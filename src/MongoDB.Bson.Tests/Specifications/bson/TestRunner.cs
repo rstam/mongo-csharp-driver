@@ -42,79 +42,90 @@ namespace MongoDB.Bson.Specifications.bson
                 case TestType.ParseError:
                     RunParseError(definition);
                     break;
-                case TestType.DecodeError:
-                    RunDecodeError(definition);
-                    break;
             }
         }
 
         private void RunValid(BsonDocument definition)
         {
-            var subjectHex = ((string)definition["subject"]).ToLowerInvariant();
-            var subjectBytes = BsonUtils.ParseHexString(subjectHex);
+            var lossy = definition.GetValue("lossy", false).ToBoolean();
+            var B = BsonUtils.ParseHexString(((string)definition["bson"]).ToLowerInvariant());
+            var E = ((string)definition["extjson"]).Replace(" ", "");
 
-            BsonDocument subject = null;
-            using (var stream = new MemoryStream(subjectBytes))
+            var cB = B;
+            if (definition.Contains("canonical_bson"))
+            {
+                cB = BsonUtils.ParseHexString(((string)definition["canonical_bson"]).ToLowerInvariant());
+            }
+
+            var cE = E;
+            if (definition.Contains("canonical_extjson"))
+            {
+                cE = ((string)definition["canonical_extjson"]).Replace(" ", "");
+            }
+
+            EncodeBson(DecodeBson(B)).Should().Equal(cB, "B -> B");
+            EncodeExtjson(DecodeBson(B)).Should().Be(cE, "B -> E");
+            EncodeExtjson(DecodeExtjson(E)).Should().Be(cE, "E -> E");
+            if (!lossy)
+            {
+                EncodeBson(DecodeExtjson(E)).Should().Equal(cB, "E -> B");
+            }
+
+            if (B != cB)
+            {
+                EncodeBson(DecodeBson(cB)).Should().Equal(cB, "(2) B -> B");
+                EncodeExtjson(DecodeBson(cB)).Should().Be(cE, "(2) B -> E");
+            }
+
+            if (E != cE)
+            {
+                EncodeExtjson(DecodeExtjson(cE)).Should().Be(cE, "(2) E -> E");
+                if (!lossy)
+                {
+                    EncodeBson(DecodeExtjson(cE)).Should().Equal(cB, "(2) E -> B");
+                }
+            }
+        }
+
+        private BsonDocument DecodeBson(byte[] bytes)
+        {
+            using (var stream = new MemoryStream(bytes))
             using (var reader = new BsonBinaryReader(stream))
             {
                 var context = BsonDeserializationContext.CreateRoot(reader);
-                subject = BsonDocumentSerializer.Instance.Deserialize(context);
+                return BsonDocumentSerializer.Instance.Deserialize(context);
             }
+        }
 
-            if (!definition.GetValue("decodeOnly", false).ToBoolean())
-            {
-                using (var stream = new MemoryStream())
-                using (var writer = new BsonBinaryWriter(stream))
-                {
-                    var context = BsonSerializationContext.CreateRoot(writer);
-                    BsonDocumentSerializer.Instance.Serialize(context, subject);
+        private BsonDocument DecodeExtjson(string extjson)
+        {
+            return BsonDocument.Parse(extjson);
+        }
 
-                    var actualEncodedHex = BsonUtils.ToHexString(stream.ToArray());
-                    actualEncodedHex.Should().Be(subjectHex);
-                }
+        private byte[] EncodeBson(BsonDocument document)
+        {
+            using (var stream = new MemoryStream())
+            using (var writer = new BsonBinaryWriter(stream))
+            {
+                var context = BsonSerializationContext.CreateRoot(writer);
+                BsonDocumentSerializer.Instance.Serialize(context, document);
+                return stream.ToArray();
             }
+        }
 
-            var extjson = ((string)definition["extjson"]).Replace(" ", "");
-            if (definition.GetValue("from_extjson", true).ToBoolean())
-            {
-                var fromExtjson = BsonDocument.Parse(extjson);
-                fromExtjson.Should().Be(subject);
-            }
-            if (definition.GetValue("to_extjson", true).ToBoolean())
-            {
-                var toExtjson = subject.ToString().Replace(" ", "");
-                toExtjson.Should().Be(extjson);
-            }
-
-            if (definition.Contains("string"))
-            {
-                var value = subject.GetElement(0).Value;
-                value.ToString().Should().Be(definition["string"].ToString());
-            }
+        private string EncodeExtjson(BsonDocument document)
+        {
+            return document.ToString().Replace(" ", "");
         }
 
         private void RunParseError(BsonDocument definition)
         {
-            var subject = (string)definition["subject"];
+            var subject = (string)definition["string"];
             var style = NumberStyles.Float & ~NumberStyles.AllowTrailingWhite;
             Decimal128 result;
             if (Decimal128.TryParse(subject, style, NumberFormatInfo.CurrentInfo, out result))
             {
                 Assert.Fail($"{subject} should have resulted in a parse failure.");
-            }
-        }
-
-        private void RunDecodeError(BsonDocument definition)
-        {
-            var subjectHex = ((string)definition["subject"]).ToLowerInvariant();
-            var subjectBytes = BsonUtils.ParseHexString(subjectHex);
-
-            using (var stream = new MemoryStream(subjectBytes))
-            using (var reader = new BsonBinaryReader(stream))
-            {
-                var context = BsonDeserializationContext.CreateRoot(reader);
-                Action act = () => BsonDocumentSerializer.Instance.Deserialize(context);
-                act.ShouldThrow<Exception>();
             }
         }
 

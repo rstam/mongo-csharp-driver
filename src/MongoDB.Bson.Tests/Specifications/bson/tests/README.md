@@ -1,82 +1,39 @@
-# BSON Corpus
+# BSON Decimal128 Value Object Tests
 
-This BSON test data corpus consists of a JSON file for each BSON type, plus
-a `top.json` file for testing the overall, enclosing document.
+These tests follow the (Work In Progress) `"BSON Corpus"` format, more or less.
 
-Top level keys include:
+See:
+  https://github.com/10gen/specifications/blob/bson-corpus/source/bson-corpus/README.md
 
-* `description`: human-readable description of what is in the file
-* `bson_type`: hex string of the first byte of a BSON element (e.g. "0x01"
-  for type "double"); this will be the synthetic value "0x00" for `top.json`.
-* `test_key`: name of a field in a `valid` test case `extjson` document
-  should be checked against the case's `string` field.
-* `valid` (optional): an array of valid test cases (see below).
-* `decodeErrors` (optional): an array of decode error cases (see below).
-* `parseErrors` (optional): an array of type-specific parse error case (see
-  below).
+In pseudo-code, the tests should look like the following:
 
-Valid test case keys include:
+B  = decode_hex( case["bson"] )
+E  = case["extjson"]
 
-* `description`: human-readable test case label.
-* `subject`: an (uppercase) big-endian hex representation of a BSON byte
-  string.  Be sure to mangle the case as appropriate in any roundtrip
-  tests.
-* `string`: (optional) a representation of an element in the `extjson`
-  field that can be checked to verify correct extjson decoding.  How to
-  check is language and bson-type specific.
-* `extjson`: a document representing the decoded extended JSON document
-  equivalent to the subject.
-* `from_extjson`: (optional) indicates whether the `extjson` representation
-  can be read. Default is true.
-* `to_extjson`: (optional) indicates whether the `extjson` representation
-  can be written. Default is true.
-* `decodeOnly` (optional): if true, indicates that the BSON can not
-  roundtrip; decoding the BSON in 'subject' and re-encoding the result will
-  not generate identical BSON; otherwise, encode(decode(subject)) should be
-  the same as the subject.
+if "canonical_bson" in case:
+    cB = decode_hex( case["canonical_bson"] )
+else:
+    cB = B
 
-Decode error cases provide an invalid BSON document or field that
-should result in an error. For each case, keys include:
+if "canonical_extjson" in case:
+    cE = decode_hex( case["canonical_extjson"] )
+else:
+    cE = E
 
-* `description`: human-readable test case label.
-* `subject`: an (uppercase) big-endian hex representation of an invalid
-  BSON string that should fail to decode correctly.
+# Baseline tests
+assert encode_bson(decode_bson(B)) == cB        # B->B
+assert encode_extjson(decode_bson(B)) == cE     # B->E
+assert encode_extjson(decode_extjson(E)) == cE  # E->E
+if "lossy" not in case:
+    assert encode_bson(decode_extjson(E)) == cB # E->B
 
-Parse error cases are type-specific and represent some input that can not
-be parsed to the `bson_type` under test.  For each case, keys include:
+# Double check canonical BSON if provided
+if B != cB:
+    assert encode_bson(decode_bson(cB)) == cB    # B->B
+    assert encode_extjson(decode_bson(cB)) == cE # B->E
 
-* `description`: human-readable test case label.
-* `subject`: a text or numeric representation of an input that can't be
-  parsed.
-
-## Extended JSON extensions
-
-The extended JSON documentation doesn't include extensions for all BSON
-types.  These are supported by `mongoexport`:
-
-    # Javascript
-    { "$code": "<code here>" }
-
-    # Javascript with scope
-    { "$code": "<code here>": "$scope": { "x":1, "y":1 } }
-
-    # Int32
-    { "$numberInt": "<number>" }
-
-However, this corpus extends JSON further to include the following:
-
-    # Double (needed for NaN, etc.)
-    { "$numberDouble": "<value|NaN|Inf|-Inf>" }
-
-    # DBpointer (deprecated): <id> is 24 hex chars
-    { "$dbpointer": "<id>", "$ns":"<namespace>" }
-
-    # Symbol (deprecated)
-    { "$symbol": "<text>" }
-
-## Visualizing BSON
-
-The directory includes a Perl script `bsonview`, which will decompose and
-highlight elements of a BSON document.  It may be used like this:
-
-    echo "0900000010610005000000" | perl bsonview -x
+# Double check canonical ExtJSON if provided
+if E != cE:
+    assert encode_extjson(decode_extjson(cB)) == cE # E->E
+    if "lossy" not in case:
+        assert encode_bson(decode_extjson(cE)) == cB # E->B
