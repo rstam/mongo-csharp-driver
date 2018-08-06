@@ -13,7 +13,9 @@
 * limitations under the License.
 */
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
@@ -30,7 +32,8 @@ namespace MongoDB.Bson.TestHelpers.XunitExtensions
 
         public IEnumerable<IXunitTestCase> Discover(ITestFrameworkDiscoveryOptions discoveryOptions, ITestMethod testMethod, IAttributeInfo factAttribute)
         {
-            yield return new SkippableFactTestCase(_diagnosticMessageSink, discoveryOptions.MethodDisplayOrDefault(), testMethod);
+            Debug.WriteLine("SkippableFactDiscoverer.Discover called");
+            return new[] { new SkippableFactTestCase(_diagnosticMessageSink, discoveryOptions.MethodDisplayOrDefault(), testMethod) };
         }
     }
 }

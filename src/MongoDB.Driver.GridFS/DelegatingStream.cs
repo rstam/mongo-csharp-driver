@@ -135,7 +135,7 @@ namespace MongoDB.Driver.GridFS
 
 #if NET45
         /// <inheritdoc/>
-        [Obsolete()]
+        [Obsolete("Not supported by DelegatingStream.")]
         protected override WaitHandle CreateWaitHandle()
         {
             throw new NotSupportedException();
@@ -201,7 +201,7 @@ namespace MongoDB.Driver.GridFS
 
 #if NET45
         /// <inheritdoc/>
-        [Obsolete()]
+        [Obsolete("Not supported by DelegatingStream.")]
         protected override void ObjectInvariant()
         {
             throw new NotSupportedException();

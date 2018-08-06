@@ -419,11 +419,7 @@ namespace MongoDB.Driver.Tests.Specifications.change_streams
             {
                 get
                 {
-#if NET45
                     return "MongoDB.Driver.Tests.Specifications.change_streams.tests.";
-#else
-                    return "MongoDB.Driver.Tests.Dotnet.Specifications.change_streams.tests.";
-#endif
                 }
             }
 

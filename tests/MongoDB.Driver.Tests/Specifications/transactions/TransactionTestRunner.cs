@@ -414,11 +414,7 @@ namespace MongoDB.Driver.Tests.Specifications.transactions
             {
                 get
                 {
-#if NET45
                     return "MongoDB.Driver.Tests.Specifications.transactions.tests.";
-#else
-                    return "MongoDB.Driver.Tests.Dotnet.Specifications.transactions.tests.";
-#endif
                 }
             }
 
