@@ -64,53 +64,14 @@ namespace MongoDB.Driver.Core.Configuration
             _eventAggregator = new EventAggregator();
         }
 
-        // methods
+        // public methods
         /// <summary>
         /// Builds the cluster.
         /// </summary>
         /// <returns>A cluster.</returns>
         public ICluster BuildCluster()
         {
-            IStreamFactory streamFactory = new TcpStreamFactory(_tcpStreamSettings);
-            if (_sslStreamSettings != null)
-            {
-                streamFactory = new SslStreamFactory(_sslStreamSettings, streamFactory);
-            }
-
-            streamFactory = _streamFactoryWrapper(streamFactory);
-
-            var connectionFactory = new BinaryConnectionFactory(
-                _connectionSettings,
-                streamFactory,
-                _eventAggregator);
-
-            var connectionPoolFactory = new ExclusiveConnectionPoolFactory(
-                _connectionPoolSettings,
-                connectionFactory,
-                _eventAggregator);
-
-            var serverMonitorConnectionSettings = _connectionSettings.With(authenticators: new IAuthenticator[] { });
-            var serverMonitorConnectionFactory = new BinaryConnectionFactory(
-                serverMonitorConnectionSettings, 
-                streamFactory, 
-                new EventAggregator());
-            var serverMonitorFactory = new ServerMonitorFactory(
-                _serverSettings,
-                serverMonitorConnectionFactory,
-                _eventAggregator);
-
-            var serverFactory = new ServerFactory(
-                _clusterSettings.ConnectionMode,
-                _serverSettings,
-                connectionPoolFactory,
-                serverMonitorFactory,
-                _eventAggregator);
-
-            var clusterFactory = new ClusterFactory(
-                _clusterSettings,
-                serverFactory,
-                _eventAggregator);
-
+            var clusterFactory = CreateClusterFactory();
             return clusterFactory.CreateCluster();
         }
 
@@ -247,6 +208,80 @@ namespace MongoDB.Driver.Core.Configuration
 
             _eventAggregator.Subscribe(subscriber);
             return this;
+        }
+
+        // private methods
+        private IClusterFactory CreateClusterFactory()
+        {
+            var serverFactory = CreateServerFactory();
+
+            return new ClusterFactory(
+                _clusterSettings,
+                serverFactory,
+                _eventAggregator);
+        }
+
+        private IConnectionPoolFactory CreateConnectionPoolFactory()
+        {
+            var streamFactory = CreateTcpStreamFactory(_tcpStreamSettings);
+
+            var connectionFactory = new BinaryConnectionFactory(
+                _connectionSettings,
+                streamFactory,
+                _eventAggregator);
+
+            return new ExclusiveConnectionPoolFactory(
+                _connectionPoolSettings,
+                connectionFactory,
+                _eventAggregator);
+        }
+
+        private ServerFactory CreateServerFactory()
+        {
+            var connectionPoolFactory = CreateConnectionPoolFactory();
+            var serverMonitorFactory = CreateServerMonitorFactory();
+
+            return new ServerFactory(
+                _clusterSettings.ConnectionMode,
+                _serverSettings,
+                connectionPoolFactory,
+                serverMonitorFactory,
+                _eventAggregator);
+        }
+
+        private IServerMonitorFactory CreateServerMonitorFactory()
+        {
+            var serverMonitorConnectionSettings = _connectionSettings
+                .With(authenticators: new IAuthenticator[] { });
+
+            var serverMonitorTcpStreamSettings = new TcpStreamSettings(_tcpStreamSettings)
+                .With(
+                    readTimeout: _serverSettings.HeartbeatTimeout,
+                    writeTimeout: _serverSettings.HeartbeatTimeout
+                );
+
+            var serverMonitorStreamFactory = CreateTcpStreamFactory(serverMonitorTcpStreamSettings);
+
+            var serverMonitorConnectionFactory = new BinaryConnectionFactory(
+                serverMonitorConnectionSettings,
+                serverMonitorStreamFactory,
+                new EventAggregator());
+
+            return new ServerMonitorFactory(
+                _serverSettings,
+                serverMonitorConnectionFactory,
+                _eventAggregator);
+        }
+
+        private IStreamFactory CreateTcpStreamFactory(TcpStreamSettings tcpStreamSettings)
+        {
+            var streamFactory = (IStreamFactory)new TcpStreamFactory(tcpStreamSettings);
+            if (_sslStreamSettings != null)
+            {
+                streamFactory = new SslStreamFactory(_sslStreamSettings, streamFactory);
+            }
+
+            return _streamFactoryWrapper(streamFactory);
         }
     }
 }
