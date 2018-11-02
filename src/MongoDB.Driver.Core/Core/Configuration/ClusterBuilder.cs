@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using MongoDB.Driver.Core.Authentication;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.ConnectionPools;
@@ -254,8 +255,14 @@ namespace MongoDB.Driver.Core.Configuration
             var serverMonitorConnectionSettings = _connectionSettings
                 .With(authenticators: new IAuthenticator[] { });
 
+            var serverMonitorConnectTimeout = _tcpStreamSettings.ConnectTimeout;
+            if (serverMonitorConnectTimeout == TimeSpan.Zero || serverMonitorConnectTimeout == Timeout.InfiniteTimeSpan)
+            {
+                serverMonitorConnectTimeout = TimeSpan.FromSeconds(30);
+            }
             var serverMonitorTcpStreamSettings = new TcpStreamSettings(_tcpStreamSettings)
                 .With(
+                    connectTimeout: serverMonitorConnectTimeout,
                     readTimeout: _serverSettings.HeartbeatTimeout,
                     writeTimeout: _serverSettings.HeartbeatTimeout
                 );
