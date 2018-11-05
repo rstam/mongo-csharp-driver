@@ -26,15 +26,18 @@ namespace MongoDB.Driver.Core.Configuration
     public class ClusterBuilderTests
     {
         [Theory]
-        [InlineData(-1, 123, 30000)]
-        [InlineData(0, 456, 30000)]
-        [InlineData(60000, 789, 60000)]
-        public void CreateServerMonitorFactory_should_return_expected_result(int connectTimeoutMilliseconds, int heartbeatMillieconds, int expectedServerMonitorConnectTimeoutMilliseconds)
+        [InlineData(0, 0, 30000, 30000)]
+        [InlineData(-1, -1, 30000, 30000)]
+        [InlineData(20000, 0, 20000, 20000)]
+        [InlineData(20000, -1, 20000, 20000)]
+        [InlineData(20000, 10000, 20000, 10000)]
+        public void CreateServerMonitorFactory_should_return_expected_result(int connectTimeoutMilliseconds, int heartbeatTimeoutMilliseconds, int expectedServerMonitorConnectTimeoutMilliseconds, int expectedServerMonitorSocketTimeoutMilliseconds)
         {
             var connectTimeout = TimeSpan.FromMilliseconds(connectTimeoutMilliseconds);
             var authenticators = new[] { new DefaultAuthenticator(new UsernamePasswordCredential("source", "username", "password")) };
-            var heartbeatTimeout = TimeSpan.FromMilliseconds(heartbeatMillieconds);
+            var heartbeatTimeout = TimeSpan.FromMilliseconds(heartbeatTimeoutMilliseconds);
             var expectedServerMonitorConnectTimeout = TimeSpan.FromMilliseconds(expectedServerMonitorConnectTimeoutMilliseconds);
+            var expectedServerMonitorSocketTimeout = TimeSpan.FromMilliseconds(expectedServerMonitorSocketTimeoutMilliseconds);
             var subject = new ClusterBuilder()
                 .ConfigureTcp(s => s.With(connectTimeout: connectTimeout))
                 .ConfigureConnection(s => s.With(authenticators: authenticators))
@@ -49,8 +52,8 @@ namespace MongoDB.Driver.Core.Configuration
             var serverMonitorStreamFactory = (TcpStreamFactory)serverMonitorConnectionFactory._streamFactory();
             var serverMonitorTcpStreamSettings = serverMonitorStreamFactory._settings();
             serverMonitorTcpStreamSettings.ConnectTimeout.Should().Be(expectedServerMonitorConnectTimeout);
-            serverMonitorTcpStreamSettings.ReadTimeout.Should().Be(heartbeatTimeout);
-            serverMonitorTcpStreamSettings.WriteTimeout.Should().Be(heartbeatTimeout);
+            serverMonitorTcpStreamSettings.ReadTimeout.Should().Be(expectedServerMonitorSocketTimeout);
+            serverMonitorTcpStreamSettings.WriteTimeout.Should().Be(expectedServerMonitorSocketTimeout);
 
             var eventSuscriber = result._eventSubscriber();
 

@@ -255,16 +255,21 @@ namespace MongoDB.Driver.Core.Configuration
             var serverMonitorConnectionSettings = _connectionSettings
                 .With(authenticators: new IAuthenticator[] { });
 
-            var serverMonitorConnectTimeout = _tcpStreamSettings.ConnectTimeout;
-            if (serverMonitorConnectTimeout == TimeSpan.Zero || serverMonitorConnectTimeout == Timeout.InfiniteTimeSpan)
+            var heartbeatConnectTimeout = _tcpStreamSettings.ConnectTimeout;
+            if (heartbeatConnectTimeout == TimeSpan.Zero || heartbeatConnectTimeout == Timeout.InfiniteTimeSpan)
             {
-                serverMonitorConnectTimeout = TimeSpan.FromSeconds(30);
+                heartbeatConnectTimeout = TimeSpan.FromSeconds(30);
+            }
+            var heartbeatSocketTimeout = _serverSettings.HeartbeatTimeout;
+            if (heartbeatSocketTimeout == TimeSpan.Zero || heartbeatSocketTimeout == Timeout.InfiniteTimeSpan)
+            {
+                heartbeatSocketTimeout = heartbeatConnectTimeout;
             }
             var serverMonitorTcpStreamSettings = new TcpStreamSettings(_tcpStreamSettings)
                 .With(
-                    connectTimeout: serverMonitorConnectTimeout,
-                    readTimeout: _serverSettings.HeartbeatTimeout,
-                    writeTimeout: _serverSettings.HeartbeatTimeout
+                    connectTimeout: heartbeatConnectTimeout,
+                    readTimeout: heartbeatSocketTimeout,
+                    writeTimeout: heartbeatSocketTimeout
                 );
 
             var serverMonitorStreamFactory = CreateTcpStreamFactory(serverMonitorTcpStreamSettings);
