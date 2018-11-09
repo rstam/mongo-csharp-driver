@@ -18,12 +18,11 @@ Upgrading
 
 There are no known backwards breaking changes in this release.
 
-This is a mandatory upgrade for anyone using the .NET Driver on Linux or OS X. In 2.7.1
-we added some code to set and configure TCP KeepAlive. Although the methods we used to
-set and configure TCP KeepAlive were documented as being supported in .NET Standard 1.5,
-it turned out that they were not in fact supported on Linux and OS X. We are working
-around that by attempting to set and configure TCP KeepAlive but ignoring any
-PlatformNotSupportedExceptions that are thrown when doing so. While it is advantageous
-for TCP KeepAlive to be turned on, the driver will work fine without it and earlier
-versions of the driver did not attempt to turn on TCP KeepAlive, so ignoring the
-PlatformNotSupportedException is acceptable.
+If your application is running on Linux or OS X and you were planning to upgrade
+to the 2.7.1 release of the driver, you must upgrade to 2.7.2 or later rather than 2.7.1.
+
+In the 2.7.1 release, the driver enables TCP KeepAlive and configures the
+KeepAlive interval, but the method that it uses throws a PlatformNotSupportedException
+on Linux and OS X. In the 2.7.2 release the driver catches that exception rather than
+failing to connect, and falls back to simply enabling KeepAlive. If that also throws a
+PlatformNotSupportedException, it will connect without enabling KeepAlive.
