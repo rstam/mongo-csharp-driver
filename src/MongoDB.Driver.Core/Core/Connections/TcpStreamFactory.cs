@@ -250,6 +250,8 @@ namespace MongoDB.Driver.Core.Connections
             }
 
             var socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            // not all platforms support IOControl
             try
             {
                 var keepAliveValues = new KeepAliveValues
@@ -262,6 +264,7 @@ namespace MongoDB.Driver.Core.Connections
             }
             catch (PlatformNotSupportedException)
             {
+                // most platforms should support this call to SetSocketOption, but just in case call it in try/catch also
                 try
                 {
                     socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
