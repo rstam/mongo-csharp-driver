@@ -2,6 +2,9 @@
 
 This is a patch release that fixes a few bugs reported since 2.7.0 was released.
 
+IMPORTANT NOTE: If you are using the .NET Driver on Linux or OS X you must
+upgrade to 2.7.2 instead.
+
 An online version of these release notes is available at:
 
 https://github.com/mongodb/mongo-csharp-driver/blob/v2.7.x/Release%20Notes/Release%20Notes%20v2.7.1.md
