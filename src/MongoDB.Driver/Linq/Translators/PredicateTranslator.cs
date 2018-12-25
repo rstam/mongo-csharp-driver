@@ -161,8 +161,10 @@ namespace MongoDB.Driver.Linq.Translators
             return null;
         }
 
-        private bool CanAnyBeRenderedWithoutElemMatch(Expression node)
+        private bool CanAnyBeRenderedWithoutElemMatch(Expression node, out bool doNotUseExpressionParamInQueryGeneration)
         {
+            doNotUseExpressionParamInQueryGeneration = false;
+
             switch (node.NodeType)
             {
                 // this doesn't cover all cases, but absolutely covers
@@ -197,11 +199,18 @@ namespace MongoDB.Driver.Linq.Translators
                 case ExpressionType.ConvertChecked:
                 case ExpressionType.Not:
                     var unaryExpression = (UnaryExpression)node;
-                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand);
+                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand, out doNotUseExpressionParamInQueryGeneration);
                 case ExpressionType.Extension:
                     var pipelineExpression = node as PipelineExpression;
                     if (pipelineExpression != null)
                     {
+                        //todo: think about StartWith and EndWith
+                        if (pipelineExpression.ResultOperator is ContainsResultOperator)
+                        {
+                            doNotUseExpressionParamInQueryGeneration = true;
+                            return false;
+                        }
+
                         var source = pipelineExpression.Source as ISerializationExpression;
                         return source == null;
                     }
@@ -917,7 +926,8 @@ namespace MongoDB.Driver.Linq.Translators
             }
 
             FilterDefinition<BsonDocument> filter;
-            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate);
+            bool doNotUseExpressionParamInQueryGeneration;
+            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate, out doNotUseExpressionParamInQueryGeneration);
 
             if (renderWithoutElemMatch)
             {
@@ -926,7 +936,8 @@ namespace MongoDB.Driver.Linq.Translators
             }
             else
             {
-                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate);
+                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate, doNotUseExpressionParamInQueryGeneration);
+
                 filter = __builder.ElemMatch(fieldExpression.FieldName, Translate(predicate));
                 if (!(fieldExpression.Serializer is IBsonDocumentSerializer))
                 {
@@ -992,7 +1003,14 @@ namespace MongoDB.Driver.Linq.Translators
                     var ienumerableInterfaceType = constantExpression.Type.FindIEnumerable();
                     var itemType = ienumerableInterfaceType.GetTypeInfo().GetGenericArguments()[0];
                     var serializedValues = field.SerializeValues(itemType, (IEnumerable)constantExpression.Value);
-                    return __builder.In(field.FieldName, serializedValues);
+                    if (string.IsNullOrEmpty(field.FieldName))
+                    {
+                        return new BsonDocument("$in", serializedValues);
+                    }
+                    else
+                    {
+                        return __builder.In(field.FieldName, serializedValues);
+                    }
                 }
             }
             else
@@ -1644,9 +1662,16 @@ namespace MongoDB.Driver.Linq.Translators
         // nested types
         private class DocumentToFieldConverter : ExtensionExpressionVisitor
         {
-            public static Expression Convert(Expression node)
+            private readonly bool _useEmptyFieldNameInFieldExpression;
+
+            private DocumentToFieldConverter(bool useEmptyFieldNameInFieldExpression)
             {
-                var visitor = new DocumentToFieldConverter();
+                _useEmptyFieldNameInFieldExpression = useEmptyFieldNameInFieldExpression;
+            }
+
+            public static Expression Convert(Expression node, bool useEmptyFieldNameInFieldExpression = false)
+            {
+                var visitor = new DocumentToFieldConverter(useEmptyFieldNameInFieldExpression);
                 return visitor.Visit(node);
             }
 
@@ -1657,7 +1682,7 @@ namespace MongoDB.Driver.Linq.Translators
 
             protected internal override Expression VisitPipeline(PipelineExpression node)
             {
-                return node;
+                return _useEmptyFieldNameInFieldExpression ? base.VisitPipeline(node) : node;
             }
         }
     }

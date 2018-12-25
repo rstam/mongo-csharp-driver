@@ -1902,6 +1902,10 @@ namespace MongoDB.Driver
                     return new BsonDocument("$nor", element.Value);
                 case "$nor":
                     return new BsonDocument("$or", element.Value);
+                case "$in":
+                    return new BsonDocument("$nin", element.Value);
+                case "$nin":
+                    return new BsonDocument("$in", element.Value);
                 default:
                     return NegateArbitraryFilter(filter);
             }

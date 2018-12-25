@@ -214,6 +214,52 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         }
 
         [Fact]
+        public void Any_with_a_not_and_a_predicate_with_not_contains()
+        {
+            var x = new[] { 1, 3, 5 };
+
+            Assert(
+                c => !c.L.Any(a => !x.Contains(a)),
+                1,
+                "{ L : { '$not' : { '$elemMatch' : { '$nin' : [1, 3, 5] } } } }");
+        }
+
+        [Fact]
+        public void Any_with_a_not_and_a_predicate_with_contains()
+        {
+            var x = new[] { 2, 4 };
+
+            Assert(
+                c => !c.L.Any(a => x.Contains(a)),
+                1,
+                "{ L : { '$not' : { '$elemMatch' : { '$in' : [2, 4] } } } }");
+        }
+
+        [Fact]
+        public void Any_with_a_predicate_with_contains()
+        {
+            var x = new[] { 1, 2 };
+
+            Assert(
+                c => c.L.Any(a => x.Contains(a)),
+                2,
+                "{ L : { '$elemMatch' : { '$in' : [1, 2] } } }"
+                );
+        }
+
+        [Fact]
+        public void Any_with_a_predicate_with_not_contains()
+        {
+            var x = new[] { 1, 3, 5 };
+
+            Assert(
+                c => c.L.Any(a => !x.Contains(a)),
+                1,
+                "{ L : { '$elemMatch' : { '$nin' : [1, 3, 5] } } }"
+            );
+        }
+
+        [Fact]
         public void Any_with_a_not()
         {
             Assert(
@@ -284,7 +330,8 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             Assert(
                 x => x.G.Any(g => local.Contains(g.D)),
                 1,
-                "{\"G.D\": { $in: [\"Delilah\", \"Dolphin\" ] } }");
+                "{ 'G' : { '$elemMatch' : { 'D' : { $in : ['Delilah', 'Dolphin'] } } } }"
+                );
         }
 
         [Fact]
