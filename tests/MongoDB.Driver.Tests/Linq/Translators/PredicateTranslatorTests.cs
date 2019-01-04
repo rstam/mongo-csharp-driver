@@ -216,23 +216,21 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         [Fact]
         public void Any_with_a_not_and_a_predicate_with_not_contains()
         {
-            var x = new[] { 1, 3, 5 };
+            var x = new[] { 1, 2 };
 
             Assert(
-                c => !c.L.Any(a => !x.Contains(a)),
-                1,
-                "{ L : { '$not' : { '$elemMatch' : { '$nin' : [1, 3, 5] } } } }");
+                c => !c.M.Any(a => !x.Contains(a)),
+                "{ M : { '$not' : { '$elemMatch' : { '$nin' : [1, 2] } } } }");
         }
 
         [Fact]
         public void Any_with_a_not_and_a_predicate_with_contains()
         {
-            var x = new[] { 2, 4 };
+            var x = new[] { 1, 2 };
 
             Assert(
-                c => !c.L.Any(a => x.Contains(a)),
-                1,
-                "{ L : { '$not' : { '$elemMatch' : { '$in' : [2, 4] } } } }");
+                c => !c.M.Any(a => x.Contains(a)),
+                "{ M : { '$not' : { '$elemMatch' : { '$in' : [1, 2] } } } }");
         }
 
         [Fact]
@@ -241,21 +239,19 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             var x = new[] { 1, 2 };
 
             Assert(
-                c => c.L.Any(a => x.Contains(a)),
-                2,
-                "{ L : { '$elemMatch' : { '$in' : [1, 2] } } }"
+                c => c.M.Any(a => x.Contains(a)),
+                "{ M : { '$elemMatch' : { '$in' : [1, 2] } } }"
                 );
         }
 
         [Fact]
         public void Any_with_a_predicate_with_not_contains()
         {
-            var x = new[] { 1, 3, 5 };
+            var x = new[] { 1, 2 };
 
             Assert(
-                c => c.L.Any(a => !x.Contains(a)),
-                1,
-                "{ L : { '$elemMatch' : { '$nin' : [1, 3, 5] } } }"
+                c => c.M.Any(a => !x.Contains(a)),
+                "{ M : { '$elemMatch' : { '$nin' : [1, 2] } } }"
             );
         }
 
@@ -957,7 +953,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             Assert(collection, filter, expectedCount, BsonDocument.Parse(expectedFilter));
         }
 
-        public void Assert<T>(IMongoCollection<T> collection, Expression<Func<T, bool>> filter, int expectedCount, BsonDocument expectedFilter)
+        public void Assert<T>(IMongoCollection<T> collection, Expression<Func<T, bool>> filter, int? expectedCount, BsonDocument expectedFilter, Action<List<T>> postAssert = null)
         {
             var serializer = BsonSerializer.SerializerRegistry.GetSerializer<T>();
             var filterDocument = PredicateTranslator.Translate(filter, serializer, BsonSerializer.SerializerRegistry);
@@ -965,7 +961,13 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             var list = collection.FindSync(filterDocument).ToList();
 
             filterDocument.Should().Be(expectedFilter);
-            list.Count.Should().Be(expectedCount);
+
+            if (expectedCount.HasValue)
+            {
+                list.Count.Should().Be(expectedCount);
+            }
+
+            postAssert?.Invoke(list);
         }
 
         public void Assert(Expression<Func<Root, bool>> filter, int expectedCount, string expectedFilter)
@@ -976,6 +978,50 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         public void Assert(Expression<Func<Root, bool>> filter, int expectedCount, BsonDocument expectedFilter)
         {
             Assert(__collection, filter, expectedCount, expectedFilter);
+        }
+
+        protected override void FillCustomCollection(List<Root> customCollection)
+        {
+            customCollection.AddRange(
+                new[]
+                {
+                    new Root { Id = 1, M = new int[0] },
+                    new Root { Id = 2, M = new [] { 1 } },
+                    new Root { Id = 3, M = new [] { 2 } },
+                    new Root { Id = 4, M = new [] { 3 } },
+                    new Root { Id = 5, M = new [] { 4 } },
+                    new Root { Id = 6, M = new [] { 1, 2 } },
+                    new Root { Id = 7, M = new [] { 1, 3 } },
+                    new Root { Id = 8, M = new [] { 1, 4 } },
+                    new Root { Id = 9, M = new [] { 2, 3 } },
+                    new Root { Id = 10, M = new [] { 3, 4} },
+                    new Root { Id = 11, M = new [] { 1, 2, 3 } },
+                    new Root { Id = 12, M = new [] { 1, 2 ,4 } },
+                    new Root { Id = 13, M = new [] { 1, 3, 4 } },
+                    new Root { Id = 14, M = new [] { 1, 2, 3, 4 } }
+                });
+        }
+
+        public void Assert(Expression<Func<Root, bool>> filter, string expectedFilter)
+        {
+            Assert(filter, BsonDocument.Parse(expectedFilter));
+        }
+
+        public void Assert(Expression<Func<Root, bool>> filter, BsonDocument expectedFilter)
+        {
+            Action<List<Root>> postAssert = queryResult =>
+            {
+                var linqResult = __customDocuments.Where(filter.Compile()).ToList();
+                linqResult.Count.Should().Be(queryResult.Count);
+                linqResult
+                    .Select((item, index) => new { Value = item, Index = index })
+                    .ToList()
+                    .ForEach(i =>
+                    {
+                        queryResult[i.Index].Id.Should().Be(i.Value.Id);
+                    });
+            };
+            Assert(__customCollection, filter, null, expectedFilter, postAssert);
         }
     }
 }

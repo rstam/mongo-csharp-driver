@@ -16,8 +16,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Bson.Serialization.Attributes;
-using Xunit;
 
 namespace MongoDB.Driver.Tests.Linq
 {
@@ -25,11 +25,19 @@ namespace MongoDB.Driver.Tests.Linq
     {
         protected static IMongoCollection<Root> __collection;
         protected static IMongoCollection<Other> __otherCollection;
+        protected static IMongoCollection<Root> __customCollection;
+
+        protected static List<Root> __customDocuments;
+
         private static ConcurrentDictionary<Type, bool> __oneTimeSetupTracker = new ConcurrentDictionary<Type, bool>();
 
         protected IntegrationTestBase()
         {
             __oneTimeSetupTracker.GetOrAdd(GetType(), OneTimeSetup); // run OneTimeSetup once per subclass
+        }
+
+        protected virtual void FillCustomCollection(List<Root> customCollection)
+        {
         }
 
         private bool OneTimeSetup(Type type)
@@ -44,8 +52,21 @@ namespace MongoDB.Driver.Tests.Linq
             InsertFirst();
             InsertSecond();
             InsertJoin();
+            ConfigureCustomCollection(db);
 
             return true;
+        }
+
+        private void ConfigureCustomCollection(IMongoDatabase db)
+        {
+            __customDocuments = new List<Root>();
+            FillCustomCollection(__customDocuments);
+            if (__customDocuments != null && __customDocuments.Any())
+            {
+                __customCollection = db.GetCollection<Root>(DriverTestConfiguration.CollectionNamespace.CollectionName + "_custom");
+                db.DropCollection(__collection.CollectionNamespace.CollectionName + "_custom");
+                __customCollection.InsertMany(__customDocuments);
+            }
         }
 
         private void InsertFirst()
