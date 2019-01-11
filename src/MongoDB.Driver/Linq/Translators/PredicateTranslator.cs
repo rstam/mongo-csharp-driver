@@ -161,9 +161,9 @@ namespace MongoDB.Driver.Linq.Translators
             return null;
         }
 
-        private bool CanAnyBeRenderedWithoutElemMatch(Expression node, out bool doNotUseExpressionParamInQueryGeneration)
+        private bool CanAnyBeRenderedWithoutElemMatch(Expression node, out bool useExpressionParamInQueryGeneration)
         {
-            doNotUseExpressionParamInQueryGeneration = false;
+            useExpressionParamInQueryGeneration = true;
 
             switch (node.NodeType)
             {
@@ -199,15 +199,14 @@ namespace MongoDB.Driver.Linq.Translators
                 case ExpressionType.ConvertChecked:
                 case ExpressionType.Not:
                     var unaryExpression = (UnaryExpression)node;
-                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand, out doNotUseExpressionParamInQueryGeneration);
+                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand, out useExpressionParamInQueryGeneration);
                 case ExpressionType.Extension:
                     var pipelineExpression = node as PipelineExpression;
                     if (pipelineExpression != null)
                     {
-                        //todo: think about StartWith and EndWith
                         if (pipelineExpression.ResultOperator is ContainsResultOperator)
                         {
-                            doNotUseExpressionParamInQueryGeneration = true;
+                            useExpressionParamInQueryGeneration = false;
                             return false;
                         }
 
@@ -926,8 +925,8 @@ namespace MongoDB.Driver.Linq.Translators
             }
 
             FilterDefinition<BsonDocument> filter;
-            bool doNotUseExpressionParamInQueryGeneration;
-            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate, out doNotUseExpressionParamInQueryGeneration);
+            bool useExpressionParamInQueryGeneration;
+            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate, out useExpressionParamInQueryGeneration);
 
             if (renderWithoutElemMatch)
             {
@@ -936,7 +935,7 @@ namespace MongoDB.Driver.Linq.Translators
             }
             else
             {
-                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate, doNotUseExpressionParamInQueryGeneration);
+                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate, useExpressionParamInQueryGeneration);
 
                 filter = __builder.ElemMatch(fieldExpression.FieldName, Translate(predicate));
                 if (!(fieldExpression.Serializer is IBsonDocumentSerializer))
@@ -1662,16 +1661,16 @@ namespace MongoDB.Driver.Linq.Translators
         // nested types
         private class DocumentToFieldConverter : ExtensionExpressionVisitor
         {
-            private readonly bool _useEmptyFieldNameInFieldExpression;
+            private readonly bool _useExpressionParamInQueryGeneration;
 
-            private DocumentToFieldConverter(bool useEmptyFieldNameInFieldExpression)
+            private DocumentToFieldConverter(bool useExpressionParamInQueryGeneration)
             {
-                _useEmptyFieldNameInFieldExpression = useEmptyFieldNameInFieldExpression;
+                _useExpressionParamInQueryGeneration = useExpressionParamInQueryGeneration;
             }
 
-            public static Expression Convert(Expression node, bool useEmptyFieldNameInFieldExpression = false)
+            public static Expression Convert(Expression node, bool useExpressionParamInQueryGeneration = true)
             {
-                var visitor = new DocumentToFieldConverter(useEmptyFieldNameInFieldExpression);
+                var visitor = new DocumentToFieldConverter(useExpressionParamInQueryGeneration);
                 return visitor.Visit(node);
             }
 
@@ -1682,7 +1681,7 @@ namespace MongoDB.Driver.Linq.Translators
 
             protected internal override Expression VisitPipeline(PipelineExpression node)
             {
-                return _useEmptyFieldNameInFieldExpression ? base.VisitPipeline(node) : node;
+                return _useExpressionParamInQueryGeneration ? node : base.VisitPipeline(node);
             }
         }
     }
