@@ -161,9 +161,9 @@ namespace MongoDB.Driver.Linq.Translators
             return null;
         }
 
-        private bool CanAnyBeRenderedWithoutElemMatch(Expression node, out bool useExpressionParamInQueryGeneration)
+        private bool CanAnyBeRenderedWithoutElemMatch(Expression node, out bool shouldOperationResultBeDocument)
         {
-            useExpressionParamInQueryGeneration = true;
+            shouldOperationResultBeDocument = true;
 
             switch (node.NodeType)
             {
@@ -199,14 +199,14 @@ namespace MongoDB.Driver.Linq.Translators
                 case ExpressionType.ConvertChecked:
                 case ExpressionType.Not:
                     var unaryExpression = (UnaryExpression)node;
-                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand, out useExpressionParamInQueryGeneration);
+                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand, out shouldOperationResultBeDocument);
                 case ExpressionType.Extension:
                     var pipelineExpression = node as PipelineExpression;
                     if (pipelineExpression != null)
                     {
                         if (pipelineExpression.ResultOperator is ContainsResultOperator)
                         {
-                            useExpressionParamInQueryGeneration = false;
+                            shouldOperationResultBeDocument = false;
                             return false;
                         }
 
@@ -925,8 +925,11 @@ namespace MongoDB.Driver.Linq.Translators
             }
 
             FilterDefinition<BsonDocument> filter;
-            bool useExpressionParamInQueryGeneration;
-            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate, out useExpressionParamInQueryGeneration);
+
+            // NOTE: this variable shows which ExpressionType will be in $elemMatch after visiting whereExpression.Predicate.
+            // 'DocumentExpression' if the value is 'true', otherwise - `FieldExpression`.
+            bool shouldOperationResultBeDocument;
+            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate, out shouldOperationResultBeDocument);
 
             if (renderWithoutElemMatch)
             {
@@ -935,7 +938,7 @@ namespace MongoDB.Driver.Linq.Translators
             }
             else
             {
-                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate, useExpressionParamInQueryGeneration);
+                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate, !shouldOperationResultBeDocument);
 
                 filter = __builder.ElemMatch(fieldExpression.FieldName, Translate(predicate));
                 if (!(fieldExpression.Serializer is IBsonDocumentSerializer))
@@ -1661,16 +1664,16 @@ namespace MongoDB.Driver.Linq.Translators
         // nested types
         private class DocumentToFieldConverter : ExtensionExpressionVisitor
         {
-            private readonly bool _useExpressionParamInQueryGeneration;
+            private readonly bool _processPipeline;
 
-            private DocumentToFieldConverter(bool useExpressionParamInQueryGeneration)
+            private DocumentToFieldConverter(bool processPipeline)
             {
-                _useExpressionParamInQueryGeneration = useExpressionParamInQueryGeneration;
+                _processPipeline = processPipeline;
             }
 
-            public static Expression Convert(Expression node, bool useExpressionParamInQueryGeneration = true)
+            public static Expression Convert(Expression node, bool processPipeline = true)
             {
-                var visitor = new DocumentToFieldConverter(useExpressionParamInQueryGeneration);
+                var visitor = new DocumentToFieldConverter(processPipeline);
                 return visitor.Visit(node);
             }
 
@@ -1681,7 +1684,7 @@ namespace MongoDB.Driver.Linq.Translators
 
             protected internal override Expression VisitPipeline(PipelineExpression node)
             {
-                return _useExpressionParamInQueryGeneration ? node : base.VisitPipeline(node);
+                return _processPipeline ? base.VisitPipeline(node) : node;
             }
         }
     }
