@@ -54,6 +54,7 @@
 
   <ItemGroup>
     <Compile Include="..\MongoDB.Shared\Hasher.cs" Link="Hasher.cs" />
+    <Compile Include="..\MongoDB.Shared\Hex.cs" Link="Hex.cs" />
   </ItemGroup>
 
   <ItemGroup>

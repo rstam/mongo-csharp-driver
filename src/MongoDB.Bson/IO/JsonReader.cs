@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
+using MongoDB.Shared;
 
 namespace MongoDB.Bson.IO
 {
@@ -923,6 +924,14 @@ namespace MongoDB.Bson.IO
             }
         }
 
+        private bool IsValidBinaryDataSubTypeString(string value)
+        {
+            return
+                value.Length >= 1 &&
+                value.Length <= 2 &&
+                Hex.IsValidHexString(value);
+        }
+
         private BsonValue ParseBinDataConstructor()
         {
             VerifyToken("(");
@@ -1017,7 +1026,7 @@ namespace MongoDB.Bson.IO
                     case "base64": base64String = value; break;
                     case "subType": subTypeString = value; break;
                     default:
-                        var message = string.Format("$binary type wrapper element names can be 'base64' or 'subType', but found '{0}'.", name);
+                        var message = string.Format("JSON reader expected 'base64' or 'subType', but found '{0}'.", name);
                         throw new FormatException(message);
                 }
 
@@ -1036,17 +1045,22 @@ namespace MongoDB.Bson.IO
 
             if (base64String == null)
             {
-                var message = "$binary type wrapper is missing a 'base64' element.";
+                var message = "JSON reader expected $binary to contain a 'base64' element.";
                 throw new FormatException(message);
             }
             if (subTypeString == null)
             {
-                var message = "$binary type wrapper is missing a 'subType' element.";
+                var message = "JSON reader expected $binary to contain a 'subType' element.";
+                throw new FormatException(message);
+            }
+            if (!IsValidBinaryDataSubTypeString(subTypeString))
+            {
+                var message = string.Format("JSON reader expected subType to be a one or two digit hex string, but found '{0}'.", subTypeString);
                 throw new FormatException(message);
             }
 
             bytes = Convert.FromBase64String(base64String);
-            subType = (BsonBinarySubType)int.Parse(subTypeString);
+            subType = (BsonBinarySubType)Hex.ParseInt32(subTypeString);
         }
 
         private void ParseBinDataExtendedJsonLegacy(JsonToken nextToken, out byte[] bytes, out BsonBinarySubType subType)
@@ -1768,7 +1782,7 @@ namespace MongoDB.Bson.IO
                         options = value;
                         break;
                     default:
-                        var message = string.Format("Expected element names \"pattern\" and \"options\" in \"$regularExpression\" extended JSON type wrapper but found '{0}'.", nextToken.Lexeme);
+                        var message = string.Format("JSON reader expected 'pattern' or 'options' but found '{0}'.", nextToken.Lexeme);
                         throw new FormatException(message);
                 }
 
@@ -1789,13 +1803,13 @@ namespace MongoDB.Bson.IO
 
             if (pattern == null)
             {
-                var message = "\"$regularExpression\" extended JSON type wrapper is missing \"pattern\" element.";
+                var message = "JSON reader expected $regularExpression to contain a 'pattern' element.";
                 throw new FormatException(message);
             }
 
             if (options == null)
             {
-                var message = "\"$regularExpression\" extended JSON type wrapper is missing \"options\" element.";
+                var message = "JSON reader expected $regularExpression to contain an 'options' element.";
                 throw new FormatException(message);
             }
 
