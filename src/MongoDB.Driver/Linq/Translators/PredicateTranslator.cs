@@ -161,10 +161,8 @@ namespace MongoDB.Driver.Linq.Translators
             return null;
         }
 
-        private bool CanAnyBeRenderedWithoutElemMatch(Expression node, out bool shouldOperationResultBeDocument)
+        private bool CanAnyBeRenderedWithoutElemMatch(Expression node)
         {
-            shouldOperationResultBeDocument = true;
-
             switch (node.NodeType)
             {
                 // this doesn't cover all cases, but absolutely covers
@@ -199,14 +197,13 @@ namespace MongoDB.Driver.Linq.Translators
                 case ExpressionType.ConvertChecked:
                 case ExpressionType.Not:
                     var unaryExpression = (UnaryExpression)node;
-                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand, out shouldOperationResultBeDocument);
+                    return CanAnyBeRenderedWithoutElemMatch(unaryExpression.Operand);
                 case ExpressionType.Extension:
                     var pipelineExpression = node as PipelineExpression;
                     if (pipelineExpression != null)
                     {
                         if (pipelineExpression.ResultOperator is ContainsResultOperator)
                         {
-                            shouldOperationResultBeDocument = false;
                             return false;
                         }
 
@@ -925,11 +922,7 @@ namespace MongoDB.Driver.Linq.Translators
             }
 
             FilterDefinition<BsonDocument> filter;
-
-            // NOTE: this variable shows which ExpressionType will be in $elemMatch after visiting whereExpression.Predicate.
-            // 'DocumentExpression' if the value is 'true', otherwise - `FieldExpression`.
-            bool shouldOperationResultBeDocument;
-            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate, out shouldOperationResultBeDocument);
+            var renderWithoutElemMatch = CanAnyBeRenderedWithoutElemMatch(whereExpression.Predicate);
 
             if (renderWithoutElemMatch)
             {
@@ -938,8 +931,7 @@ namespace MongoDB.Driver.Linq.Translators
             }
             else
             {
-                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate, !shouldOperationResultBeDocument);
-
+                var predicate = DocumentToFieldConverter.Convert(whereExpression.Predicate);
                 filter = __builder.ElemMatch(fieldExpression.FieldName, Translate(predicate));
                 if (!(fieldExpression.Serializer is IBsonDocumentSerializer))
                 {
@@ -1111,7 +1103,7 @@ namespace MongoDB.Driver.Linq.Translators
 
                     if (startIndex == -1)
                     {
-                        // the regex for: IndexOf(c) == index 
+                        // the regex for: IndexOf(c) == index
                         // is: /^[^c]{index}c/
                         pattern = string.Format("^{0}{{{1}}}{2}", negativeClass, index, positiveClass);
                     }
@@ -1144,7 +1136,7 @@ namespace MongoDB.Driver.Linq.Translators
                     var escapedString = Regex.Escape((string)value);
                     if (startIndex == -1)
                     {
-                        // the regex for: IndexOf(s) == index 
+                        // the regex for: IndexOf(s) == index
                         // is: /^(?!.{0,index - 1}s).{index}s/
                         pattern = string.Format("^(?!.{{0,{2}}}{0}).{{{1}}}{0}", escapedString, index, index - 1);
                     }
@@ -1664,27 +1656,15 @@ namespace MongoDB.Driver.Linq.Translators
         // nested types
         private class DocumentToFieldConverter : ExtensionExpressionVisitor
         {
-            private readonly bool _processPipeline;
-
-            private DocumentToFieldConverter(bool processPipeline)
+            public static Expression Convert(Expression node)
             {
-                _processPipeline = processPipeline;
-            }
-
-            public static Expression Convert(Expression node, bool processPipeline = true)
-            {
-                var visitor = new DocumentToFieldConverter(processPipeline);
+                var visitor = new DocumentToFieldConverter();
                 return visitor.Visit(node);
             }
 
             protected internal override Expression VisitDocument(DocumentExpression node)
             {
                 return new FieldExpression("", node.Serializer);
-            }
-
-            protected internal override Expression VisitPipeline(PipelineExpression node)
-            {
-                return _processPipeline ? base.VisitPipeline(node) : node;
             }
         }
     }

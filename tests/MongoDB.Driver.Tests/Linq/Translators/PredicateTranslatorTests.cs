@@ -220,7 +220,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
 
             Assert(
                 c => !c.M.Any(a => !x.Contains(a)),
-                "{ M : { '$not' : { '$elemMatch' : { '$nin' : [1, 2] } } } }");
+                "{ M : { '$not' : { '$elemMatch' : { '$not' : { '$in' : [1, 2] } } } } }");
         }
 
         [Fact]
@@ -251,7 +251,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
 
             Assert(
                 c => c.M.Any(a => !x.Contains(a)),
-                "{ M : { '$elemMatch' : { '$nin' : [1, 2] } } }"
+                "{ M : { '$elemMatch' : { '$not' : { '$in' : [1, 2] } } } }"
             );
         }
 
@@ -293,7 +293,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
                 1,
                 "{\"C.E.I\": /^ick/s}");
 
-            // this isn't a legal query, as in, there isn't any 
+            // this isn't a legal query, as in, there isn't any
             // way to render this legally for the server...
             //Assert(
             //    x => x.C.E.I.Any(i => i.StartsWith("ick") && i == "Jack"),
@@ -326,8 +326,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             Assert(
                 x => x.G.Any(g => local.Contains(g.D)),
                 1,
-                "{ 'G' : { '$elemMatch' : { 'D' : { $in : ['Delilah', 'Dolphin'] } } } }"
-                );
+                "{ 'G' : { '$elemMatch' : { 'D' : { $in : ['Delilah', 'Dolphin'] } } } }");
         }
 
         [Fact]
