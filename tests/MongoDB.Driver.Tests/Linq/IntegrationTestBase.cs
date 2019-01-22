@@ -26,7 +26,6 @@ namespace MongoDB.Driver.Tests.Linq
         protected static IMongoCollection<Root> __collection;
         protected static IMongoCollection<Other> __otherCollection;
         protected static IMongoCollection<Root> __customCollection;
-
         protected static List<Root> __customDocuments;
 
         private static ConcurrentDictionary<Type, bool> __oneTimeSetupTracker = new ConcurrentDictionary<Type, bool>();
@@ -36,7 +35,7 @@ namespace MongoDB.Driver.Tests.Linq
             __oneTimeSetupTracker.GetOrAdd(GetType(), OneTimeSetup); // run OneTimeSetup once per subclass
         }
 
-        protected virtual void FillCustomCollection(List<Root> customCollection)
+        protected virtual void FillCustomDocuments(List<Root> customDocuments)
         {
         }
 
@@ -46,6 +45,7 @@ namespace MongoDB.Driver.Tests.Linq
             var db = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
             __collection = db.GetCollection<Root>(DriverTestConfiguration.CollectionNamespace.CollectionName);
             __otherCollection = db.GetCollection<Other>(DriverTestConfiguration.CollectionNamespace.CollectionName + "_other");
+            __customCollection = db.GetCollection<Root>(DriverTestConfiguration.CollectionNamespace.CollectionName + "_custom");
             db.DropCollection(__collection.CollectionNamespace.CollectionName);
             db.DropCollection(__collection.CollectionNamespace.CollectionName + "_other");
 
@@ -60,11 +60,10 @@ namespace MongoDB.Driver.Tests.Linq
         private void ConfigureCustomCollection(IMongoDatabase db)
         {
             __customDocuments = new List<Root>();
-            FillCustomCollection(__customDocuments);
-            if (__customDocuments != null && __customDocuments.Any())
+            FillCustomDocuments(__customDocuments);
+            db.DropCollection(__customCollection.CollectionNamespace.CollectionName);
+            if (__customDocuments.Count > 0)
             {
-                __customCollection = db.GetCollection<Root>(DriverTestConfiguration.CollectionNamespace.CollectionName + "_custom");
-                db.DropCollection(__collection.CollectionNamespace.CollectionName + "_custom");
                 __customCollection.InsertMany(__customDocuments);
             }
         }
