@@ -17,7 +17,7 @@ using System.Globalization;
 
 namespace MongoDB.Shared
 {
-    internal static class Hex
+    internal static class HexUtils
     {
         public static bool IsValidHexDigit(char c)
         {

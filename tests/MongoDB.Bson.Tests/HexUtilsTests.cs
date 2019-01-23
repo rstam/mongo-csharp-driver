@@ -20,7 +20,7 @@ using Xunit;
 
 namespace MongoDB.Bson.Tests
 {
-    public class HexTests
+    public class HexUtilsTests
     {
         [Theory]
         [InlineData(0)]
@@ -35,7 +35,7 @@ namespace MongoDB.Bson.Tests
         [InlineData(0xffff)]
         public void IsValidHexDigit_should_return_false_when_value_is_invalid(char c)
         {
-            var result = Hex.IsValidHexDigit(c);
+            var result = HexUtils.IsValidHexDigit(c);
 
             result.Should().BeFalse();
         }
@@ -65,7 +65,7 @@ namespace MongoDB.Bson.Tests
         [InlineData('F')]
         public void IsValidHexDigit_should_return_true_when_value_is_valid(char c)
         {
-            var result = Hex.IsValidHexDigit(c);
+            var result = HexUtils.IsValidHexDigit(c);
 
             result.Should().BeTrue();
         }
@@ -79,7 +79,7 @@ namespace MongoDB.Bson.Tests
         [InlineData("00x")]
         public void IsValidHexString_should_return_false_when_value_is_invalid(string value)
         {
-            var result = Hex.IsValidHexString(value);
+            var result = HexUtils.IsValidHexString(value);
 
             result.Should().BeFalse();
         }
@@ -91,7 +91,7 @@ namespace MongoDB.Bson.Tests
         [InlineData("000")]
         public void IsValidHexString_should_return_true_when_value_is_valid(string value)
         {
-            var result = Hex.IsValidHexString(value);
+            var result = HexUtils.IsValidHexString(value);
 
             result.Should().BeTrue();
         }
@@ -102,7 +102,7 @@ namespace MongoDB.Bson.Tests
         [InlineData("111", 0x111)]
         public void ParseInt32_should_return_expected_result(string value, int expectedResult)
         {
-            var result = Hex.ParseInt32(value);
+            var result = HexUtils.ParseInt32(value);
 
             result.Should().Be(expectedResult);
         }
@@ -113,7 +113,7 @@ namespace MongoDB.Bson.Tests
         [InlineData("0x0")]
         public void ParseInt32_should_throw_when_value_is_invalid(string value)
         {
-            var exception = Record.Exception(() => Hex.ParseInt32(value));
+            var exception = Record.Exception(() => HexUtils.ParseInt32(value));
 
             exception.Should().BeOfType<FormatException>();
         }

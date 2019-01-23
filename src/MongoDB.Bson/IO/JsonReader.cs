@@ -929,7 +929,7 @@ namespace MongoDB.Bson.IO
             return
                 value.Length >= 1 &&
                 value.Length <= 2 &&
-                Hex.IsValidHexString(value);
+                HexUtils.IsValidHexString(value);
         }
 
         private BsonValue ParseBinDataConstructor()
@@ -1060,7 +1060,7 @@ namespace MongoDB.Bson.IO
             }
 
             bytes = Convert.FromBase64String(base64String);
-            subType = (BsonBinarySubType)Hex.ParseInt32(subTypeString);
+            subType = (BsonBinarySubType)HexUtils.ParseInt32(subTypeString);
         }
 
         private void ParseBinDataExtendedJsonLegacy(JsonToken nextToken, out byte[] bytes, out BsonBinarySubType subType)

@@ -120,14 +120,20 @@ namespace MongoDB.Bson.Tests.IO
 
         [Theory]
         [InlineData("{ $binary : \"AQ==\", $type : 0 }", new byte[] { 1 }, BsonBinarySubType.Binary)]
+        [InlineData("{ $binary : \"AQ==\", $type : 128 }", new byte[] { 1 }, BsonBinarySubType.UserDefined)]
         [InlineData("{ $binary : \"AQ==\", $type : \"0\" }", new byte[] { 1 }, BsonBinarySubType.Binary)]
         [InlineData("{ $binary : \"AQ==\", $type : \"00\" }", new byte[] { 1 }, BsonBinarySubType.Binary)]
+        [InlineData("{ $binary : \"AQ==\", $type : \"80\" }", new byte[] { 1 }, BsonBinarySubType.UserDefined)]
         [InlineData("{ $binary : { base64 : \"AQ==\", subType : \"0\" } }", new byte[] { 1 }, BsonBinarySubType.Binary)]
         [InlineData("{ $binary : { base64 : \"AQ==\", subType : \"00\" } }", new byte[] { 1 }, BsonBinarySubType.Binary)]
+        [InlineData("{ $binary : { base64 : \"AQ==\", subType : \"80\" } }", new byte[] { 1 }, BsonBinarySubType.UserDefined)]
         [InlineData("{ $binary : { subType : \"0\", base64 : \"AQ==\" } }", new byte[] { 1 }, BsonBinarySubType.Binary)]
         [InlineData("{ $binary : { subType : \"00\", base64 : \"AQ==\" } }", new byte[] { 1 }, BsonBinarySubType.Binary)]
+        [InlineData("{ $binary : { subType : \"80\", base64 : \"AQ==\" } }", new byte[] { 1 }, BsonBinarySubType.UserDefined)]
         [InlineData("BinData(0, \"AQ==\")", new byte[] { 1 }, BsonBinarySubType.Binary)]
+        [InlineData("BinData(128, \"AQ==\")", new byte[] { 1 }, BsonBinarySubType.UserDefined)]
         [InlineData("HexData(0, \"01\")", new byte[] { 1 }, BsonBinarySubType.Binary)]
+        [InlineData("HexData(128, \"01\")", new byte[] { 1 }, BsonBinarySubType.UserDefined)]
         public void TestBinaryData(string json, byte[] expectedBytes, BsonBinarySubType expectedSubType)
         {
             using (var reader = new JsonReader(json))
@@ -200,10 +206,12 @@ namespace MongoDB.Bson.Tests.IO
         [InlineData("{ $binary : { base64 : \"AQ==\", [")]
         [InlineData("{ $binary : { base64 : \"AQ==\", subType [")]
         [InlineData("{ $binary : { base64 : \"AQ==\", subType : [")]
+        [InlineData("{ $binary : { base64 : \"AQ==\", subType : \"\" [")]
         [InlineData("{ $binary : { base64 : \"AQ==\", subType : \"0\" [")]
         [InlineData("{ $binary : { base64 : \"AQ==\", subType : \"0\" } [")]
         [InlineData("{ $binary : { subType [")]
         [InlineData("{ $binary : { subType : [")]
+        [InlineData("{ $binary : { subType : \"\" [")]
         [InlineData("{ $binary : { subType : \"0\" [")]
         [InlineData("{ $binary : { subType : \"0\", [")]
         [InlineData("{ $binary : { subType : \"0\", base64 [")]
