@@ -1103,7 +1103,7 @@ namespace MongoDB.Driver.Linq.Translators
 
                     if (startIndex == -1)
                     {
-                        // the regex for: IndexOf(c) == index 
+                        // the regex for: IndexOf(c) == index
                         // is: /^[^c]{index}c/
                         pattern = string.Format("^{0}{{{1}}}{2}", negativeClass, index, positiveClass);
                     }
@@ -1136,7 +1136,7 @@ namespace MongoDB.Driver.Linq.Translators
                     var escapedString = Regex.Escape((string)value);
                     if (startIndex == -1)
                     {
-                        // the regex for: IndexOf(s) == index 
+                        // the regex for: IndexOf(s) == index
                         // is: /^(?!.{0,index - 1}s).{index}s/
                         pattern = string.Format("^(?!.{{0,{2}}}{0}).{{{1}}}{0}", escapedString, index, index - 1);
                     }

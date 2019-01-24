@@ -220,7 +220,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
 
             AssertUsingCustomCollection(
                 c => !c.M.Any(a => !x.Contains(a)),
-                "{ M : { '$not' : { '$elemMatch' : { '$nin' : [1, 2] } } } }");
+                "{ M : { '$not' : { '$elemMatch' : { '$not' : { '$in' : [1, 2] } } } } }");
         }
 
         [Fact]
@@ -251,7 +251,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
 
             AssertUsingCustomCollection(
                 c => c.M.Any(a => !x.Contains(a)),
-                "{ M : { '$elemMatch' : { '$nin' : [1, 2] } } }"
+                "{ M : { '$elemMatch' : { '$not' : { '$in' : [1, 2] } } } }"
             );
         }
 
