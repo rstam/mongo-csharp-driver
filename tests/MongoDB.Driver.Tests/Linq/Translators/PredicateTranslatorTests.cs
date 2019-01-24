@@ -218,7 +218,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         {
             var x = new[] { 1, 2 };
 
-            Assert(
+            AssertUsingCustomCollection(
                 c => !c.M.Any(a => !x.Contains(a)),
                 "{ M : { '$not' : { '$elemMatch' : { '$nin' : [1, 2] } } } }");
         }
@@ -228,7 +228,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         {
             var x = new[] { 1, 2 };
 
-            Assert(
+            AssertUsingCustomCollection(
                 c => !c.M.Any(a => x.Contains(a)),
                 "{ M : { '$not' : { '$elemMatch' : { '$in' : [1, 2] } } } }");
         }
@@ -238,7 +238,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         {
             var x = new[] { 1, 2 };
 
-            Assert(
+            AssertUsingCustomCollection(
                 c => c.M.Any(a => x.Contains(a)),
                 "{ M : { '$elemMatch' : { '$in' : [1, 2] } } }"
                 );
@@ -249,7 +249,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
         {
             var x = new[] { 1, 2 };
 
-            Assert(
+            AssertUsingCustomCollection(
                 c => c.M.Any(a => !x.Contains(a)),
                 "{ M : { '$elemMatch' : { '$nin' : [1, 2] } } }"
             );
@@ -293,7 +293,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
                 1,
                 "{\"C.E.I\": /^ick/s}");
 
-            // this isn't a legal query, as in, there isn't any 
+            // this isn't a legal query, as in, there isn't any
             // way to render this legally for the server...
             //Assert(
             //    x => x.C.E.I.Any(i => i.StartsWith("ick") && i == "Jack"),
@@ -326,8 +326,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             Assert(
                 x => x.G.Any(g => local.Contains(g.D)),
                 1,
-                "{ 'G' : { '$elemMatch' : { 'D' : { $in : ['Delilah', 'Dolphin'] } } } }"
-                );
+                "{ 'G' : { '$elemMatch' : { 'D' : { $in : ['Delilah', 'Dolphin'] } } } }");
         }
 
         [Fact]
@@ -953,7 +952,7 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             Assert(collection, filter, expectedCount, BsonDocument.Parse(expectedFilter));
         }
 
-        public void Assert<T>(IMongoCollection<T> collection, Expression<Func<T, bool>> filter, int? expectedCount, BsonDocument expectedFilter, Action<List<T>> postAssert = null)
+        public List<T> Assert<T>(IMongoCollection<T> collection, Expression<Func<T, bool>> filter, int expectedCount, BsonDocument expectedFilter)
         {
             var serializer = BsonSerializer.SerializerRegistry.GetSerializer<T>();
             var filterDocument = PredicateTranslator.Translate(filter, serializer, BsonSerializer.SerializerRegistry);
@@ -961,13 +960,8 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             var list = collection.FindSync(filterDocument).ToList();
 
             filterDocument.Should().Be(expectedFilter);
-
-            if (expectedCount.HasValue)
-            {
-                list.Count.Should().Be(expectedCount);
-            }
-
-            postAssert?.Invoke(list);
+            list.Count.Should().Be(expectedCount);
+            return list;
         }
 
         public void Assert(Expression<Func<Root, bool>> filter, int expectedCount, string expectedFilter)
@@ -980,9 +974,9 @@ namespace MongoDB.Driver.Tests.Linq.Translators
             Assert(__collection, filter, expectedCount, expectedFilter);
         }
 
-        protected override void FillCustomCollection(List<Root> customCollection)
+        protected override void FillCustomDocuments(List<Root> customDocuments)
         {
-            customCollection.AddRange(
+            customDocuments.AddRange(
                 new[]
                 {
                     new Root { Id = 1, M = new int[0] },
@@ -1002,26 +996,18 @@ namespace MongoDB.Driver.Tests.Linq.Translators
                 });
         }
 
-        public void Assert(Expression<Func<Root, bool>> filter, string expectedFilter)
+        public void AssertUsingCustomCollection(Expression<Func<Root, bool>> filter, string expectedFilter)
         {
-            Assert(filter, BsonDocument.Parse(expectedFilter));
+            AssertUsingCustomCollection(filter, BsonDocument.Parse(expectedFilter));
         }
 
-        public void Assert(Expression<Func<Root, bool>> filter, BsonDocument expectedFilter)
+        public void AssertUsingCustomCollection(Expression<Func<Root, bool>> filter, BsonDocument expectedFilter)
         {
-            Action<List<Root>> postAssert = queryResult =>
-            {
-                var linqResult = __customDocuments.Where(filter.Compile()).ToList();
-                linqResult.Count.Should().Be(queryResult.Count);
-                linqResult
-                    .Select((item, index) => new { Value = item, Index = index })
-                    .ToList()
-                    .ForEach(i =>
-                    {
-                        queryResult[i.Index].Id.Should().Be(i.Value.Id);
-                    });
-            };
-            Assert(__customCollection, filter, null, expectedFilter, postAssert);
+            var expectedResult = __customDocuments.Where(filter.Compile()).ToList();
+
+            var queryResult = Assert(__customCollection, filter, expectedResult.Count, expectedFilter);
+
+            queryResult.Select(r => r.Id).Should().Equal(expectedResult.Select(r => r.Id));
         }
     }
 }
