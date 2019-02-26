@@ -476,6 +476,17 @@ namespace MongoDB.Driver.Core.Configuration
         /// <returns>A resolved ConnectionString.</returns>
         public ConnectionString Resolve()
         {
+            return Resolve(resolveHosts: true);
+        }
+
+        /// <summary>
+        /// Resolves a connection string. If the connection string indicates more information is available
+        /// in the DNS system, it will acquire that information as well.
+        /// </summary>
+        /// <param name="resolveHosts">Whether to resolve hosts.</param>
+        /// <returns>A resolved ConnectionString.</returns>
+        public ConnectionString Resolve(bool resolveHosts)
+        {
             if (_isResolved)
             {
                 return this;
@@ -487,25 +498,17 @@ namespace MongoDB.Driver.Core.Configuration
 
             ConnectionStringScheme resolvedScheme;
             List<string> hosts;
-            switch (_connect)
+            if (resolveHosts)
             {
-                case ClusterConnectionMode.Direct:
-                case ClusterConnectionMode.Standalone:
-                    resolvedScheme = ConnectionStringScheme.MongoDB;
-                    var srvResponse = client.Query(srvPrefix + host, QueryType.SRV, QueryClass.IN);
-                    hosts = GetHostsFromResponse(srvResponse);
-                    ValidateResolvedHosts(host, hosts);
-                    break;
-
-                case ClusterConnectionMode.Automatic:
-                case ClusterConnectionMode.ReplicaSet:
-                case ClusterConnectionMode.Sharded:
-                    resolvedScheme = ConnectionStringScheme.MongoDBPlusSrv;
-                    hosts = new List<string> { host };
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected cluster connection mode: {_connect}.");
+                resolvedScheme = ConnectionStringScheme.MongoDB;
+                var srvResponse = client.Query(srvPrefix + host, QueryType.SRV, QueryClass.IN);
+                hosts = GetHostsFromResponse(srvResponse);
+                ValidateResolvedHosts(host, hosts);
+            }
+            else
+            {
+                resolvedScheme = ConnectionStringScheme.MongoDBPlusSrv;
+                hosts = new List<string> { host };
             }
 
             List<String> options;
@@ -531,7 +534,19 @@ namespace MongoDB.Driver.Core.Configuration
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A resolved ConnectionString.</returns>
-        public async Task<ConnectionString> ResolveAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<ConnectionString> ResolveAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return ResolveAsync(resolveHosts: true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Resolves a connection string. If the connection string indicates more information is available
+        /// in the DNS system, it will acquire that information as well.
+        /// </summary>
+        /// <param name="resolveHosts">Whether to resolve hosts.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A resolved ConnectionString.</returns>
+        public async Task<ConnectionString> ResolveAsync(bool resolveHosts, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_isResolved)
             {
@@ -544,25 +559,17 @@ namespace MongoDB.Driver.Core.Configuration
 
             ConnectionStringScheme resolvedScheme;
             List<string> hosts;
-            switch (_connect)
+            if (resolveHosts)
             {
-                case ClusterConnectionMode.Direct:
-                case ClusterConnectionMode.Standalone:
-                    resolvedScheme = ConnectionStringScheme.MongoDB;
-                    var srvResponse = await client.QueryAsync(srvPrefix + host, QueryType.SRV, QueryClass.IN).ConfigureAwait(false);
-                    hosts = GetHostsFromResponse(srvResponse);
-                    ValidateResolvedHosts(host, hosts);
-                    break;
-
-                case ClusterConnectionMode.Automatic:
-                case ClusterConnectionMode.ReplicaSet:
-                case ClusterConnectionMode.Sharded:
-                    resolvedScheme = ConnectionStringScheme.MongoDBPlusSrv;
-                    hosts = new List<string> { host };
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"Unexpected cluster connection mode: {_connect}.");
+                resolvedScheme = ConnectionStringScheme.MongoDB;
+                var srvResponse = await client.QueryAsync(srvPrefix + host, QueryType.SRV, QueryClass.IN).ConfigureAwait(false);
+                hosts = GetHostsFromResponse(srvResponse);
+                ValidateResolvedHosts(host, hosts);
+            }
+            else
+            {
+                resolvedScheme = ConnectionStringScheme.MongoDBPlusSrv;
+                hosts = new List<string> { host };
             }
 
             var txtResponse = await client.QueryAsync(host, QueryType.TXT, QueryClass.IN).ConfigureAwait(false);

@@ -611,6 +611,17 @@ namespace MongoDB.Driver
         /// <returns>A resolved MongoURL.</returns>
         public MongoUrl Resolve()
         {
+            return Resolve(resolveHosts: true);
+        }
+
+        /// <summary>
+        /// Resolves a connection string. If the connection string indicates more information is available
+        /// in the DNS system, it will acquire that information as well.
+        /// </summary>
+        /// <param name="resolveHosts">Whether to resolve hosts.</param>
+        /// <returns>A resolved MongoURL.</returns>
+        public MongoUrl Resolve(bool resolveHosts)
+        {
             if (_isResolved)
             {
                 return this;
@@ -618,7 +629,7 @@ namespace MongoDB.Driver
 
             var connectionString = new ConnectionString(_originalUrl);
 
-            var resolved = connectionString.Resolve();
+            var resolved = connectionString.Resolve(resolveHosts);
 
             return new MongoUrl(resolved.ToString(), isResolved: true);
         }
@@ -629,7 +640,19 @@ namespace MongoDB.Driver
         /// </summary>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A resolved MongoURL.</returns>
-        public async Task<MongoUrl> ResolveAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<MongoUrl> ResolveAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return ResolveAsync(resolveHosts: true);
+        }
+
+        /// <summary>
+        /// Resolves a connection string. If the connection string indicates more information is available
+        /// in the DNS system, it will acquire that information as well.
+        /// </summary>
+        /// <param name="resolveHosts">Whether to resolve hosts.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A resolved MongoURL.</returns>
+        public async Task<MongoUrl> ResolveAsync(bool resolveHosts, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_isResolved)
             {
@@ -638,7 +661,7 @@ namespace MongoDB.Driver
 
             var connectionString = new ConnectionString(_originalUrl);
 
-            var resolved = await connectionString.ResolveAsync(cancellationToken).ConfigureAwait(false);
+            var resolved = await connectionString.ResolveAsync(resolveHosts, cancellationToken).ConfigureAwait(false);
 
             return new MongoUrl(resolved.ToString(), isResolved: true);
         }
