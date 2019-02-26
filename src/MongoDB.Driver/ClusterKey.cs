@@ -54,6 +54,7 @@ namespace MongoDB.Driver
         private readonly int _minConnectionPoolSize;
         private readonly int _receiveBufferSize;
         private readonly string _replicaSetName;
+        private readonly ConnectionStringScheme _scheme;
         private readonly string _sdamLogFilename;
         private readonly int _sendBufferSize;
         private readonly IReadOnlyList<MongoServerAddress> _servers;
@@ -81,6 +82,7 @@ namespace MongoDB.Driver
             int maxConnectionPoolSize,
             int minConnectionPoolSize,
             string replicaSetName,
+            ConnectionStringScheme scheme,
             string sdamLogFilename,
             IReadOnlyList<MongoServerAddress> servers,
             TimeSpan serverSelectionTimeout,
@@ -106,6 +108,7 @@ namespace MongoDB.Driver
             _minConnectionPoolSize = minConnectionPoolSize;
             _receiveBufferSize = __defaultReceiveBufferSize; // TODO: add ReceiveBufferSize to MongoServerSettings?
             _replicaSetName = replicaSetName;
+            _scheme = scheme;
             _sdamLogFilename = sdamLogFilename;
             _sendBufferSize = __defaultSendBufferSize; // TODO: add SendBufferSize to MongoServerSettings?
             _servers = servers;
@@ -136,6 +139,7 @@ namespace MongoDB.Driver
         public int MinConnectionPoolSize { get { return _minConnectionPoolSize; } }
         public int ReceiveBufferSize { get { return _receiveBufferSize; } }
         public string ReplicaSetName { get { return _replicaSetName; } }
+        public ConnectionStringScheme Scheme { get { return _scheme; } }
         public string SdamLogFilename { get { return _sdamLogFilename; }}
         public int SendBufferSize { get { return _sendBufferSize; } }
         public IReadOnlyList<MongoServerAddress> Servers { get { return _servers; } }
@@ -152,6 +156,7 @@ namespace MongoDB.Driver
         {
             // keep calculation simple (leave out fields that are rarely used)
             return new Hasher()
+                .Hash(_scheme)
                 .HashElements(_credentials)
                 .HashElements(_servers)
                 .GetHashCode();
@@ -181,6 +186,7 @@ namespace MongoDB.Driver
                 _minConnectionPoolSize == rhs._minConnectionPoolSize &&
                 _receiveBufferSize == rhs._receiveBufferSize &&
                 _replicaSetName == rhs._replicaSetName &&
+                _scheme == rhs._scheme &&
                 _sdamLogFilename == rhs._sdamLogFilename &&
                 _sendBufferSize == rhs._sendBufferSize &&
                 _servers.SequenceEqual(rhs._servers) &&

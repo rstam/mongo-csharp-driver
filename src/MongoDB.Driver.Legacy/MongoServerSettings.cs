@@ -52,6 +52,7 @@ namespace MongoDB.Driver
         private ReadPreference _readPreference;
         private string _replicaSetName;
         private bool _retryWrites;
+        private ConnectionStringScheme _scheme;
         private string _sdamLogFilename;
         private List<MongoServerAddress> _servers;
         private TimeSpan _serverSelectionTimeout;
@@ -94,6 +95,7 @@ namespace MongoDB.Driver
             _readPreference = ReadPreference.Primary;
             _replicaSetName = null;
             _retryWrites = false;
+            _scheme = ConnectionStringScheme.MongoDB;
             _servers = new List<MongoServerAddress> { new MongoServerAddress("localhost") };
             _serverSelectionTimeout = MongoDefaults.ServerSelectionTimeout;
             _socketTimeout = MongoDefaults.SocketTimeout;
@@ -412,7 +414,20 @@ namespace MongoDB.Driver
                 _retryWrites = value;
             }
         }
-        
+
+        /// <summary>
+        /// Gets or sets the connection string scheme.
+        /// </summary>
+        public ConnectionStringScheme Scheme
+        {
+            get { return _scheme; }
+            set
+            {
+                if (_isFrozen) { throw new InvalidOperationException("MongoServerSettings is frozen."); }
+                _scheme = value;
+            }
+        }
+
         /// <summary>
         /// Gets or set the name of the SDAM log file. Null turns logging off. stdout will log to console.
         /// </summary>
@@ -639,6 +654,7 @@ namespace MongoDB.Driver
             serverSettings.ReplicaSetName = clientSettings.ReplicaSetName;
             serverSettings.RetryWrites = clientSettings.RetryWrites;
             serverSettings.LocalThreshold = clientSettings.LocalThreshold;
+            serverSettings.Scheme = clientSettings.Scheme;
             serverSettings.SdamLogFilename = clientSettings.SdamLogFilename;
             serverSettings.Servers = new List<MongoServerAddress>(clientSettings.Servers);
             serverSettings.ServerSelectionTimeout = clientSettings.ServerSelectionTimeout;
@@ -696,6 +712,7 @@ namespace MongoDB.Driver
             serverSettings.RetryWrites = url.RetryWrites ?? false;
             serverSettings.LocalThreshold = url.LocalThreshold;
             serverSettings.SdamLogFilename = null; // SdamLogFilename must be provided in code
+            serverSettings.Scheme = url.Scheme;
             serverSettings.Servers = new List<MongoServerAddress>(url.Servers);
             serverSettings.ServerSelectionTimeout = url.ServerSelectionTimeout;
             serverSettings.SocketTimeout = url.SocketTimeout;
@@ -720,6 +737,7 @@ namespace MongoDB.Driver
             clone._applicationName = _applicationName;
             clone._clusterConfigurator = _clusterConfigurator;
             clone._connectionMode = _connectionMode;
+            clone._scheme = _scheme;
             clone._connectTimeout = _connectTimeout;
             clone._credentials = _credentials;
             clone._guidRepresentation = _guidRepresentation;
@@ -737,6 +755,7 @@ namespace MongoDB.Driver
             clone._replicaSetName = _replicaSetName;
             clone._retryWrites = _retryWrites;
             clone._localThreshold = _localThreshold;
+            clone._scheme = _scheme;
             clone._sdamLogFilename = _sdamLogFilename;
             clone._servers = new List<MongoServerAddress>(_servers);
             clone._serverSelectionTimeout = _serverSelectionTimeout;
@@ -795,6 +814,7 @@ namespace MongoDB.Driver
                _replicaSetName == rhs._replicaSetName &&
                _retryWrites == rhs._retryWrites &&
                _localThreshold == rhs._localThreshold &&
+               _scheme == rhs._scheme &&
                _sdamLogFilename == rhs._sdamLogFilename &&
                _servers.SequenceEqual(rhs._servers) &&
                _serverSelectionTimeout == rhs._serverSelectionTimeout &&
@@ -871,6 +891,7 @@ namespace MongoDB.Driver
                 .Hash(_replicaSetName)
                 .Hash(_retryWrites)
                 .Hash(_localThreshold)
+                .Hash(_scheme)
                 .Hash(_sdamLogFilename)
                 .HashElements(_servers)
                 .Hash(_serverSelectionTimeout)
@@ -922,6 +943,10 @@ namespace MongoDB.Driver
             parts.Add(string.Format("ReplicaSetName={0}", _replicaSetName));
             parts.Add(string.Format("RetryWrites={0}", _retryWrites));
             parts.Add(string.Format("LocalThreshold={0}", _localThreshold));
+            if (_scheme != ConnectionStringScheme.MongoDB)
+            {
+                parts.Add(string.Format("Scheme={0}", _scheme));
+            }
             if (_sdamLogFilename != null)
             {
                 parts.Add($"SDAMLogFilename={_sdamLogFilename}");
@@ -963,6 +988,7 @@ namespace MongoDB.Driver
                 _maxConnectionPoolSize,
                 _minConnectionPoolSize,
                 _replicaSetName,
+                _scheme,
                 _sdamLogFilename,
                 _servers.ToList(),
                 _serverSelectionTimeout,

@@ -20,11 +20,9 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Driver.Core.Async;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Events;
-using MongoDB.Driver.Core.Events.Diagnostics;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
 
@@ -33,7 +31,7 @@ namespace MongoDB.Driver.Core.Clusters
     /// <summary>
     /// Represents a multi server cluster.
     /// </summary>
-    internal sealed class MultiServerCluster : Cluster
+    internal sealed class MultiServerCluster : Cluster, IDnsMonitoringCluster
     {
         // fields
         private readonly CancellationTokenSource _monitorServersCancellationTokenSource;
@@ -43,6 +41,7 @@ namespace MongoDB.Driver.Core.Clusters
         private readonly List<IClusterableServer> _servers;
         private readonly object _serversLock = new object();
         private readonly InterlockedInt32 _state;
+        private readonly object _updateClusterDescriptionLock = new object();
 
         private readonly Action<ClusterClosingEvent> _closingEventHandler;
         private readonly Action<ClusterClosedEvent> _closedEventHandler;
@@ -132,24 +131,30 @@ namespace MongoDB.Driver.Core.Clusters
                 }
 
                 var stopwatch = Stopwatch.StartNew();
-                MonitorServersAsync().ConfigureAwait(false);
-                // We lock here even though AddServer locks. Monitors
-                // are re-entrant such that this won't cause problems,
-                // but could prevent issues of conflicting reports
-                // from servers that are quick to respond.
-                var clusterDescription = Description.WithType(Settings.ConnectionMode.ToClusterType());
+
                 var newServers = new List<IClusterableServer>();
-                lock (_serversLock)
+                lock (_updateClusterDescriptionLock)
                 {
-                    foreach (var endPoint in Settings.EndPoints)
+                    // We lock here even though AddServer locks. Monitors
+                    // are re-entrant such that this won't cause problems,
+                    // but could prevent issues of conflicting reports
+                    // from servers that are quick to respond.
+                    var clusterDescription = Description.WithType(Settings.ConnectionMode.ToClusterType());
+                    if (Settings.Scheme != ConnectionStringScheme.MongoDBPlusSrv)
                     {
-                        clusterDescription = EnsureServer(clusterDescription, endPoint, newServers);
+                        lock (_serversLock)
+                        {
+                            foreach (var endPoint in Settings.EndPoints)
+                            {
+                                clusterDescription = EnsureServer(clusterDescription, endPoint, newServers);
+                            }
+                        }
                     }
+
+                    stopwatch.Stop();
+
+                    UpdateClusterDescription(clusterDescription);
                 }
-
-                stopwatch.Stop();
-
-                UpdateClusterDescription(clusterDescription);
 
                 foreach (var server in newServers)
                 {
@@ -160,6 +165,17 @@ namespace MongoDB.Driver.Core.Clusters
                 {
                     _openedEventHandler(new ClusterOpenedEvent(ClusterId, Settings, stopwatch.Elapsed));
                 }
+
+                MonitorServersAsync().ConfigureAwait(false);
+
+                if (Settings.Scheme == ConnectionStringScheme.MongoDBPlusSrv)
+                {
+                    var dnsEndPoint = (DnsEndPoint)Settings.EndPoints.Single();
+                    var lookupDomainName = dnsEndPoint.Host;
+                    var dnsMonitor = new DnsMonitor(this, lookupDomainName, _monitorServersCancellationTokenSource.Token);
+                    var thread = new Thread(dnsMonitor.Start);
+                    thread.Start();
+                }
             }
         }
 
@@ -167,6 +183,9 @@ namespace MongoDB.Driver.Core.Clusters
         {
             switch (clusterType)
             {
+                case ClusterType.Standalone:
+                    return serverType == ServerType.Standalone;
+
                 case ClusterType.ReplicaSet:
                     return serverType.IsReplicaSetMember();
 
@@ -177,7 +196,7 @@ namespace MongoDB.Driver.Core.Clusters
                     switch (connectionMode)
                     {
                         case ClusterConnectionMode.Automatic:
-                            return serverType.IsReplicaSetMember() || serverType == ServerType.ShardRouter;
+                            return serverType.IsReplicaSetMember() || serverType == ServerType.ShardRouter || serverType == ServerType.Standalone;
 
                         default:
                             throw new MongoInternalException("Unexpected connection mode.");
@@ -263,49 +282,56 @@ namespace MongoDB.Driver.Core.Clusters
 
         private void ProcessServerDescriptionChanged(ServerDescriptionChangedEventArgs args)
         {
-            var newServerDescription = args.NewServerDescription;
-            var newClusterDescription = Description;
-
-            if (!_servers.Any(x => EndPointHelper.Equals(x.EndPoint, newServerDescription.EndPoint)))
-            {
-                return;
-            }
-
             var newServers = new List<IClusterableServer>();
-            if (newServerDescription.State == ServerState.Disconnected)
+            lock (_updateClusterDescriptionLock)
             {
-                newClusterDescription = newClusterDescription.WithServerDescription(newServerDescription);
-            }
-            else
-            {
-                if (IsServerValidForCluster(newClusterDescription.Type, Settings.ConnectionMode, newServerDescription.Type))
+                var newServerDescription = args.NewServerDescription;
+                var newClusterDescription = Description;
+
+                if (!_servers.Any(x => EndPointHelper.Equals(x.EndPoint, newServerDescription.EndPoint)))
                 {
-                    if (newClusterDescription.Type == ClusterType.Unknown)
-                    {
-                        newClusterDescription = newClusterDescription.WithType(newServerDescription.Type.ToClusterType());
-                    }
+                    return;
+                }
 
-                    switch (newClusterDescription.Type)
-                    {
-                        case ClusterType.ReplicaSet:
-                            newClusterDescription = ProcessReplicaSetChange(newClusterDescription, args, newServers);
-                            break;
-
-                        case ClusterType.Sharded:
-                            newClusterDescription = ProcessShardedChange(newClusterDescription, args);
-                            break;
-
-                        default:
-                            throw new MongoInternalException("Unexpected cluster type.");
-                    }
+                if (newServerDescription.State == ServerState.Disconnected)
+                {
+                    newClusterDescription = newClusterDescription.WithServerDescription(newServerDescription);
                 }
                 else
                 {
-                    newClusterDescription = newClusterDescription.WithoutServerDescription(newServerDescription.EndPoint);
-                }
-            }
+                    if (IsServerValidForCluster(newClusterDescription.Type, Settings.ConnectionMode, newServerDescription.Type))
+                    {
+                        if (newClusterDescription.Type == ClusterType.Unknown)
+                        {
+                            newClusterDescription = newClusterDescription.WithType(newServerDescription.Type.ToClusterType());
+                        }
 
-            UpdateClusterDescription(newClusterDescription);
+                        switch (newClusterDescription.Type)
+                        {
+                            case ClusterType.Standalone:
+                                newClusterDescription = ProcessStandaloneChange(newClusterDescription, args);
+                                break;
+
+                            case ClusterType.ReplicaSet:
+                                newClusterDescription = ProcessReplicaSetChange(newClusterDescription, args, newServers);
+                                break;
+
+                            case ClusterType.Sharded:
+                                newClusterDescription = ProcessShardedChange(newClusterDescription, args);
+                                break;
+
+                            default:
+                                throw new MongoInternalException("Unexpected cluster type.");
+                        }
+                    }
+                    else
+                    {
+                        newClusterDescription = newClusterDescription.WithoutServerDescription(newServerDescription.EndPoint);
+                    }
+                }
+
+                UpdateClusterDescription(newClusterDescription);
+            }
 
             foreach (var server in newServers)
             {
@@ -478,6 +504,53 @@ namespace MongoDB.Driver.Core.Clusters
             }
 
             return clusterDescription.WithServerDescription(args.NewServerDescription);
+        }
+
+        private ClusterDescription ProcessStandaloneChange(ClusterDescription clusterDescription, ServerDescriptionChangedEventArgs args)
+        {
+            if (args.NewServerDescription.Type != ServerType.Standalone)
+            {
+                return RemoveServer(clusterDescription, args.NewServerDescription.EndPoint, "Server is not a standalone server.");
+            }
+
+            return clusterDescription.WithServerDescription(args.NewServerDescription);
+        }
+
+        void IDnsMonitoringCluster.ProcessDnsResults(List<DnsEndPoint> dnsEndPoints, CancellationToken cancellationToken)
+        {
+            var newServers = new List<IClusterableServer>();
+            lock (_updateClusterDescriptionLock)
+            {
+                var oldClusterDescription = Description;
+
+                var clusterType = oldClusterDescription.Type;
+                if (clusterType != ClusterType.Unknown && clusterType != ClusterType.Sharded)
+                {
+                    return;
+                }
+
+                var newClusterDescription = oldClusterDescription;
+                var currentEndPoints = oldClusterDescription.Servers.Select(serverDescription => serverDescription.EndPoint).ToList();
+
+                var endPointsToAdd = dnsEndPoints.Where(endPoint => !currentEndPoints.Contains(endPoint));
+                foreach (var endPoint in endPointsToAdd)
+                {
+                    newClusterDescription = EnsureServer(newClusterDescription, endPoint, newServers);
+                }
+
+                var endPointsToRemove = currentEndPoints.Where(endPoint => !dnsEndPoints.Contains(endPoint));
+                foreach (var endPoint in endPointsToRemove)
+                {
+                    newClusterDescription = RemoveServer(newClusterDescription, endPoint, "Server no longer appears in the DNS SRV records.");
+                }
+
+                UpdateClusterDescription(newClusterDescription);
+            }
+
+            foreach (var addedServer in newServers)
+            {
+                addedServer.Initialize();
+            }
         }
 
         private ClusterDescription EnsureServer(ClusterDescription clusterDescription, EndPoint endPoint, List<IClusterableServer> newServers)

@@ -74,6 +74,7 @@ namespace MongoDB.Driver.Core.Configuration
         private TimeSpan? _heartbeatTimeout;
         private IReadOnlyList<EndPoint> _hosts;
         private bool? _ipv6;
+        private bool _isResolved;
         private bool? _journal;
         private TimeSpan? _localThreshold;
         private TimeSpan? _maxIdleTime;
@@ -113,6 +114,22 @@ namespace MongoDB.Driver.Core.Configuration
             _unknownOptions = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
             _authMechanismProperties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             Parse();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ConnectionString" /> class.
+        /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="isResolved">Whether the connection string is resolved.</param>
+        internal ConnectionString(string connectionString, bool isResolved)
+            : this(connectionString)
+        {
+            if (!isResolved && _scheme != ConnectionStringScheme.MongoDBPlusSrv)
+            {
+                throw new ArgumentException("Only connection strings with scheme MongoDBPlusSrv can be unresolved.", nameof(isResolved));
+            }
+
+            _isResolved = isResolved;
         }
 
         // public properties
@@ -229,6 +246,14 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         /// <summary>
+        /// Gets whether the connection string has been resolved. Always true when scheme is MongoDB.
+        /// </summary>
+        public bool IsResolved
+        {
+            get { return _isResolved; }
+        }
+
+        /// <summary>
         /// Gets the journal value of the write concern.
         /// </summary>
         public bool? Journal
@@ -336,7 +361,7 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
        /// <summary>
-        /// Gets the scheme.
+        /// Gets the connection string scheme.
         /// </summary>
         public ConnectionStringScheme Scheme
         {
@@ -449,7 +474,7 @@ namespace MongoDB.Driver.Core.Configuration
         /// <returns>A resolved ConnectionString.</returns>
         public ConnectionString Resolve()
         {
-            if (_scheme == ConnectionStringScheme.MongoDB)
+            if (_isResolved)
             {
                 return this;
             }
@@ -457,16 +482,45 @@ namespace MongoDB.Driver.Core.Configuration
             var host = GetHostNameForDns();
 
             var client = new LookupClient();
-            var response = client.Query(srvPrefix + host, QueryType.SRV, QueryClass.IN);
-            var hosts = GetHostsFromResponse(response);
-            ValidateResolvedHosts(host, hosts);
 
-            response = client.Query(host, QueryType.TXT, QueryClass.IN);
-            var options = GetOptionsFromResponse(response);
+            ConnectionStringScheme resolvedScheme;
+            List<string> hosts;
+            switch (_connect)
+            {
+                case ClusterConnectionMode.Direct:
+                case ClusterConnectionMode.Standalone:
+                    resolvedScheme = ConnectionStringScheme.MongoDB;
+                    var srvResponse = client.Query(srvPrefix + host, QueryType.SRV, QueryClass.IN);
+                    hosts = GetHostsFromResponse(srvResponse);
+                    ValidateResolvedHosts(host, hosts);
+                    break;
+
+                case ClusterConnectionMode.Automatic:
+                case ClusterConnectionMode.ReplicaSet:
+                case ClusterConnectionMode.Sharded:
+                    resolvedScheme = ConnectionStringScheme.MongoDBPlusSrv;
+                    hosts = new List<string> { host };
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected cluster connection mode: {_connect}.");
+            }
+
+            List<String> options;
+            // for testing
+            if (host == "dnsmonitor_test.mongodb_plus_srv_test.com")
+            {
+                options = new List<string>();
+            }
+            else
+            {
+                var txtResponse = client.Query(host, QueryType.TXT, QueryClass.IN);
+                options = GetOptionsFromResponse(txtResponse);
+            }
 
             var resolvedOptions = GetResolvedOptions(options);
 
-            return BuildResolvedConnectionString(hosts, resolvedOptions);
+            return BuildResolvedConnectionString(resolvedScheme, hosts, resolvedOptions);
         }
 
         /// <summary>
@@ -477,24 +531,44 @@ namespace MongoDB.Driver.Core.Configuration
         /// <returns>A resolved ConnectionString.</returns>
         public async Task<ConnectionString> ResolveAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (_scheme == ConnectionStringScheme.MongoDB)
+            if (_isResolved)
             {
                 return this;
             }
 
-            string host = GetHostNameForDns();
+            var host = GetHostNameForDns();
 
             var client = new LookupClient();
-            var response = await client.QueryAsync(srvPrefix + host, QueryType.SRV, QueryClass.IN, cancellationToken).ConfigureAwait(false);
-            var hosts = GetHostsFromResponse(response);
-            ValidateResolvedHosts(host, hosts);
 
-            response = await client.QueryAsync(host, QueryType.TXT, QueryClass.IN, cancellationToken).ConfigureAwait(false);
-            var options = GetOptionsFromResponse(response);
+            ConnectionStringScheme resolvedScheme;
+            List<string> hosts;
+            switch (_connect)
+            {
+                case ClusterConnectionMode.Direct:
+                case ClusterConnectionMode.Standalone:
+                    resolvedScheme = ConnectionStringScheme.MongoDB;
+                    var srvResponse = await client.QueryAsync(srvPrefix + host, QueryType.SRV, QueryClass.IN).ConfigureAwait(false);
+                    hosts = GetHostsFromResponse(srvResponse);
+                    ValidateResolvedHosts(host, hosts);
+                    break;
+
+                case ClusterConnectionMode.Automatic:
+                case ClusterConnectionMode.ReplicaSet:
+                case ClusterConnectionMode.Sharded:
+                    resolvedScheme = ConnectionStringScheme.MongoDBPlusSrv;
+                    hosts = new List<string> { host };
+                    break;
+
+                default:
+                    throw new InvalidOperationException($"Unexpected cluster connection mode: {_connect}.");
+            }
+
+            var txtResponse = await client.QueryAsync(host, QueryType.TXT, QueryClass.IN).ConfigureAwait(false);
+            var options = GetOptionsFromResponse(txtResponse);
 
             var resolvedOptions = GetResolvedOptions(options);
 
-            return BuildResolvedConnectionString(hosts, resolvedOptions);
+            return BuildResolvedConnectionString(resolvedScheme, hosts, resolvedOptions);
         }
 
         /// <inheritdoc/>
@@ -504,9 +578,9 @@ namespace MongoDB.Driver.Core.Configuration
         }
 
         // private methods
-        private ConnectionString BuildResolvedConnectionString(List<string> resolvedHosts, NameValueCollection resolvedOptions)
+        private ConnectionString BuildResolvedConnectionString(ConnectionStringScheme resolvedScheme, List<string> resolvedHosts, NameValueCollection resolvedOptions)
         {
-            var connectionString = "mongodb://";
+            var connectionString = resolvedScheme == ConnectionStringScheme.MongoDBPlusSrv ? "mongodb+srv://" : "mongodb://";
             if (_username != null)
             {
                 connectionString += Uri.EscapeDataString(_username);
@@ -548,7 +622,7 @@ namespace MongoDB.Driver.Core.Configuration
                 connectionString += "?" + string.Join("&", mergedOptions);
             }
 
-            return new ConnectionString(connectionString);
+            return new ConnectionString(connectionString, isResolved: true);
         }
 
         private void ExtractScheme(Match match)

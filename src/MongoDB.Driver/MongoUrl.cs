@@ -48,6 +48,7 @@ namespace MongoDB.Driver
         private readonly TimeSpan _heartbeatInterval;
         private readonly TimeSpan _heartbeatTimeout;
         private readonly bool _ipv6;
+        private readonly bool _isResolved;
         private readonly bool? _journal;
         private readonly TimeSpan _maxConnectionIdleTime;
         private readonly TimeSpan _maxConnectionLifeTime;
@@ -96,6 +97,7 @@ namespace MongoDB.Driver
             _heartbeatInterval = builder.HeartbeatInterval;
             _heartbeatTimeout = builder.HeartbeatTimeout;
             _ipv6 = builder.IPv6;
+            _isResolved = builder.Scheme == ConnectionStringScheme.MongoDBPlusSrv ? false : true;
             _journal = builder.Journal;
             _localThreshold = builder.LocalThreshold;
             _maxConnectionIdleTime = builder.MaxConnectionIdleTime;
@@ -120,6 +122,17 @@ namespace MongoDB.Driver
             _waitQueueTimeout = builder.WaitQueueTimeout;
             _wTimeout = builder.WTimeout;
             _url = builder.ToString(); // keep canonical form
+        }
+
+        internal MongoUrl(string url, bool isResolved)
+            : this(url)
+        {
+            if (!isResolved && _scheme != ConnectionStringScheme.MongoDBPlusSrv)
+            {
+                throw new ArgumentException("Only connection strings with scheme MongoDBPlusSrv can be unresolved.", nameof(isResolved));
+            }
+
+            _isResolved = isResolved;
         }
 
         // public properties
@@ -253,6 +266,14 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Gets a value indicating whether a connection string with scheme MongoDBPlusSrv has been resolved.
+        /// </summary>
+        public bool IsResolved
+        {
+            get { return _isResolved; }
+        }
+
+        /// <summary>
         /// Gets the Journal component of the write concern.
         /// </summary>
         public bool? Journal
@@ -341,7 +362,7 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
-        /// Gets the scheme.
+        /// Gets the connection string scheme.
         /// </summary>
         public ConnectionStringScheme Scheme
         {
@@ -590,7 +611,7 @@ namespace MongoDB.Driver
         /// <returns>A resolved MongoURL.</returns>
         public MongoUrl Resolve()
         {
-            if (_scheme == ConnectionStringScheme.MongoDB)
+            if (_isResolved)
             {
                 return this;
             }
@@ -599,7 +620,7 @@ namespace MongoDB.Driver
 
             var resolved = connectionString.Resolve();
 
-            return new MongoUrl(resolved.ToString());
+            return new MongoUrl(resolved.ToString(), isResolved: true);
         }
 
         /// <summary>
@@ -610,7 +631,7 @@ namespace MongoDB.Driver
         /// <returns>A resolved MongoURL.</returns>
         public async Task<MongoUrl> ResolveAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (_scheme == ConnectionStringScheme.MongoDB)
+            if (_isResolved)
             {
                 return this;
             }
@@ -619,7 +640,7 @@ namespace MongoDB.Driver
 
             var resolved = await connectionString.ResolveAsync(cancellationToken).ConfigureAwait(false);
 
-            return new MongoUrl(resolved.ToString());
+            return new MongoUrl(resolved.ToString(), isResolved: true);
         }
 
         /// <summary>
