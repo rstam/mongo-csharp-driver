@@ -114,6 +114,8 @@ namespace MongoDB.Driver.Core.Configuration
             _unknownOptions = new NameValueCollection(StringComparer.OrdinalIgnoreCase);
             _authMechanismProperties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             Parse();
+
+            _isResolved = _scheme == ConnectionStringScheme.MongoDBPlusSrv ? false : true;
         }
 
         /// <summary>
