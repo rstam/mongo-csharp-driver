@@ -43,6 +43,7 @@ namespace MongoDB.Driver.Core.Clusters
         private readonly InterlockedInt32 _state;
         private readonly object _updateClusterDescriptionLock = new object();
 
+        private readonly IEventSubscriber _eventSubscriber;
         private readonly Action<ClusterClosingEvent> _closingEventHandler;
         private readonly Action<ClusterClosedEvent> _closedEventHandler;
         private readonly Action<ClusterOpeningEvent> _openingEventHandler;
@@ -73,6 +74,7 @@ namespace MongoDB.Driver.Core.Clusters
             _state = new InterlockedInt32(State.Initial);
             _replicaSetName = settings.ReplicaSetName;
 
+            _eventSubscriber = eventSubscriber;
             eventSubscriber.TryGetEventHandler(out _closingEventHandler);
             eventSubscriber.TryGetEventHandler(out _closedEventHandler);
             eventSubscriber.TryGetEventHandler(out _openingEventHandler);
@@ -172,7 +174,7 @@ namespace MongoDB.Driver.Core.Clusters
                 {
                     var dnsEndPoint = (DnsEndPoint)Settings.EndPoints.Single();
                     var lookupDomainName = dnsEndPoint.Host;
-                    var dnsMonitor = new DnsMonitor(this, lookupDomainName, _monitorServersCancellationTokenSource.Token);
+                    var dnsMonitor = new DnsMonitor(this, lookupDomainName, _eventSubscriber, _monitorServersCancellationTokenSource.Token);
                     var thread = new Thread(dnsMonitor.Start);
                     thread.Start();
                 }
@@ -517,10 +519,27 @@ namespace MongoDB.Driver.Core.Clusters
                 return RemoveServer(clusterDescription, args.NewServerDescription.EndPoint, "Server is not a standalone server.");
             }
 
+            foreach (var endPoint in clusterDescription.Servers.Select(s => s.EndPoint).ToList())
+            {
+                if (!EndPointHelper.Equals(endPoint, args.NewServerDescription.EndPoint))
+                {
+                    clusterDescription = RemoveServer(clusterDescription, endPoint, "Removing all other end points once a standalone is discovered.");
+                }
+            }
+
             return clusterDescription.WithServerDescription(args.NewServerDescription);
         }
 
-        void IDnsMonitoringCluster.ProcessDnsResults(List<DnsEndPoint> dnsEndPoints, CancellationToken cancellationToken)
+        void IDnsMonitoringCluster.ProcessDnsException(Exception exception)
+        {
+            lock (_updateClusterDescriptionLock)
+            {
+                var newClusterDescription = Description.WithDnsMonitorException(exception);
+                UpdateClusterDescription(newClusterDescription);
+            }
+        }
+
+        void IDnsMonitoringCluster.ProcessDnsResults(List<DnsEndPoint> dnsEndPoints)
         {
             var newServers = new List<IClusterableServer>();
             lock (_updateClusterDescriptionLock)
@@ -548,6 +567,7 @@ namespace MongoDB.Driver.Core.Clusters
                     newClusterDescription = RemoveServer(newClusterDescription, endPoint, "Server no longer appears in the DNS SRV records.");
                 }
 
+                newClusterDescription = newClusterDescription.WithDnsMonitorException(null);
                 UpdateClusterDescription(newClusterDescription);
             }
 

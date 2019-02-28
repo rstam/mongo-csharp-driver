@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
@@ -26,6 +27,7 @@ namespace MongoDB.Driver.Core.Clusters
     {
         ClusterDescription Description { get; }
 
-        void ProcessDnsResults(List<DnsEndPoint> endPoints, CancellationToken cancellationToken);
+        void ProcessDnsException(Exception exception);
+        void ProcessDnsResults(List<DnsEndPoint> endPoints);
     }
 }

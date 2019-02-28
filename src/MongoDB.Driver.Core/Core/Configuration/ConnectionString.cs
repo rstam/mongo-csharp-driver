@@ -115,7 +115,7 @@ namespace MongoDB.Driver.Core.Configuration
             _authMechanismProperties = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             Parse();
 
-            _isResolved = _scheme == ConnectionStringScheme.MongoDBPlusSrv ? false : true;
+            _isResolved = _scheme != ConnectionStringScheme.MongoDBPlusSrv;
         }
 
         /// <summary>
@@ -511,17 +511,8 @@ namespace MongoDB.Driver.Core.Configuration
                 hosts = new List<string> { host };
             }
 
-            List<String> options;
-            // for testing
-            if (host == "dnsmonitor_test.mongodb_plus_srv_test.com")
-            {
-                options = new List<string>();
-            }
-            else
-            {
-                var txtResponse = client.Query(host, QueryType.TXT, QueryClass.IN);
-                options = GetOptionsFromResponse(txtResponse);
-            }
+            var txtResponse = client.Query(host, QueryType.TXT, QueryClass.IN);
+            var options = GetOptionsFromResponse(txtResponse);
 
             var resolvedOptions = GetResolvedOptions(options);
 

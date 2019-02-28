@@ -97,7 +97,7 @@ namespace MongoDB.Driver
             _heartbeatInterval = builder.HeartbeatInterval;
             _heartbeatTimeout = builder.HeartbeatTimeout;
             _ipv6 = builder.IPv6;
-            _isResolved = builder.Scheme == ConnectionStringScheme.MongoDBPlusSrv ? false : true;
+            _isResolved = builder.Scheme != ConnectionStringScheme.MongoDBPlusSrv;
             _journal = builder.Journal;
             _localThreshold = builder.LocalThreshold;
             _maxConnectionIdleTime = builder.MaxConnectionIdleTime;

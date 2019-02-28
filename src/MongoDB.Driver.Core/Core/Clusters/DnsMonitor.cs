@@ -20,13 +20,29 @@ using System.Net;
 using System.Threading;
 using DnsClient;
 using DnsClient.Protocol;
+using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Core.Clusters
 {
+    internal enum DnsMonitorState
+    {
+        Created,
+        Running,
+        Failed,
+        Stopped
+    }
+
     internal class DnsMonitor
     {
         #region static
+        private static string EnsureLookupDomainNameIsValid(string lookupDomainName)
+        {
+            Ensure.IsNotNull(lookupDomainName, nameof(lookupDomainName));
+            Ensure.That(lookupDomainName.Count(c => c == '.') >= 2, "LookupDomainName must have at least three components.", nameof(lookupDomainName));
+            return lookupDomainName;
+        }
+
         private static string GetParentDomainName(string domainName)
         {
             var index = domainName.IndexOf('.');
@@ -40,26 +56,36 @@ namespace MongoDB.Driver.Core.Clusters
         private readonly LookupClient _lookupClient;
         private readonly string _lookupDomainName;
         private readonly string _parentDomainName;
+        private bool _processDnsResultHasEverBeenCalled;
         private readonly string _query;
-        private bool _startReturnedNormally; // used for testing
+        private DnsMonitorState _state;
+        private Exception _unhandledException;
+
+        private readonly Action<SdamInformationEvent> _sdamInformationEventHandler;
 
         // constructors
-        public DnsMonitor(IDnsMonitoringCluster cluster, string lookupDomainName, CancellationToken cancellationToken)
+        public DnsMonitor(IDnsMonitoringCluster cluster, string lookupDomainName, IEventSubscriber eventSubscriber, CancellationToken cancellationToken)
         {
             _cluster = Ensure.IsNotNull(cluster, nameof(cluster));
-            _lookupDomainName = Ensure.IsNotNull(lookupDomainName, nameof(lookupDomainName));
+            _lookupDomainName = EnsureLookupDomainNameIsValid(lookupDomainName);
             _cancellationToken = cancellationToken;
             _lookupClient = new LookupClient();
             _parentDomainName = GetParentDomainName(lookupDomainName);
             _query = "_mongodb._tcp." + _lookupDomainName;
+            _state = DnsMonitorState.Created;
+
+            eventSubscriber?.TryGetEventHandler(out _sdamInformationEventHandler);
         }
 
         // public properties
-        public bool StartReturnedNormally => _startReturnedNormally;
+        public DnsMonitorState State => _state;
+
+        public Exception UnhandledException => _unhandledException;
 
         // public methods
         public void Start()
         {
+            _state = DnsMonitorState.Running;
             try
             {
                 Monitor();
@@ -68,12 +94,21 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 // ignore OperationCanceledException
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // TODO: log unexpected exceptions
+                _state = DnsMonitorState.Failed;
+                _unhandledException = exception;
+
+                if (_sdamInformationEventHandler != null)
+                {
+                    var message = $"Unexpected exception in DnsMonitor: {exception}.";
+                    var sdamInformationEvent = new SdamInformationEvent(() => message);
+                    _sdamInformationEventHandler(sdamInformationEvent);
+                }
+
                 throw;
             }
-            _startReturnedNormally = true;
+            _state = DnsMonitorState.Stopped;
         }
 
         // private methods
@@ -107,14 +142,19 @@ namespace MongoDB.Driver.Core.Clusters
 
                 if (IsValidHost(host))
                 {
-                    // for testing
-                    if (host == "localhost.mongodb_plus_srv_test.com")
-                    {
-                        host = "localhost";
-                    }
                     var port = srvRecord.Port;
                     var endPoint = new DnsEndPoint(host, port);
                     endPoints.Add(endPoint);
+                }
+                else
+                {
+                    if (_sdamInformationEventHandler != null)
+                    {
+                        var message = $"Invalid host returned by DNS SRV lookup: {host}.";
+                        var sdamInformationEvent = new SdamInformationEvent(() => message);
+                        _sdamInformationEventHandler(sdamInformationEvent);
+                    }
+
                 }
             }
 
@@ -137,7 +177,8 @@ namespace MongoDB.Driver.Core.Clusters
 
                 var srvRecords = QuerySrvRecords();
                 var dnsEndPoints = GetDnsEndPoints(srvRecords);
-                _cluster.ProcessDnsResults(dnsEndPoints, _cancellationToken);
+                _cluster.ProcessDnsResults(dnsEndPoints);
+                _processDnsResultHasEverBeenCalled = true;
 
                 if (ShouldStopMonitoring())
                 {
@@ -154,23 +195,17 @@ namespace MongoDB.Driver.Core.Clusters
         {
             _cancellationToken.ThrowIfCancellationRequested();
 
-            // for testing
-            if (_lookupDomainName == "dnsmonitor_test.mongodb_plus_srv_test.com")
-            {
-                var host = DnsString.Parse("localhost.mongodb_plus_srv_test.com");
-                var info = new ResourceRecordInfo(host, ResourceRecordType.SRV, QueryClass.IN, 600, 0);
-                var srvRecord = new SrvRecord(info, 0, 0, 27017, host);
-                return new List<SrvRecord> { srvRecord };
-            }
-
             try
             {
                 var response = _lookupClient.Query(_query, QueryType.SRV, QueryClass.IN);
                 return response.Answers.SrvRecords().ToList();
             }
-            catch (Exception)
+            catch (Exception exception)
             {
-                // TODO: log exception
+                if (!_processDnsResultHasEverBeenCalled)
+                {
+                    _cluster.ProcessDnsException(exception);
+                }
                 return new List<SrvRecord>();
             }
         }

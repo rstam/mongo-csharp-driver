@@ -22,7 +22,6 @@ using DnsClient;
 using DnsClient.Protocol;
 using FluentAssertions;
 using MongoDB.Bson.TestHelpers;
-using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
 using Moq;
@@ -50,9 +49,9 @@ namespace MongoDB.Driver.Core.Clusters
             var lookupDomainName = "a.b.c.com";
             var cancellationToken = new CancellationTokenSource().Token;
 
-            var subject = new DnsMonitor(cluster, lookupDomainName, cancellationToken);
+            var subject = new DnsMonitor(cluster, lookupDomainName, null, cancellationToken);
 
-            subject.StartReturnedNormally.Should().BeFalse();
+            subject.State.Should().Be(DnsMonitorState.Created);
             subject._cancellationToken().Should().Be(cancellationToken);
             subject._cluster().Should().BeSameAs(cluster);
             subject._lookupClient().Should().NotBeNull();
@@ -67,7 +66,7 @@ namespace MongoDB.Driver.Core.Clusters
             var lookupDomainName = "a.b.c.com";
             var cancellationToken = new CancellationTokenSource().Token;
 
-            var exception = Record.Exception(() => new DnsMonitor(null, lookupDomainName, cancellationToken));
+            var exception = Record.Exception(() => new DnsMonitor(null, lookupDomainName, null, cancellationToken));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("cluster");
@@ -79,7 +78,7 @@ namespace MongoDB.Driver.Core.Clusters
             var cluster = Mock.Of<IDnsMonitoringCluster>();
             var cancellationToken = new CancellationTokenSource().Token;
 
-            var exception = Record.Exception(() => new DnsMonitor(cluster, null, cancellationToken));
+            var exception = Record.Exception(() => new DnsMonitor(cluster, null, null, cancellationToken));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("lookupDomainName");
@@ -94,8 +93,8 @@ namespace MongoDB.Driver.Core.Clusters
             var mockCluster = new Mock<IDnsMonitoringCluster>();
             mockCluster.Setup(x => x.Description).Returns(CreateClusterDescription(ClusterType.Unknown));
             mockCluster
-                .Setup(x => x.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>(), It.IsAny<CancellationToken>()))
-                .Callback((List<DnsEndPoint> endPoints, CancellationToken cancellationToken) =>
+                .Setup(x => x.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>()))
+                .Callback((List<DnsEndPoint> endPoints) =>
                 {
                     actualEndPoints = endPoints;
                     cts.Cancel();
@@ -108,7 +107,7 @@ namespace MongoDB.Driver.Core.Clusters
 
             var expectedEndPoints = expectedEndPointStrings.Select(e => (DnsEndPoint)EndPointHelper.Parse(e)).ToList();
             actualEndPoints.Should().Equal(expectedEndPoints);
-            subject.StartReturnedNormally.Should().BeTrue();
+            subject.State.Should().Be(DnsMonitorState.Stopped);
         }
 
         [Fact]
@@ -118,7 +117,7 @@ namespace MongoDB.Driver.Core.Clusters
             var mockCluster = new Mock<IDnsMonitoringCluster>();
             mockCluster.Setup(x => x.Description).Returns(CreateClusterDescription(ClusterType.Unknown));
             mockCluster
-                .Setup(x => x.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>()))
                 .Callback(() =>
                 {
                     cts.Cancel();
@@ -130,7 +129,7 @@ namespace MongoDB.Driver.Core.Clusters
             thread.Start();
             thread.Join();
 
-            subject.StartReturnedNormally.Should().BeTrue();
+            subject.State.Should().Be(DnsMonitorState.Stopped);
         }
 
         [Theory]
@@ -141,7 +140,7 @@ namespace MongoDB.Driver.Core.Clusters
             var mockCluster = new Mock<IDnsMonitoringCluster>();
             mockCluster.Setup(x => x.Description).Returns(CreateClusterDescription(ClusterType.Unknown));
             mockCluster
-                .Setup(x => x.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>(), It.IsAny<CancellationToken>()))
+                .Setup(x => x.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>()))
                 .Callback(() =>
                 {
                     mockCluster.Setup(x => x.Description).Returns(CreateClusterDescription(clusterType));
@@ -153,7 +152,7 @@ namespace MongoDB.Driver.Core.Clusters
             thread.Start();
             thread.Join();
 
-            subject.StartReturnedNormally.Should().BeTrue();
+            subject.State.Should().Be(DnsMonitorState.Stopped);
         }
 
         [Theory]
@@ -303,7 +302,7 @@ namespace MongoDB.Driver.Core.Clusters
         {
             cluster = cluster ?? Mock.Of<IDnsMonitoringCluster>();
             lookupDomainName = lookupDomainName ?? "a.b.c.com";
-            return new DnsMonitor(cluster, lookupDomainName, cancellationToken);
+            return new DnsMonitor(cluster, lookupDomainName, null, cancellationToken);
         }
     }
 
