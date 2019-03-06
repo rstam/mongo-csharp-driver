@@ -174,7 +174,8 @@ namespace MongoDB.Driver.Core.Clusters
                 {
                     var dnsEndPoint = (DnsEndPoint)Settings.EndPoints.Single();
                     var lookupDomainName = dnsEndPoint.Host;
-                    var dnsMonitor = new DnsMonitor(this, lookupDomainName, _eventSubscriber, _monitorServersCancellationTokenSource.Token);
+                    var dnsResolver = new DnsClientWrapper();
+                    var dnsMonitor = new DnsMonitor(this, dnsResolver, lookupDomainName, _eventSubscriber, _monitorServersCancellationTokenSource.Token);
                     var thread = new Thread(dnsMonitor.Start);
                     thread.Start();
                 }
@@ -575,6 +576,12 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 addedServer.Initialize();
             }
+        }
+
+        bool IDnsMonitoringCluster.ShouldDnsMonitorStop()
+        {
+            var clusterType = Description.Type;
+            return clusterType != ClusterType.Unknown && clusterType != ClusterType.Sharded;
         }
 
         private ClusterDescription EnsureServer(ClusterDescription clusterDescription, EndPoint endPoint, List<IClusterableServer> newServers)

@@ -18,8 +18,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using DnsClient;
-using DnsClient.Protocol;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 
@@ -53,25 +51,25 @@ namespace MongoDB.Driver.Core.Clusters
         // private fields
         private readonly CancellationToken _cancellationToken;
         private readonly IDnsMonitoringCluster _cluster;
-        private readonly LookupClient _lookupClient;
+        private readonly IDnsResolver _dnsResolver;
         private readonly string _lookupDomainName;
         private readonly string _parentDomainName;
         private bool _processDnsResultHasEverBeenCalled;
-        private readonly string _query;
+        private readonly string _service;
         private DnsMonitorState _state;
         private Exception _unhandledException;
 
         private readonly Action<SdamInformationEvent> _sdamInformationEventHandler;
 
         // constructors
-        public DnsMonitor(IDnsMonitoringCluster cluster, string lookupDomainName, IEventSubscriber eventSubscriber, CancellationToken cancellationToken)
+        public DnsMonitor(IDnsMonitoringCluster cluster, IDnsResolver dnsResolver, string lookupDomainName, IEventSubscriber eventSubscriber, CancellationToken cancellationToken)
         {
             _cluster = Ensure.IsNotNull(cluster, nameof(cluster));
+            _dnsResolver = Ensure.IsNotNull(dnsResolver, nameof(dnsResolver));
             _lookupDomainName = EnsureLookupDomainNameIsValid(lookupDomainName);
             _cancellationToken = cancellationToken;
-            _lookupClient = new LookupClient();
             _parentDomainName = GetParentDomainName(lookupDomainName);
-            _query = "_mongodb._tcp." + _lookupDomainName;
+            _service = "_mongodb._tcp." + _lookupDomainName;
             _state = DnsMonitorState.Created;
 
             eventSubscriber?.TryGetEventHandler(out _sdamInformationEventHandler);
@@ -86,6 +84,7 @@ namespace MongoDB.Driver.Core.Clusters
         public void Start()
         {
             _state = DnsMonitorState.Running;
+
             try
             {
                 Monitor();
@@ -96,18 +95,19 @@ namespace MongoDB.Driver.Core.Clusters
             }
             catch (Exception exception)
             {
-                _state = DnsMonitorState.Failed;
                 _unhandledException = exception;
 
                 if (_sdamInformationEventHandler != null)
                 {
-                    var message = $"Unexpected exception in DnsMonitor: {exception}.";
+                    var message = $"Unhandled exception in DnsMonitor: {exception}.";
                     var sdamInformationEvent = new SdamInformationEvent(() => message);
                     _sdamInformationEventHandler(sdamInformationEvent);
                 }
 
-                throw;
+                _state = DnsMonitorState.Failed;
+                return;
             }
+
             _state = DnsMonitorState.Stopped;
         }
 
@@ -118,7 +118,7 @@ namespace MongoDB.Driver.Core.Clusters
 
             if (srvRecords.Count > 0)
             {
-                var minTimeToLive = TimeSpan.FromSeconds(srvRecords.Select(s => s.InitialTimeToLive).Min());
+                var minTimeToLive = srvRecords.Select(s => s.TimeToLive).Min();
                 if (minTimeToLive > delay)
                 {
                     delay = minTimeToLive;
@@ -128,23 +128,23 @@ namespace MongoDB.Driver.Core.Clusters
             return delay;
         }
 
-        private List<DnsEndPoint> GetDnsEndPoints(List<SrvRecord> srvRecords)
+        private List<DnsEndPoint> GetValidEndPoints(List<SrvRecord> srvRecords)
         {
-            var endPoints = new List<DnsEndPoint>();
+            var validEndPoints = new List<DnsEndPoint>();
 
             foreach (var srvRecord in srvRecords)
             {
-                var host = srvRecord.Target.ToString();
+                var endPoint = srvRecord.EndPoint;
+                var host = endPoint.Host;
                 if (host.EndsWith("."))
                 {
                     host = host.Substring(0, host.Length - 1);
+                    endPoint = new DnsEndPoint(host, endPoint.Port);
                 }
 
                 if (IsValidHost(host))
                 {
-                    var port = srvRecord.Port;
-                    var endPoint = new DnsEndPoint(host, port);
-                    endPoints.Add(endPoint);
+                    validEndPoints.Add(endPoint);
                 }
                 else
                 {
@@ -154,11 +154,10 @@ namespace MongoDB.Driver.Core.Clusters
                         var sdamInformationEvent = new SdamInformationEvent(() => message);
                         _sdamInformationEventHandler(sdamInformationEvent);
                     }
-
                 }
             }
 
-            return endPoints;
+            return validEndPoints;
         }
 
         private bool IsValidHost(string host)
@@ -170,17 +169,32 @@ namespace MongoDB.Driver.Core.Clusters
         {
             while (true)
             {
-                if (ShouldStopMonitoring())
+                if (_cluster.ShouldDnsMonitorStop())
                 {
                     return;
                 }
 
-                var srvRecords = QuerySrvRecords();
-                var dnsEndPoints = GetDnsEndPoints(srvRecords);
-                _cluster.ProcessDnsResults(dnsEndPoints);
-                _processDnsResultHasEverBeenCalled = true;
+                List<SrvRecord> srvRecords = null;
+                try
+                {
+                    srvRecords = _dnsResolver.ResolveSrvRecords(_service, _cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    if (!_processDnsResultHasEverBeenCalled)
+                    {
+                        _cluster.ProcessDnsException(exception);
+                    }
+                }
 
-                if (ShouldStopMonitoring())
+                if (srvRecords != null)
+                {
+                    var endPoints = GetValidEndPoints(srvRecords);
+                    _cluster.ProcessDnsResults(endPoints);
+                    _processDnsResultHasEverBeenCalled = true;
+                }
+
+                if (_cluster.ShouldDnsMonitorStop())
                 {
                     return;
                 }
@@ -189,31 +203,6 @@ namespace MongoDB.Driver.Core.Clusters
                 var delay = ComputeRescanDelay(srvRecords);
                 Thread.Sleep(delay);
             }
-        }
-
-        private List<SrvRecord> QuerySrvRecords()
-        {
-            _cancellationToken.ThrowIfCancellationRequested();
-
-            try
-            {
-                var response = _lookupClient.Query(_query, QueryType.SRV, QueryClass.IN);
-                return response.Answers.SrvRecords().ToList();
-            }
-            catch (Exception exception)
-            {
-                if (!_processDnsResultHasEverBeenCalled)
-                {
-                    _cluster.ProcessDnsException(exception);
-                }
-                return new List<SrvRecord>();
-            }
-        }
-
-        private bool ShouldStopMonitoring()
-        {
-            var clusterType = _cluster.Description.Type;
-            return clusterType != ClusterType.Unknown && clusterType != ClusterType.Sharded;
         }
     }
 }

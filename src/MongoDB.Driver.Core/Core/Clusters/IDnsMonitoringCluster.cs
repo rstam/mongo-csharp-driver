@@ -25,9 +25,8 @@ namespace MongoDB.Driver.Core.Clusters
     /// </summary>
     internal interface IDnsMonitoringCluster
     {
-        ClusterDescription Description { get; }
-
         void ProcessDnsException(Exception exception);
         void ProcessDnsResults(List<DnsEndPoint> endPoints);
+        bool ShouldDnsMonitorStop();
     }
 }

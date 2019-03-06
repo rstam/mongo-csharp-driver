@@ -72,19 +72,33 @@ namespace MongoDB.Bson.TestHelpers
         
         public static object InvokeStatic(Type type, string name, BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Static)
         {
-            var methodInfo = type.GetMethods(flags)
-                .Where(m => m.Name == name && m.GetParameters().Length == 0)
-                .Single();
-            return methodInfo.Invoke(null, new object[] { });
+            try
+            {
+                var methodInfo = type.GetMethods(flags)
+                    .Where(m => m.Name == name && m.GetParameters().Length == 0)
+                    .Single();
+                return methodInfo.Invoke(null, new object[] { });
+            }
+            catch (TargetInvocationException exception)
+            {
+                throw exception.InnerException;
+            }
         }
 
         public static object InvokeStatic<T1>(Type type, string name, T1 arg1)
         {
-            var parameterTypes = new[] { typeof(T1) };
-            var methodInfo = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
-                .Where(m => m.Name == name && m.GetParameters().Select(p => p.ParameterType).SequenceEqual(parameterTypes))
-                .Single();
-            return methodInfo.Invoke(null, new object[] { arg1 });
+            try
+            {
+                var parameterTypes = new[] { typeof(T1) };
+                var methodInfo = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Static)
+                    .Where(m => m.Name == name && m.GetParameters().Select(p => p.ParameterType).SequenceEqual(parameterTypes))
+                    .Single();
+                return methodInfo.Invoke(null, new object[] { arg1 });
+            }
+            catch (TargetInvocationException exception)
+            {
+                throw exception.InnerException;
+            }
         }
 
         public static void SetFieldValue(object obj, string name, object value, BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Instance)
