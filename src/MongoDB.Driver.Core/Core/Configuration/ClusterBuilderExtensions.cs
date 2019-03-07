@@ -61,7 +61,7 @@ namespace MongoDB.Driver.Core.Configuration
             Ensure.IsNotNull(builder, nameof(builder));
             Ensure.IsNotNull(connectionString, nameof(connectionString));
 
-            if (connectionString.Scheme == ConnectionStringScheme.MongoDBPlusSrv)
+            if (!connectionString.IsResolved)
             {
                 var connectionMode = connectionString.Connect;
                 var resolveHosts = connectionMode == ClusterConnectionMode.Direct || connectionMode == ClusterConnectionMode.Standalone;

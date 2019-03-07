@@ -621,7 +621,7 @@ namespace MongoDB.Driver
         /// <returns>A MongoClientSettings.</returns>
         public static MongoClientSettings FromUrl(MongoUrl url)
         {
-            if (url.Scheme == ConnectionStringScheme.MongoDBPlusSrv)
+            if (!url.IsResolved)
             {
                 var connectionMode = url.ConnectionMode;
                 var resolveHosts = connectionMode == ConnectionMode.Direct || connectionMode == ConnectionMode.Standalone;
@@ -933,9 +933,11 @@ namespace MongoDB.Driver
                 _maxConnectionLifeTime,
                 _maxConnectionPoolSize,
                 _minConnectionPoolSize,
+                ClusterKey.DefaultReceiveBufferSize, // TODO: add ReceiveBufferSize to MongoClientSettings?
                 _replicaSetName,
                 _scheme,
                 _sdamLogFilename,
+                ClusterKey.DefaultSendBufferSize, // TODO: add SendBufferSize to MongoClientSettings?
                 _servers.ToList(),
                 _serverSelectionTimeout,
                 _socketTimeout,

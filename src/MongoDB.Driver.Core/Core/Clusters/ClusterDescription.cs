@@ -206,6 +206,7 @@ namespace MongoDB.Driver.Core.Clusters
             return
                 _clusterId.Equals(other._clusterId) &&
                 _connectionMode == other._connectionMode &&
+                object.Equals(_dnsMonitorException, other._dnsMonitorException) &&
                 _servers.SequenceEqual(other._servers) &&
                 _type == other._type;
         }

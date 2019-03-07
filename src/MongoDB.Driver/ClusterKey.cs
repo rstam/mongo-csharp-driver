@@ -24,7 +24,7 @@ namespace MongoDB.Driver
     internal class ClusterKey
     {
         #region static
-        // static fields
+        // private static fields
         private static readonly int __defaultReceiveBufferSize;
         private static readonly int __defaultSendBufferSize;
 
@@ -35,6 +35,12 @@ namespace MongoDB.Driver
             __defaultReceiveBufferSize = defaultTcpStreamSettings.ReceiveBufferSize;
             __defaultSendBufferSize = defaultTcpStreamSettings.SendBufferSize;
         }
+
+        // public static properties
+        public static int DefaultReceiveBufferSize => __defaultReceiveBufferSize;
+
+        public static int DefaultSendBufferSize => __defaultSendBufferSize;
+
         #endregion
 
         // fields
@@ -81,9 +87,11 @@ namespace MongoDB.Driver
             TimeSpan maxConnectionLifeTime,
             int maxConnectionPoolSize,
             int minConnectionPoolSize,
+            int receiveBufferSize,
             string replicaSetName,
             ConnectionStringScheme scheme,
             string sdamLogFilename,
+            int sendBufferSize,
             IReadOnlyList<MongoServerAddress> servers,
             TimeSpan serverSelectionTimeout,
             TimeSpan socketTimeout,
@@ -106,11 +114,11 @@ namespace MongoDB.Driver
             _maxConnectionLifeTime = maxConnectionLifeTime;
             _maxConnectionPoolSize = maxConnectionPoolSize;
             _minConnectionPoolSize = minConnectionPoolSize;
-            _receiveBufferSize = __defaultReceiveBufferSize; // TODO: add ReceiveBufferSize to MongoServerSettings?
+            _receiveBufferSize = receiveBufferSize;
             _replicaSetName = replicaSetName;
             _scheme = scheme;
             _sdamLogFilename = sdamLogFilename;
-            _sendBufferSize = __defaultSendBufferSize; // TODO: add SendBufferSize to MongoServerSettings?
+            _sendBufferSize = sendBufferSize;
             _servers = servers;
             _serverSelectionTimeout = serverSelectionTimeout;
             _socketTimeout = socketTimeout;
@@ -156,7 +164,6 @@ namespace MongoDB.Driver
         {
             // keep calculation simple (leave out fields that are rarely used)
             return new Hasher()
-                .Hash(_scheme)
                 .HashElements(_credentials)
                 .HashElements(_servers)
                 .GetHashCode();
