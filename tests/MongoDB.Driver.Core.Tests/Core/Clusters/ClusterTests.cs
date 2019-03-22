@@ -32,6 +32,7 @@ using Xunit;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using System.Reflection;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Bson.TestHelpers;
 
 namespace MongoDB.Driver.Core.Clusters
 {
@@ -542,5 +543,10 @@ namespace MongoDB.Driver.Core.Clusters
                 }
             }
         }
+    }
+
+    internal static class ClusterReflector
+    {
+        public static InterlockedInt32 _state(this Cluster cluster) => (InterlockedInt32)Reflector.GetFieldValue(cluster, nameof(_state));
     }
 }

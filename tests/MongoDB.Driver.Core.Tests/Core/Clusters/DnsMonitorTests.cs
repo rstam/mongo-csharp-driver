@@ -164,8 +164,7 @@ namespace MongoDB.Driver.Core.Clusters
                 .Setup(m => m.ShouldDnsMonitorStop())
                 .Returns(() => { actualState = subject.State; return true; });
 
-            var thread = new Thread(subject.Start);
-            thread.Start();
+            var thread = subject.Start();
             thread.Join();
 
             actualState.Should().Be(DnsMonitorState.Running);
@@ -180,8 +179,7 @@ namespace MongoDB.Driver.Core.Clusters
                 .Returns(true);
             var subject = CreateSubject(cluster: mockCluster.Object);
 
-            var thread = new Thread(subject.Start);
-            thread.Start();
+            var thread = subject.Start();
             thread.Join();
 
             subject.State.Should().Be(DnsMonitorState.Stopped);
@@ -196,8 +194,7 @@ namespace MongoDB.Driver.Core.Clusters
                 .Throws(new OperationCanceledException());
             var subject = CreateSubject(cluster: mockCluster.Object);
 
-            var thread = new Thread(subject.Start);
-            thread.Start();
+            var thread = subject.Start();
             thread.Join();
 
             subject.State.Should().Be(DnsMonitorState.Stopped);
@@ -213,8 +210,7 @@ namespace MongoDB.Driver.Core.Clusters
                 .Throws(unhandledException);
             var subject = CreateSubject(cluster: mockCluster.Object);
 
-            var thread = new Thread(subject.Start);
-            thread.Start();
+            var thread = subject.Start();
             thread.Join();
 
             subject.State.Should().Be(DnsMonitorState.Failed);
@@ -236,8 +232,7 @@ namespace MongoDB.Driver.Core.Clusters
                 .Setup(m => m.TryGetEventHandler<SdamInformationEvent>(out sdamInformationEventHandler));
             var subject = CreateSubject(cluster: mockCluster.Object, eventSubscriber: mockEventSubscriber.Object);
 
-            var thread = new Thread(subject.Start);
-            thread.Start();
+            var thread = subject.Start();
             thread.Join();
 
             actualEvent.Message.Should().Contain("fake exception");
@@ -252,8 +247,7 @@ namespace MongoDB.Driver.Core.Clusters
                 .Returns(true);
             var subject = CreateSubject(cluster: mockCluster.Object);
 
-            var thread = new Thread(subject.Start);
-            thread.Start();
+            var thread = subject.Start();
             thread.Join();
 
             subject.State.Should().Be(DnsMonitorState.Stopped);

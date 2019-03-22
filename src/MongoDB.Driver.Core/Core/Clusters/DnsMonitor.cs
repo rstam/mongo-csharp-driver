@@ -23,15 +23,7 @@ using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Core.Clusters
 {
-    internal enum DnsMonitorState
-    {
-        Created,
-        Running,
-        Failed,
-        Stopped
-    }
-
-    internal class DnsMonitor
+    internal class DnsMonitor : IDnsMonitor
     {
         #region static
         private static string EnsureLookupDomainNameIsValid(string lookupDomainName)
@@ -81,7 +73,15 @@ namespace MongoDB.Driver.Core.Clusters
         public Exception UnhandledException => _unhandledException;
 
         // public methods
-        public void Start()
+        public Thread Start()
+        {
+            var thread = new Thread(ThreadStart);
+            thread.Start();
+            return thread;
+        }
+
+        // private methods
+        private void ThreadStart()
         {
             _state = DnsMonitorState.Running;
 
@@ -111,7 +111,6 @@ namespace MongoDB.Driver.Core.Clusters
             _state = DnsMonitorState.Stopped;
         }
 
-        // private methods
         private TimeSpan ComputeRescanDelay(List<SrvRecord> srvRecords)
         {
             var delay = TimeSpan.FromSeconds(60);
