@@ -96,6 +96,7 @@ namespace MongoDB.Driver
             _replicaSetName = null;
             _retryWrites = false;
             _scheme = ConnectionStringScheme.MongoDB;
+            _sdamLogFilename = null;
             _servers = new List<MongoServerAddress> { new MongoServerAddress("localhost") };
             _serverSelectionTimeout = MongoDefaults.ServerSelectionTimeout;
             _socketTimeout = MongoDefaults.SocketTimeout;
@@ -711,8 +712,8 @@ namespace MongoDB.Driver
             serverSettings.ReplicaSetName = url.ReplicaSetName;
             serverSettings.RetryWrites = url.RetryWrites ?? false;
             serverSettings.LocalThreshold = url.LocalThreshold;
-            serverSettings.SdamLogFilename = null; // SdamLogFilename must be provided in code
             serverSettings.Scheme = url.Scheme;
+            serverSettings.SdamLogFilename = null; // SdamLogFilename must be provided in code
             serverSettings.Servers = new List<MongoServerAddress>(url.Servers);
             serverSettings.ServerSelectionTimeout = url.ServerSelectionTimeout;
             serverSettings.SocketTimeout = url.SocketTimeout;
@@ -737,7 +738,6 @@ namespace MongoDB.Driver
             clone._applicationName = _applicationName;
             clone._clusterConfigurator = _clusterConfigurator;
             clone._connectionMode = _connectionMode;
-            clone._scheme = _scheme;
             clone._connectTimeout = _connectTimeout;
             clone._credentials = _credentials;
             clone._guidRepresentation = _guidRepresentation;

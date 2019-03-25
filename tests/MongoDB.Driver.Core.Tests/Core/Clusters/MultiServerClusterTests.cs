@@ -1238,12 +1238,6 @@ namespace MongoDB.Driver.Core.Clusters
             matchingEvents.Should().HaveCount(1);
             return matchingEvents[0];
         }
-
-        private ServerDescription ShouldHaveOneServer(IReadOnlyList<ServerDescription> servers)
-        {
-            servers.Should().HaveCount(1);
-            return servers[0];
-        }
     }
 
     internal static class MultiServerClusterReflector

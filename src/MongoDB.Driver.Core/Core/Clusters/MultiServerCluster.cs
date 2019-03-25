@@ -34,8 +34,8 @@ namespace MongoDB.Driver.Core.Clusters
     internal sealed class MultiServerCluster : Cluster, IDnsMonitoringCluster
     {
         // fields
-        private Thread _dnsMonitorThread;
         private readonly IDnsMonitorFactory _dnsMonitorFactory;
+        private Thread _dnsMonitorThread;
         private readonly CancellationTokenSource _monitorServersCancellationTokenSource;
         private volatile ElectionInfo _maxElectionInfo;
         private Task _monitorServersTask;

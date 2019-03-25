@@ -603,7 +603,6 @@ namespace MongoDB.Driver
         }
 
         // public static methods
-
         /// <summary>
         /// Gets a MongoClientSettings object intialized with values from a connection string.
         /// </summary>
@@ -889,13 +888,13 @@ namespace MongoDB.Driver
             sb.AppendFormat("ReplicaSetName={0};", _replicaSetName);
             sb.AppendFormat("RetryWrites={0}", _retryWrites);
             sb.AppendFormat("LocalThreshold={0};", _localThreshold);
-            if (_sdamLogFilename != null)
-            {
-                sb.AppendFormat("SDAMLogFileName={0};", _sdamLogFilename);
-            }
             if (_scheme != ConnectionStringScheme.MongoDB)
             {
                 sb.AppendFormat("Scheme={0};", _scheme);
+            }
+            if (_sdamLogFilename != null)
+            {
+                sb.AppendFormat("SDAMLogFileName={0};", _sdamLogFilename);
             }
             sb.AppendFormat("Servers={0};", string.Join(",", _servers.Select(s => s.ToString()).ToArray()));
             sb.AppendFormat("ServerSelectionTimeout={0};", _serverSelectionTimeout);
