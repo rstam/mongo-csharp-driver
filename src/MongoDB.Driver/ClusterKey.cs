@@ -23,26 +23,6 @@ namespace MongoDB.Driver
 {
     internal class ClusterKey
     {
-        #region static
-        // private static fields
-        private static readonly int __defaultReceiveBufferSize;
-        private static readonly int __defaultSendBufferSize;
-
-        // static constructor
-        static ClusterKey()
-        {
-            var defaultTcpStreamSettings = new TcpStreamSettings();
-            __defaultReceiveBufferSize = defaultTcpStreamSettings.ReceiveBufferSize;
-            __defaultSendBufferSize = defaultTcpStreamSettings.SendBufferSize;
-        }
-
-        // public static properties
-        public static int DefaultReceiveBufferSize => __defaultReceiveBufferSize;
-
-        public static int DefaultSendBufferSize => __defaultSendBufferSize;
-
-        #endregion
-
         // fields
         private readonly string _applicationName;
         private readonly Action<ClusterBuilder> _clusterConfigurator;

@@ -892,11 +892,11 @@ namespace MongoDB.Driver.Tests
             result.MaxConnectionLifeTime.Should().Be(subject.MaxConnectionLifeTime);
             result.MaxConnectionPoolSize.Should().Be(subject.MaxConnectionPoolSize);
             result.MinConnectionPoolSize.Should().Be(subject.MinConnectionPoolSize);
-            result.ReceiveBufferSize.Should().Be(ClusterKey.DefaultReceiveBufferSize);
+            result.ReceiveBufferSize.Should().Be(MongoDefaults.TcpReceiveBufferSize);
             result.ReplicaSetName.Should().Be(subject.ReplicaSetName);
             result.Scheme.Should().Be(subject.Scheme);
             result.SdamLogFilename.Should().Be(subject.SdamLogFilename);
-            result.SendBufferSize.Should().Be(ClusterKey.DefaultSendBufferSize);
+            result.SendBufferSize.Should().Be(MongoDefaults.TcpSendBufferSize);
             result.Servers.Should().Equal(subject.Servers);
             result.ServerSelectionTimeout.Should().Be(subject.ServerSelectionTimeout);
             result.SocketTimeout.Should().Be(subject.SocketTimeout);

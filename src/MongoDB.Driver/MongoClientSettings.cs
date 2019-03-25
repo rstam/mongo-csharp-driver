@@ -603,7 +603,7 @@ namespace MongoDB.Driver
         }
 
         // public static methods
-        
+
         /// <summary>
         /// Gets a MongoClientSettings object intialized with values from a connection string.
         /// </summary>
@@ -613,7 +613,7 @@ namespace MongoDB.Driver
         {
             return FromUrl(new MongoUrl(connectionString));
         }
-        
+
         /// <summary>
         /// Gets a MongoClientSettings object intialized with values from a MongoURL.
         /// </summary>
@@ -933,11 +933,11 @@ namespace MongoDB.Driver
                 _maxConnectionLifeTime,
                 _maxConnectionPoolSize,
                 _minConnectionPoolSize,
-                ClusterKey.DefaultReceiveBufferSize, // TODO: add ReceiveBufferSize to MongoClientSettings?
+                MongoDefaults.TcpReceiveBufferSize, // TODO: add ReceiveBufferSize to MongoClientSettings?
                 _replicaSetName,
                 _scheme,
                 _sdamLogFilename,
-                ClusterKey.DefaultSendBufferSize, // TODO: add SendBufferSize to MongoClientSettings?
+                MongoDefaults.TcpSendBufferSize, // TODO: add SendBufferSize to MongoClientSettings?
                 _servers.ToList(),
                 _serverSelectionTimeout,
                 _socketTimeout,
