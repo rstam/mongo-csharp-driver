@@ -471,7 +471,8 @@ namespace MongoDB.Driver
             return new ListCollectionsOperation(_databaseNamespace, messageEncoderSettings)
             {
                 Filter = options?.Filter?.Render(_settings.SerializerRegistry.GetSerializer<BsonDocument>(), _settings.SerializerRegistry),
-                NameOnly = true
+                NameOnly = true,
+                RetryRequested = _client.Settings.RetryReads
             };
         }
 
@@ -480,7 +481,8 @@ namespace MongoDB.Driver
             var messageEncoderSettings = GetMessageEncoderSettings();
             return new ListCollectionsOperation(_databaseNamespace, messageEncoderSettings)
             {
-                Filter = options?.Filter?.Render(_settings.SerializerRegistry.GetSerializer<BsonDocument>(), _settings.SerializerRegistry)
+                Filter = options?.Filter?.Render(_settings.SerializerRegistry.GetSerializer<BsonDocument>(), _settings.SerializerRegistry),
+                RetryRequested = _client.Settings.RetryReads
             };
         }
 
@@ -525,7 +527,13 @@ namespace MongoDB.Driver
             PipelineDefinition<ChangeStreamDocument<BsonDocument>, TResult> pipeline,
             ChangeStreamOptions options)
         {
-            return ChangeStreamHelper.CreateChangeStreamOperation(this, pipeline, options, _settings.ReadConcern, GetMessageEncoderSettings());
+            return ChangeStreamHelper.CreateChangeStreamOperation(
+                database: this, 
+                pipeline: pipeline, 
+                options: options, 
+                readConcern: _settings.ReadConcern, 
+                messageEncoderSettings: GetMessageEncoderSettings(),
+                retryRequested: _client.Settings.RetryReads);
         }
 
         private IEnumerable<string> ExtractCollectionNames(IEnumerable<BsonDocument> collections)

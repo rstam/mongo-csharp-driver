@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 
@@ -29,7 +30,7 @@ namespace MongoDB.Driver.Core.Operations
     /// <summary>
     /// Represents the listDatabases command.
     /// </summary>
-    public class ListDatabasesOperation : IReadOperation<IAsyncCursor<BsonDocument>>
+    public class ListDatabasesOperation : RetryableReadCommandOperationBase<IAsyncCursor<BsonDocument>>
     {
         // fields
         private BsonDocument _filter;
@@ -41,7 +42,8 @@ namespace MongoDB.Driver.Core.Operations
         /// Initializes a new instance of the <see cref="ListDatabasesOperation"/> class.
         /// </summary>
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
-        public ListDatabasesOperation(MessageEncoderSettings messageEncoderSettings)
+        public ListDatabasesOperation(MessageEncoderSettings messageEncoderSettings) 
+            : base(DatabaseNamespace.Admin, messageEncoderSettings)
         {
             _messageEncoderSettings = messageEncoderSettings;
         }
@@ -60,17 +62,6 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <summary>
-        /// Gets the message encoder settings.
-        /// </summary>
-        /// <value>
-        /// The message encoder settings.
-        /// </value>
-        public MessageEncoderSettings MessageEncoderSettings
-        {
-            get { return _messageEncoderSettings; }
-        }
-
-        /// <summary>
         /// Gets or sets the NameOnly flag.
         /// </summary>
         /// <value>
@@ -82,23 +73,72 @@ namespace MongoDB.Driver.Core.Operations
             set { _nameOnly = value; }
         }
 
+        /// <inheritdoc />
+        public override IAsyncCursor<BsonDocument> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+         
+            var binding = context.Binding;
+            var session = binding.Session;
+            var channelSource = context.ChannelSource;
+            var server = channelSource.Server;
+            var channel = context.Channel;
+            var readPreference = context.Binding.ReadPreference;
+
+            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+            {
+                var operation = CreateOperation();
+                var commandResult = operation.Execute(channelBinding, cancellationToken);
+                return CreateCursor(commandResult);
+            }            
+        }
+
+        /// <inheritdoc />
+        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            var binding = context.Binding;
+            var session = binding.Session;
+            var channelSource = context.ChannelSource;
+            var server = channelSource.Server;
+            var channel = context.Channel;
+            var readPreference = context.Binding.ReadPreference;
+
+            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+            {
+                var operation = CreateOperation();
+                var commandResult = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                return CreateCursor(commandResult);
+            }
+        }
+
         // public methods
         /// <inheritdoc/>
-        public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
-        {
+        public override IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
+        {            
             Ensure.IsNotNull(binding, nameof(binding));
-            var operation = CreateOperation();
-            var reply = operation.Execute(binding, cancellationToken);
-            return CreateCursor(reply);
+            
+            Ensure.IsNotNull(binding, nameof(binding));
+            using (var retryableReadContext = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            {
+                return Execute(retryableReadContext, cancellationToken);
+            }
         }
 
         /// <inheritdoc/>
-        public async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
+        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
             var operation = CreateOperation();
             var reply = await operation.ExecuteAsync(binding, cancellationToken).ConfigureAwait(false);
             return CreateCursor(reply);
+        }
+
+        /// <inheritdoc />
+        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt,
+            long? transactionNumber)
+        {
+            return CreateCommand();
         }
 
         // private methods

@@ -30,6 +30,8 @@ namespace MongoDB.Driver.Core.Operations
     /// <typeparam name="TDocument">The type of the returned documents.</typeparam>
     public class FindOperation<TDocument> : IReadOperation<IAsyncCursor<TDocument>>
     {
+        
+
         // fields
         private bool? _allowPartialResults;
         private int? _batchSize;
@@ -53,6 +55,7 @@ namespace MongoDB.Driver.Core.Operations
         private BsonDocument _projection;
         private ReadConcern _readConcern = ReadConcern.Default;
         private readonly IBsonSerializer<TDocument> _resultSerializer;
+        private bool _retryRequested;
         private bool? _returnKey;
         private bool? _showRecordId;
         private bool? _singleBatch;
@@ -67,11 +70,14 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="collectionNamespace">The collection namespace.</param>
         /// <param name="resultSerializer">The result serializer.</param>
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
+        /// <param name="retryRequested">Whether or not </param>
         public FindOperation(
             CollectionNamespace collectionNamespace,
             IBsonSerializer<TDocument> resultSerializer,
-            MessageEncoderSettings messageEncoderSettings)
+            MessageEncoderSettings messageEncoderSettings,
+            bool retryRequested = false)
         {
+            _retryRequested = retryRequested;
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
             _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
@@ -342,6 +348,19 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <summary>
+        /// Gets or sets whether or not retry was requested.
+        /// </summary>
+        /// <value>
+        /// Whether retry was requested.
+        /// </value>
+        public bool RetryRequested
+        {
+            get { return _retryRequested; }
+            set { _retryRequested = value; }
+        }
+
+        
+        /// <summary>
         /// Gets or sets whether to only return the key values.
         /// </summary>
         /// <value>
@@ -420,12 +439,22 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (var channelSource = binding.GetReadChannelSource(cancellationToken))
-            using (var channel = channelSource.GetChannel(cancellationToken))
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
-                var operation = CreateOperation(channel.ConnectionDescription.ServerVersion);
-                return operation.Execute(channelBinding, cancellationToken);
+                var operation = CreateOperation(context.Channel.ConnectionDescription.ServerVersion);
+                var retryableOperation = operation as IRetryableReadOperation<IAsyncCursor<TDocument>>;
+                if (retryableOperation != null)
+                {
+                    return retryableOperation.Execute(context, cancellationToken);
+                }
+                using (var channelBinding = new ChannelReadBinding(
+                    context.ChannelSource.Server, 
+                    context.Channel,
+                    context.Binding.ReadPreference, 
+                    context.Binding.Session.Fork()))
+                {
+                    return operation.Execute(channelBinding, cancellationToken);
+                }
             }
         }
 
@@ -439,7 +468,17 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 var operation = CreateOperation(channel.ConnectionDescription.ServerVersion);
-                return await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                var retryableOperation = operation as IRetryableReadOperation<IAsyncCursor<TDocument>>;
+                if (retryableOperation == null)
+                {
+                    return await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                }
+                using (var context = await RetryableReadContext
+                    .CreateAsync(binding, _retryRequested, cancellationToken)
+                    .ConfigureAwait(false))
+                {
+                    return await retryableOperation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);     
+                }
             }
         }
 
@@ -483,7 +522,9 @@ namespace MongoDB.Driver.Core.Operations
             var operation = new FindCommandOperation<TDocument>(
                 _collectionNamespace,
                 _resultSerializer,
-                _messageEncoderSettings)
+                _messageEncoderSettings,
+                _readConcern,
+                _retryRequested)
             {
                 AllowPartialResults = _allowPartialResults,
                 BatchSize = _batchSize,
@@ -502,7 +543,6 @@ namespace MongoDB.Driver.Core.Operations
                 NoCursorTimeout = _noCursorTimeout,
                 OplogReplay = _oplogReplay,
                 Projection = _projection,
-                ReadConcern = _readConcern,
                 ReturnKey = returnKey,
                 ShowRecordId = showRecordId,
                 SingleBatch = _singleBatch,

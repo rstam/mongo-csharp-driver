@@ -90,6 +90,11 @@ namespace MongoDB.Driver.GridFS
             }
         }
 
+        /// <summary>
+        /// Gets or sets whether to retry reads.
+        /// </summary>
+        public bool RetryReads { get; set; }
+    
         // methods
         public override int Read(byte[] buffer, int offset, int count)
         {
@@ -208,7 +213,8 @@ namespace MongoDB.Driver.GridFS
                 messageEncoderSettings)
             {
                 Filter = filter,
-                Sort = sort
+                Sort = sort,
+                RetryRequested = RetryReads
             };
         }
 

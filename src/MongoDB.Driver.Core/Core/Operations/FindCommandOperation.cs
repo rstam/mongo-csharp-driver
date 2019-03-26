@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Core.Operations
     /// Represents a Find command operation.
     /// </summary>
     /// <typeparam name="TDocument">The type of the document.</typeparam>
-    public class FindCommandOperation<TDocument> : IReadOperation<IAsyncCursor<TDocument>>
+    public class FindCommandOperation<TDocument> : RetryableReadCommandOperationBase<IAsyncCursor<TDocument>>
     {
         #region static
         // private static fields
@@ -80,15 +80,46 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="collectionNamespace">The collection namespace.</param>
         /// <param name="resultSerializer">The result serializer.</param>
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
+        /// <param name="retryRequested">Whether or not retry was requested.</param>
         public FindCommandOperation(
             CollectionNamespace collectionNamespace,
             IBsonSerializer<TDocument> resultSerializer,
-            MessageEncoderSettings messageEncoderSettings)
+            MessageEncoderSettings messageEncoderSettings,
+            bool retryRequested = false) 
+            : this(collectionNamespace: collectionNamespace,
+                   resultSerializer: resultSerializer,
+                   readConcern: ReadConcern.Default, 
+                   messageEncoderSettings: messageEncoderSettings,
+                   retryRequested: retryRequested)
         {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="FindCommandOperation{TDocument}" /> class.
+        /// </summary>
+        /// <param name="collectionNamespace">The collection namespace.</param>
+        /// <param name="resultSerializer"></param>
+        /// <param name="messageEncoderSettings">The message encoder settings.</param>
+        /// <param name="readConcern">The read concern</param>
+        /// <param name="retryRequested">Whether or not retry was requested.</param>
+        public FindCommandOperation(
+            CollectionNamespace collectionNamespace,
+            IBsonSerializer<TDocument> resultSerializer,
+            MessageEncoderSettings messageEncoderSettings,
+            ReadConcern readConcern,
+            bool retryRequested)
+            : base(
+                databaseNamespace: Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace)).DatabaseNamespace,
+                retryRequested: retryRequested,
+                readConcern: readConcern,
+                messageEncoderSettings: messageEncoderSettings)
+        {
+            
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
             _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
             _cursorType = CursorType.NonTailable;
+
         }
 
         // properties
@@ -261,17 +292,6 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <summary>
-        /// Gets the message encoder settings.
-        /// </summary>
-        /// <value>
-        /// The message encoder settings.
-        /// </value>
-        public MessageEncoderSettings MessageEncoderSettings
-        {
-            get { return _messageEncoderSettings; }
-        }
-
-        /// <summary>
         /// Gets or sets the min key value.
         /// </summary>
         /// <value>
@@ -317,18 +337,6 @@ namespace MongoDB.Driver.Core.Operations
         {
             get { return _projection; }
             set { _projection = value; }
-        }
-
-        /// <summary>
-        /// Gets or sets the read concern.
-        /// </summary>
-        /// <value>
-        /// The read concern.
-        /// </value>
-        public ReadConcern ReadConcern
-        {
-            get { return _readConcern; }
-            set { _readConcern = Ensure.IsNotNull(value, nameof(value)); }
         }
 
         /// <summary>
@@ -486,7 +494,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc/>
-        public IAsyncCursor<TDocument> Execute(IReadBinding binding, CancellationToken cancellationToken = default(CancellationToken))
+        public override IAsyncCursor<TDocument> Execute(IReadBinding binding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
@@ -507,7 +515,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc/>
-        public async Task<IAsyncCursor<TDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<IAsyncCursor<TDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
@@ -525,6 +533,78 @@ namespace MongoDB.Driver.Core.Operations
                     return CreateCursor(channelSource, commandResult);
                 }
             }
+        }
+        
+        /// <inheritdoc />
+        public override IAsyncCursor<TDocument> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        { //TODO: lookatme
+            var args = GetCommandArgs(context, attempt, transactionNumber);
+            
+
+            using (EventContext.BeginOperation())
+            {
+                var binding = context.Binding;
+                var session = binding.Session;
+                var channelSource = context.ChannelSource;
+                var server = channelSource.Server;
+                var channel = context.Channel;
+                var readPreference = context.Binding.ReadPreference;
+
+                using (EventContext.BeginFind(_batchSize, _limit))
+                using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+                {
+                    var operation = CreateOperation(channel, channelBinding);
+                    var commandResult = operation.Execute(channelBinding, cancellationToken);
+                    return CreateCursor(channelSource, commandResult);
+                }
+            }
+        }
+        
+        /// <inheritdoc />
+        public override async Task<IAsyncCursor<TDocument>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        { //TODO: lookatme
+            var args = GetCommandArgs(context, attempt, transactionNumber);
+            
+
+            using (EventContext.BeginOperation())
+            {
+                var binding = context.Binding;
+                var session = binding.Session;
+                var channelSource = context.ChannelSource;
+                var server = channelSource.Server;
+                var channel = context.Channel;
+                var readPreference = context.Binding.ReadPreference;
+                
+                using (EventContext.BeginFind(_batchSize, _limit))
+                using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))    
+                {
+                    var operation = CreateOperation(channel, channelBinding);
+                    var commandResult = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                    return CreateCursor(channelSource, commandResult);
+                }
+            }
+        }
+        
+        // TODO: Remove this
+        /// <inheritdoc />
+        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt,
+            long? transactionNumber)
+        {
+            return CreateCommand(connectionDescription, session);
+        }
+        
+        // TODO: Remove this
+        /// <inheritdoc />
+        protected override IAsyncCursor<TDocument> ParseCommandResult(RetryableReadContext context, BsonDocument commandResult)
+        {
+            return CreateCursor(context.ChannelSource, commandResult);
+        }
+
+        /// <inheritdoc />
+        protected override async Task<IAsyncCursor<TDocument>> ParseCommandResultAsync(RetryableReadContext context, Task<BsonDocument> commandResultTask)
+        {
+            var commandResult = await commandResultTask.ConfigureAwait(false);
+            return CreateCursor(context.ChannelSource, commandResult);
         }
 
         private ReadCommandOperation<BsonDocument> CreateOperation(IChannel channel, IBinding binding)

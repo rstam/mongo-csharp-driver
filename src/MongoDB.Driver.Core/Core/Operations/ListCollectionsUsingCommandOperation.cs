@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
@@ -30,7 +31,7 @@ namespace MongoDB.Driver.Core.Operations
     /// <summary>
     /// Represents a list collections operation.
     /// </summary>
-    public class ListCollectionsUsingCommandOperation : IReadOperation<IAsyncCursor<BsonDocument>>
+    public class ListCollectionsUsingCommandOperation : RetryableReadCommandOperationBase<IAsyncCursor<BsonDocument>>
     {
         // fields
         private BsonDocument _filter;
@@ -46,7 +47,8 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
         public ListCollectionsUsingCommandOperation(
             DatabaseNamespace databaseNamespace,
-            MessageEncoderSettings messageEncoderSettings)
+            MessageEncoderSettings messageEncoderSettings) 
+            : base(databaseNamespace, messageEncoderSettings)
         {
             _databaseNamespace = Ensure.IsNotNull(databaseNamespace, nameof(databaseNamespace));
             _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
@@ -66,28 +68,6 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <summary>
-        /// Gets the database namespace.
-        /// </summary>
-        /// <value>
-        /// The database namespace.
-        /// </value>
-        public DatabaseNamespace DatabaseNamespace
-        {
-            get { return _databaseNamespace; }
-        }
-
-        /// <summary>
-        /// Gets the message encoder settings.
-        /// </summary>
-        /// <value>
-        /// The message encoder settings.
-        /// </value>
-        public MessageEncoderSettings MessageEncoderSettings
-        {
-            get { return _messageEncoderSettings; }
-        }
-
-        /// <summary>
         /// Gets or sets the name only option.
         /// </summary>
         /// <value>
@@ -101,7 +81,7 @@ namespace MongoDB.Driver.Core.Operations
 
         // public methods
         /// <inheritdoc/>
-        public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
+        public override IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
@@ -115,7 +95,51 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc/>
-        public async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
+        public override IAsyncCursor<BsonDocument> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            using (EventContext.BeginOperation())
+            {
+                var binding = context.Binding;
+                var session = binding.Session;
+                var channelSource = context.ChannelSource;
+                var server = channelSource.Server;
+                var channel = context.Channel;
+                var readPreference = context.Binding.ReadPreference;
+
+                using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+                {
+                    var operation = CreateOperation();
+                    var commandResult = operation.Execute(channelBinding, cancellationToken);
+                    return CreateCursor(channelSource, operation.Command, commandResult);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            using (EventContext.BeginOperation())
+            {
+                var binding = context.Binding;
+                var session = binding.Session;
+                var channelSource = context.ChannelSource;
+                var server = channelSource.Server;
+                var channel = context.Channel;
+                var readPreference = context.Binding.ReadPreference;
+
+                using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+                {
+                    var operation = CreateOperation();
+                    var commandResult = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                    return CreateCursor(channelSource, operation.Command, commandResult);
+                }
+            }
+        }
+
+        /// <inheritdoc/>
+        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
@@ -128,15 +152,26 @@ namespace MongoDB.Driver.Core.Operations
             }
         }
 
-        // private methods
-        private ReadCommandOperation<BsonDocument> CreateOperation()
+        /// <inheritdoc />
+        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt,
+            long? transactionNumber)
         {
-            var command = new BsonDocument
+            return CreateCommand();
+        }
+
+        // private methods
+        private BsonDocument CreateCommand()
+        {
+            return new BsonDocument
             {
                 { "listCollections", 1 },
                 { "filter", _filter, _filter != null },
                 { "nameOnly", () => _nameOnly.Value, _nameOnly.HasValue }
             };
+        }
+        private ReadCommandOperation<BsonDocument> CreateOperation()
+        {
+            var command = CreateCommand();
             return new ReadCommandOperation<BsonDocument>(_databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings);
         }
 

@@ -606,11 +606,11 @@ namespace MongoDB.Driver.Core.Operations
             Exception exception;
             if (async)
             {
-                exception = Record.Exception(() => subject.ExecuteAsync(null, CancellationToken.None).GetAwaiter().GetResult());
+                exception = Record.Exception(() => subject.ExecuteAsync(binding: null, cancellationToken: CancellationToken.None).GetAwaiter().GetResult());
             }
             else
             {
-                exception = Record.Exception(() => subject.Execute(null, CancellationToken.None));
+                exception = Record.Exception(() => subject.Execute(binding: null, cancellationToken: CancellationToken.None));
             }
 
             var argumentNullException = exception.Should().BeOfType<ArgumentNullException>().Subject;

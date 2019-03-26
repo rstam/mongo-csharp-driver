@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Core.Operations
     /// Represents a map-reduce operation.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
-    public class MapReduceOperation<TResult> : MapReduceOperationBase, IReadOperation<IAsyncCursor<TResult>>
+    public class MapReduceOperation<TResult> : MapReduceOperationBase, IReadOperation<IAsyncCursor<TResult>>, IRetryableReadOperation<IAsyncCursor<TResult>>
     {
         // fields
         private ReadConcern _readConcern = ReadConcern.Default;
@@ -91,16 +91,15 @@ namespace MongoDB.Driver.Core.Operations
         public IAsyncCursor<TResult> Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-
-            using (var channelSource = binding.GetReadChannelSource(cancellationToken))
-            using (var channel = channelSource.GetChannel(cancellationToken))
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            
+            using (var retryableReadContext = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                var operation = CreateOperation(channelBinding.Session, channel.ConnectionDescription);
-                var result = operation.Execute(channelBinding, cancellationToken);
-                return new SingleBatchAsyncCursor<TResult>(result);
+                return Execute(retryableReadContext, cancellationToken);
             }
         }
+
+        /// <inheritdoc/>
+        public bool RetryRequested { get; set; }
 
         /// <inheritdoc/>
         public async Task<IAsyncCursor<TResult>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
@@ -139,6 +138,43 @@ namespace MongoDB.Driver.Core.Operations
             var resultArraySerializer = new ArraySerializer<TResult>(_resultSerializer);
             var resultSerializer = new ElementDeserializer<TResult[]>("results", resultArraySerializer);
             return new ReadCommandOperation<TResult[]>(CollectionNamespace.DatabaseNamespace, command, resultSerializer, MessageEncoderSettings);
+        }
+
+        /// <inheritdoc />
+        public IAsyncCursor<TResult> Execute(RetryableReadContext context, CancellationToken cancellationToken)
+        {
+            return RetryableReadOperationExecutor.Execute(this, context, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public Task<IAsyncCursor<TResult>> ExecuteAsync(RetryableReadContext context, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public IAsyncCursor<TResult> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            var binding = context.Binding;
+            var session = binding.Session;
+            var channelSource = context.ChannelSource;
+            var server = channelSource.Server;
+            var channel = context.Channel;
+            var readPreference = context.Binding.ReadPreference;
+            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+            {
+                var operation = CreateOperation(channelBinding.Session, channel.ConnectionDescription);
+                var result = operation.Execute(channelBinding, cancellationToken);
+                return new SingleBatchAsyncCursor<TResult>(result);
+            }
+        }
+
+        /// <inheritdoc />
+        public Task<IAsyncCursor<TResult>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }

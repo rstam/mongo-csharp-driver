@@ -643,8 +643,9 @@ namespace MongoDB.Driver.GridFS
                 MaxTime = options.MaxTime,
                 NoCursorTimeout = options.NoCursorTimeout ?? false,
                 ReadConcern = GetReadConcern(),
+                RetryRequested = _database.Client.Settings.RetryReads,
                 Skip = options.Skip,
-                Sort = renderedSort
+                Sort = renderedSort,
             };
         }
 
@@ -665,8 +666,9 @@ namespace MongoDB.Driver.GridFS
                 Filter = filter,
                 Limit = limit,
                 ReadConcern = GetReadConcern(),
+                RetryRequested = _database.Client.Settings.RetryReads,
                 Skip = skip,
-                Sort = sort
+                Sort = sort,
             };
         }
 
@@ -684,7 +686,8 @@ namespace MongoDB.Driver.GridFS
                 Filter = filter,
                 Limit = 1,
                 ReadConcern = GetReadConcern(),
-                SingleBatch = true
+                RetryRequested = _database.Client.Settings.RetryReads,
+                SingleBatch = true,
             };
         }
 
@@ -697,7 +700,8 @@ namespace MongoDB.Driver.GridFS
                 Limit = 1,
                 ReadConcern = GetReadConcern(),
                 SingleBatch = true,
-                Projection = new BsonDocument("_id", 1)
+                Projection = new BsonDocument("_id", 1),
+                RetryRequested = _database.Client.Settings.RetryReads,
             };
         }
 
@@ -771,7 +775,8 @@ namespace MongoDB.Driver.GridFS
         {
             var checkMD5 = options.CheckMD5 ?? false;
 
-            using (var source = new GridFSForwardOnlyDownloadStream<TFileId>(this, binding.Fork(), fileInfo, checkMD5))
+            using (var source = new GridFSForwardOnlyDownloadStream<TFileId>(this, binding.Fork(), fileInfo, checkMD5) 
+                { RetryReads = _database.Client.Settings.RetryReads } )
             {
                 var count = source.Length;
                 var buffer = new byte[fileInfo.ChunkSizeBytes];

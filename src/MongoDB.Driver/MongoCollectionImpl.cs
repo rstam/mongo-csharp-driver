@@ -120,7 +120,10 @@ namespace MongoDB.Driver
             }
             else
             {
-                var aggregateOperation = CreateAggregateOperation(renderedPipeline, options);
+                var aggregateOperation = CreateAggregateOperation(
+                    renderedPipeline, 
+                    options, 
+                    _database.Client.Settings.RetryReads);
                 return ExecuteReadOperation(session, aggregateOperation, cancellationToken);
             }
         }
@@ -154,7 +157,7 @@ namespace MongoDB.Driver
             }
             else
             {
-                var aggregateOperation = CreateAggregateOperation(renderedPipeline, options);
+                var aggregateOperation = CreateAggregateOperation(renderedPipeline, options, _database.Client.Settings.RetryReads);
                 return await ExecuteReadOperationAsync(session, aggregateOperation, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -226,7 +229,7 @@ namespace MongoDB.Driver
             Ensure.IsNotNull(filter, nameof(filter));
             options = options ?? new CountOptions();
 
-            var operation = CreateCountOperation(filter, options);
+            var operation = CreateRetryableCountOperation(filter, options, _database.Client.Settings.RetryReads);
             return ExecuteReadOperation(session, operation, cancellationToken);
         }
 
@@ -242,8 +245,8 @@ namespace MongoDB.Driver
             Ensure.IsNotNull(session, nameof(session));
             Ensure.IsNotNull(filter, nameof(filter));
             options = options ?? new CountOptions();
-
-            var operation = CreateCountOperation(filter, options);
+            
+            var operation = CreateRetryableCountOperation(filter, options, _database.Client.Settings.RetryReads);
             return ExecuteReadOperationAsync(session, operation, cancellationToken);
         }
 
@@ -313,7 +316,7 @@ namespace MongoDB.Driver
         {
             return UsingImplicitSession(session =>
             {
-                var operation = CreateEstimatedDocumentCountOperation(options);
+                var operation = CreateEstimatedDocumentCountOperation(options, _database.Client.Settings.RetryReads);
                 return ExecuteReadOperation(session, operation, cancellationToken);
             });
         }
@@ -322,7 +325,7 @@ namespace MongoDB.Driver
         {
             return UsingImplicitSessionAsync(session =>
             {
-                var operation = CreateEstimatedDocumentCountOperation(options);
+                var operation = CreateEstimatedDocumentCountOperation(options, _database.Client.Settings.RetryReads);
                 return ExecuteReadOperationAsync(session, operation, cancellationToken);
             });
         }
@@ -338,7 +341,7 @@ namespace MongoDB.Driver
             Ensure.IsNotNull(filter, nameof(filter));
             options = options ?? new FindOptions<TDocument, TProjection>();
 
-            var operation = CreateFindOperation<TProjection>(filter, options);
+            var operation = CreateFindOperation<TProjection>(filter, options, _database.Client.Settings.RetryReads);
             return ExecuteReadOperation(session, operation, cancellationToken);
         }
 
@@ -353,7 +356,7 @@ namespace MongoDB.Driver
             Ensure.IsNotNull(filter, nameof(filter));
             options = options ?? new FindOptions<TDocument, TProjection>();
 
-            var operation = CreateFindOperation<TProjection>(filter, options);
+            var operation = CreateFindOperation<TProjection>(filter, options, _database.Client.Settings.RetryReads);
             return ExecuteReadOperationAsync(session, operation, cancellationToken);
         }
 
@@ -692,13 +695,17 @@ namespace MongoDB.Driver
             }
         }
 
-        private AggregateOperation<TResult> CreateAggregateOperation<TResult>(RenderedPipelineDefinition<TResult> renderedPipeline, AggregateOptions options)
+        private AggregateOperation<TResult> CreateAggregateOperation<TResult>(
+            RenderedPipelineDefinition<TResult> renderedPipeline, 
+            AggregateOptions options,
+            bool retryReads)
         {
             return new AggregateOperation<TResult>(
                 _collectionNamespace,
                 renderedPipeline.Documents,
                 renderedPipeline.OutputSerializer,
-                _messageEncoderSettings)
+                _messageEncoderSettings,
+                retryReads)
             {
                 AllowDiskUse = options.AllowDiskUse,
                 BatchSize = options.BatchSize,
@@ -763,7 +770,13 @@ namespace MongoDB.Driver
             PipelineDefinition<ChangeStreamDocument<TDocument>, TResult> pipeline,
             ChangeStreamOptions options)
         {
-            return ChangeStreamHelper.CreateChangeStreamOperation(this, pipeline, _documentSerializer, options, _settings.ReadConcern, _messageEncoderSettings);
+            return ChangeStreamHelper.CreateChangeStreamOperation(
+                collection: this, 
+                pipeline: pipeline, 
+                documentSerializer: _documentSerializer, 
+                options: options, 
+                readConcern: _settings.ReadConcern, messageEncoderSettings: _messageEncoderSettings,
+                retryRequested: _database.Client.Settings.RetryReads);
         }
 
         private CountDocumentsOperation CreateCountDocumentsOperation(FilterDefinition<TDocument> filter, CountOptions options)
@@ -776,7 +789,8 @@ namespace MongoDB.Driver
                 Limit = options.Limit,
                 MaxTime = options.MaxTime,
                 ReadConcern = _settings.ReadConcern,
-                Skip = options.Skip
+                Skip = options.Skip,
+                RetryRequested = _database.Client.Settings.RetryReads
             };
         }
 
@@ -808,16 +822,27 @@ namespace MongoDB.Driver
                 Collation = options.Collation,
                 Filter = filter.Render(_documentSerializer, _settings.SerializerRegistry),
                 MaxTime = options.MaxTime,
-                ReadConcern = _settings.ReadConcern
+                ReadConcern = _settings.ReadConcern,
+                RetryRequested = _database.Client.Settings.RetryReads,
             };
         }
 
-        private CountOperation CreateEstimatedDocumentCountOperation(EstimatedDocumentCountOptions options)
+        private RetryableCountCommandOperation CreateEstimatedDocumentCountOperation(
+            EstimatedDocumentCountOptions options, 
+            bool retryRequested)
         {
-            return new CountOperation(_collectionNamespace, _messageEncoderSettings)
-            {
-                MaxTime = options?.MaxTime
-            };
+            return new RetryableCountCommandOperation(
+                    collectionNamespace: _collectionNamespace,
+                    collation: null,
+                    filter: null,
+                    hint: null,
+                    limit: null,
+                    maxTime: options?.MaxTime,
+                    readConcern: _settings.ReadConcern,
+                    skip: null,
+                    messageEncoderSettings: _messageEncoderSettings,
+                    retryRequested: retryRequested)
+                ;
         }
 
         private FindOneAndDeleteOperation<TProjection> CreateFindOneAndDeleteOperation<TProjection>(FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection> options)
@@ -889,7 +914,10 @@ namespace MongoDB.Driver
             };
         }
 
-        private FindOperation<TProjection> CreateFindOperation<TProjection>(FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection> options)
+        private FindOperation<TProjection> CreateFindOperation<TProjection>(
+            FilterDefinition<TDocument> filter, 
+            FindOptions<TDocument, TProjection> options,
+            bool retryRequested)
         {
             var projection = options.Projection ?? new ClientSideDeserializationProjectionDefinition<TDocument, TProjection>();
             var renderedProjection = projection.Render(_documentSerializer, _settings.SerializerRegistry);
@@ -897,7 +925,8 @@ namespace MongoDB.Driver
             return new FindOperation<TProjection>(
                 _collectionNamespace,
                 renderedProjection.ProjectionSerializer,
-                _messageEncoderSettings)
+                _messageEncoderSettings,
+                retryRequested)
             {
                 AllowPartialResults = options.AllowPartialResults,
                 BatchSize = options.BatchSize,
@@ -934,6 +963,7 @@ namespace MongoDB.Driver
                 Limit = options.Limit,
                 MaxTime = options.MaxTime,
                 ReadConcern = _settings.ReadConcern,
+                RetryRequested = _database.Client.Settings.RetryReads,
                 Scope = options.Scope,
                 Sort = options.Sort == null ? null : options.Sort.Render(_documentSerializer, _settings.SerializerRegistry),
                 Verbose = options.Verbose
@@ -1000,6 +1030,24 @@ namespace MongoDB.Driver
         {
             var binding = new WritableServerBinding(_cluster, session.WrappedCoreSession.Fork());
             return new ReadWriteBindingHandle(binding);
+        }
+        
+        private RetryableCountCommandOperation CreateRetryableCountOperation(
+            FilterDefinition<TDocument> filter, 
+            CountOptions options,
+            bool retryRequested)
+        {
+            return new RetryableCountCommandOperation(_collectionNamespace,
+                options.Collation,
+                filter.Render(_documentSerializer, _settings.SerializerRegistry),
+                options.Hint,
+                options.Limit,
+                options.MaxTime,
+                _settings.ReadConcern,
+                options.Skip,
+                _messageEncoderSettings,
+                retryRequested)
+            ;
         }
 
         private IBsonSerializer<TField> GetValueSerializerForDistinct<TField>(RenderedFieldDefinition<TField> renderedField, IBsonSerializerRegistry serializerRegistry)
@@ -1427,7 +1475,10 @@ namespace MongoDB.Driver
 
             private ListIndexesOperation CreateListIndexesOperation()
             {
-                return new ListIndexesOperation(_collection._collectionNamespace, _collection._messageEncoderSettings);
+                return new ListIndexesOperation(_collection._collectionNamespace, _collection._messageEncoderSettings) 
+                {
+                    RetryRequested = _collection.Database.Client.Settings.RetryReads                    
+                };
             }
         }
     }

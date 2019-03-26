@@ -27,13 +27,15 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         private readonly string _databaseName;
         private readonly string _collectionName;
         private readonly Dictionary<string, object> _objectMap;
+        private readonly string _bucketName;
 
         // public constructors
-        public JsonDrivenTestFactory(IMongoClient client, string databaseName, string collectionName, Dictionary<string, object> objectMap)
+        public JsonDrivenTestFactory(IMongoClient client, string databaseName, string collectionName, string bucketName, Dictionary<string, object> objectMap)
         {
             _client = client;
             _databaseName = databaseName;
             _collectionName = collectionName;
+            _bucketName = bucketName;
             _objectMap = objectMap;
         }
 
@@ -51,6 +53,17 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                     default: throw new FormatException($"Invalid method name: \"{name}\".");
                 }
             }
+            
+            if (receiver == "client")
+            {
+                switch (name)
+                {
+                    case "listDatabases": return new JsonDrivenListDatabasesTest(_client, _objectMap);
+                    case "listDatabaseNames": return new JsonDrivenListDatabaseNamesTest(_client, _objectMap);
+                    case "watch": return new JsonDrivenClientWatchTest(_client, _objectMap);
+                    default: throw new FormatException($"Invalid method name: \"{name}\".");
+                }
+            }
 
             var database = _client.GetDatabase(_databaseName);
             if (receiver == "database")
@@ -58,6 +71,19 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 switch (name)
                 {
                     case "runCommand": return new JsonDrivenRunCommandTest(database, _objectMap);
+                    case "listCollections": return new JsonDrivenListCollectionsTest(database, _objectMap);
+                    case "listCollectionNames": return new JsonDrivenListCollectionNamesTest(database, _objectMap);
+                    case "watch": return new JsonDrivenDatabaseWatchTest(database, _objectMap);
+                    default: throw new FormatException($"Invalid method name: \"{name}\".");
+                }
+            }
+
+            if (receiver == "gridfsbucket")
+            {
+                switch (name)
+                {
+                    case "download": return new JsonDrivenDownloadTest(database, _bucketName, _objectMap);
+                    case "download_by_name": return new JsonDrivenDownloadByNameTest(database, _bucketName, _objectMap);
                     default: throw new FormatException($"Invalid method name: \"{name}\".");
                 }
             }
@@ -69,6 +95,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 {
                     case "aggregate": return new JsonDrivenAggregateTest(collection, _objectMap);
                     case "bulkWrite": return new JsonDrivenBulkWriteTest(collection, _objectMap);
+                    case "estimatedDocumentCount": return new JsonDrivenEstimatedCountTest(collection, _objectMap);
                     case "count": return new JsonDrivenCountTest(collection, _objectMap);
                     case "countDocuments": return new JsonDrivenCountDocumentsTest(collection, _objectMap);
                     case "deleteMany": return new JsonDrivenDeleteManyTest(collection, _objectMap);
@@ -80,9 +107,12 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                     case "findOneAndUpdate": return new JsonDrivenFindOneAndUpdateTest(collection, _objectMap);
                     case "insertMany": return new JsonDrivenInsertManyTest(collection, _objectMap);
                     case "insertOne": return new JsonDrivenInsertOneTest(collection, _objectMap);
+                    case "listIndexes": return new JsonDrivenListIndexesTest(collection, _objectMap);
+                    case "mapReduce": return new JsonDrivenMapReduceTest(collection, _objectMap);
                     case "replaceOne": return new JsonDrivenReplaceOneTest(collection, _objectMap);
                     case "updateMany": return new JsonDrivenUpdateManyTest(collection, _objectMap);
                     case "updateOne": return new JsonDrivenUpdateOneTest(collection, _objectMap);
+                    case "watch": return new JsonDrivenCollectionWatchTest(collection, _objectMap);
                     default: throw new FormatException($"Invalid method name: \"{name}\".");
                 }
             }

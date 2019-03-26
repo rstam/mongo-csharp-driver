@@ -111,6 +111,12 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 // some missing fields are only missing because the C# driver omits default values
                 switch (name)
                 {
+                    case "mapReduce":
+                        if (commandName == "mapreduce") 
+                        {   // C# driver emits lowercase mapreduce for backwards compatibility
+                            return;
+                        }
+                        break;
                     case "new":
                         if (commandName == "findAndModify" && expectedValue == false)
                         {
@@ -133,6 +139,23 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
 
             if (!(useOrderInsensitiveComparison ? BsonValueEquivalencyComparer.Compare(actualValue, expectedValue) : actualValue.Equals(expectedValue)))
             {
+                switch (name)
+                {
+                    case "out":
+                        if (commandName == "mapreduce") 
+                        {
+                            if (expectedValue is BsonString
+                                && actualValue.IsBsonDocument 
+                                && actualValue.AsBsonDocument.Contains("replace")
+                                && actualValue["replace"] == expectedValue.AsString)
+                            {   // allow short form for "out" to be equivalent to the long form
+                                // Assumes that the driver is correctly generating the following
+                                // fields: db, sharded, nonAtomic
+                                return;
+                            }
+                        }
+                        break;
+                }
                 throw new AssertionFailedException($"Expected field '{name}' in command '{commandName}' to be {expectedValue.ToJson()} but found {actualValue.ToJson()}.");
             }
         }

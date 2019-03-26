@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
@@ -30,7 +31,7 @@ namespace MongoDB.Driver.Core.Operations
     /// <summary>
     /// Represents a list indexes operation.
     /// </summary>
-    public class ListIndexesUsingCommandOperation : IReadOperation<IAsyncCursor<BsonDocument>>
+    public class ListIndexesUsingCommandOperation : RetryableReadCommandOperationBase<IAsyncCursor<BsonDocument>>
     {
         // fields
         private readonly CollectionNamespace _collectionNamespace;
@@ -44,7 +45,8 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
         public ListIndexesUsingCommandOperation(
             CollectionNamespace collectionNamespace,
-            MessageEncoderSettings messageEncoderSettings)
+            MessageEncoderSettings messageEncoderSettings) 
+            : base(collectionNamespace.DatabaseNamespace, messageEncoderSettings)
         {
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
             _messageEncoderSettings = messageEncoderSettings;
@@ -62,20 +64,9 @@ namespace MongoDB.Driver.Core.Operations
             get { return _collectionNamespace; }
         }
 
-        /// <summary>
-        /// Gets the message encoder settings.
-        /// </summary>
-        /// <value>
-        /// The message encoder settings.
-        /// </value>
-        public MessageEncoderSettings MessageEncoderSettings
-        {
-            get { return _messageEncoderSettings; }
-        }
-
         // public methods
         /// <inheritdoc/>
-        public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
+        public override IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
@@ -100,7 +91,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc/>
-        public async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
+        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
@@ -124,11 +115,90 @@ namespace MongoDB.Driver.Core.Operations
             }
         }
 
+        /// <inheritdoc />
+        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt,
+            long? transactionNumber)
+        {
+            return CreateCommand();
+        }
+
+        /// <inheritdoc />
+        public override IAsyncCursor<BsonDocument> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            using (EventContext.BeginOperation())
+            {
+                var binding = context.Binding;
+                var session = binding.Session;
+                var channelSource = context.ChannelSource;
+                var server = channelSource.Server;
+                var channel = context.Channel;
+                var readPreference = context.Binding.ReadPreference;
+
+                using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+                {
+                    var operation = CreateOperation();
+                    try
+                    {
+                        var result = operation.Execute(channelSource, binding.ReadPreference, binding.Session, cancellationToken);
+                        return CreateCursor(channelSource, result, operation.Command);
+                    }
+                    catch (MongoCommandException ex)
+                    {
+                        if (IsCollectionNotFoundException(ex))
+                        {
+                            return new SingleBatchAsyncCursor<BsonDocument>(new List<BsonDocument>());
+                        }
+                        throw;
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc />
+        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
+            CancellationToken cancellationToken)
+        {
+            using (EventContext.BeginOperation())
+            {
+                var binding = context.Binding;
+                var session = binding.Session;
+                var channelSource = context.ChannelSource;
+                var server = channelSource.Server;
+                var channel = context.Channel;
+                var readPreference = context.Binding.ReadPreference;
+
+                using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+                {
+                    var operation = CreateOperation();
+                    try
+                    {
+                        var result = await operation.ExecuteAsync(channelSource, binding.ReadPreference, binding.Session, cancellationToken).ConfigureAwait(false);
+                        return CreateCursor(channelSource, result, operation.Command);
+                    }
+                    catch (MongoCommandException ex)
+                    {
+                        if (IsCollectionNotFoundException(ex))
+                        {
+                            return new SingleBatchAsyncCursor<BsonDocument>(new List<BsonDocument>());
+                        }
+                        throw;
+                    }
+                }
+            }
+        }
+
+        private BsonDocument CreateCommand()
+        {
+            return new BsonDocument("listIndexes", _collectionNamespace.CollectionName);
+        }
+
+
         // private methods
         private ReadCommandOperation<BsonDocument> CreateOperation()
         {
             var databaseNamespace = _collectionNamespace.DatabaseNamespace;
-            var command = new BsonDocument("listIndexes", _collectionNamespace.CollectionName);
+            var command = CreateCommand();
             return new ReadCommandOperation<BsonDocument>(databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings);
         }
 

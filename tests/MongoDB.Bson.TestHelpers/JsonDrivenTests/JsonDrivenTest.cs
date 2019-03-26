@@ -27,6 +27,7 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
         protected BsonDocument _expectedException;
         protected BsonValue _expectedResult;
         protected Dictionary<string, object> _objectMap;
+        private bool _expectingNonspecificException = false;
 
         // constructors
         protected JsonDrivenTest(Dictionary<string, object> objectMap = null)
@@ -66,6 +67,8 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
                 SetArguments(document["arguments"].AsBsonDocument);
             }
 
+            _expectingNonspecificException = document.Contains("error");
+
             if (document.Contains("result"))
             {
                 ParseExpectedResult(document["result"]);
@@ -74,7 +77,10 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 
         public virtual void Assert()
         {
-            if (_expectedException == null)
+            var notExpectingException = 
+                !_expectingNonspecificException 
+                && (_expectedException == null  || !_expectedException.GetValue("error", true).ToBoolean());
+            if (notExpectingException)
             {
                 if (_actualException != null)
                 {
@@ -92,7 +98,7 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
                 {
                     throw new Exception("Expected an exception but none was thrown.");
                 }
-                AssertException();
+                if (!_expectingNonspecificException) AssertException();
             }
         }
 

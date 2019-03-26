@@ -68,20 +68,37 @@ namespace MongoDB.Driver.Core.Operations
         {
             get { return _messageEncoderSettings; }
         }
+        
+        /// <summary>
+        /// Gets or sets whether or not retry was requested.
+        /// </summary>
+        /// <value>
+        /// Whether retry was requested.
+        /// </value>
+        public bool RetryRequested { get; set; }
 
         // public methods
         /// <inheritdoc/>
         public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
-        {
+        {   
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (EventContext.BeginOperation())
-            using (var channelSource = binding.GetReadChannelSource(cancellationToken))
-            using (var channel = channelSource.GetChannel(cancellationToken))
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                var operation = CreateOperation(channel);
-                return operation.Execute(channelBinding, cancellationToken);
+                var operation = CreateOperation(context.Channel);
+                var retryableOperation = operation as IRetryableReadOperation<IAsyncCursor<BsonDocument>>;
+                if (retryableOperation != null)
+                {
+                    return retryableOperation.Execute(context, cancellationToken);
+                }
+                using (var channelBinding = new ChannelReadBinding(
+                    context.ChannelSource.Server, 
+                    context.Channel,
+                    context.Binding.ReadPreference, 
+                    context.Binding.Session.Fork()))
+                {
+                    return operation.Execute(channelBinding, cancellationToken);
+                }
             }
         }
 
@@ -105,7 +122,10 @@ namespace MongoDB.Driver.Core.Operations
         {
             if (Feature.ListIndexesCommand.IsSupported(channel.ConnectionDescription.ServerVersion))
             {
-                return new ListIndexesUsingCommandOperation(_collectionNamespace, _messageEncoderSettings);
+                return new ListIndexesUsingCommandOperation(_collectionNamespace, _messageEncoderSettings) 
+                {
+                    RetryRequested = RetryRequested    
+                };
             }
             else
             {
