@@ -38,8 +38,6 @@ namespace MongoDB.Driver.Core.Operations
         private BsonValue _hint;
         private long? _limit;
         private TimeSpan? _maxTime;
-        private readonly MessageEncoderSettings _messageEncoderSettings;
-        private ReadConcern _readConcern = ReadConcern.Default;
         private long? _skip;
 
         // constructors
@@ -49,10 +47,9 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="collectionNamespace">The collection namespace.</param>
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
         public CountDocumentsOperation(CollectionNamespace collectionNamespace, MessageEncoderSettings messageEncoderSettings)
-            : base(collectionNamespace.DatabaseNamespace, messageEncoderSettings)
+            : base(Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace)).DatabaseNamespace, messageEncoderSettings)
         {
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
-            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         // public properties
@@ -143,56 +140,43 @@ namespace MongoDB.Driver.Core.Operations
         public override long Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-            using (var retryableReadContext = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                return Execute(retryableReadContext, cancellationToken);
+                return Execute(context, cancellationToken);
             }            
-        }
-
-        /// <inheritdoc/>
-        public override long ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
-            CancellationToken cancellationToken)
-        {
-            var binding = context.Binding;
-            var session = binding.Session;
-            var channelSource = context.ChannelSource;
-            var server = channelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
-            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
-            {
-                var operation = CreateOperation();
-                var cursor = operation.Execute(channelBinding, cancellationToken);
-                var result = cursor.ToList();
-                return ExtractCountFromResult(result);
-            }
-        }
-
-        /// <inheritdoc/>
-        public override async Task<long> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
-            CancellationToken cancellationToken)
-        {
-            var binding = context.Binding;
-            var session = binding.Session;
-            var channelSource = context.ChannelSource;
-            var server = channelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
-            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
-            {
-                var operation = CreateOperation();
-                var cursor = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
-                var result = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
-                return ExtractCountFromResult(result);
-            }
         }
 
         /// <inheritdoc/>
         public override async Task<long> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-            using (var channelSource = await binding.GetReadChannelSourceAsync(cancellationToken).ConfigureAwait(false))
-            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            {
+                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <inheritdoc/>
+        public override long ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        {
+            var binding = context.Binding;
+            var channelSource = context.ChannelSource;
+            var channel = context.Channel;
+            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            {
+                var operation = CreateOperation();
+                var cursor = operation.Execute(channelBinding, cancellationToken);
+                var result = cursor.ToList(cancellationToken);
+                return ExtractCountFromResult(result);
+            }
+        }
+
+        /// <inheritdoc/>
+        public override async Task<long> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        {
+            var binding = context.Binding;
+            var channelSource = context.ChannelSource;
+            var channel = context.Channel;
             using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 var operation = CreateOperation();
@@ -203,8 +187,7 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc />
-        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt,
-            long? transactionNumber)
+        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt, long? transactionNumber)
         {
             return CreateOperation().CreateCommand(connectionDescription, session);
         }
@@ -213,12 +196,12 @@ namespace MongoDB.Driver.Core.Operations
         private AggregateOperation<BsonDocument> CreateOperation()
         {
             var pipeline = CreatePipeline();
-            var operation = new AggregateOperation<BsonDocument>(_collectionNamespace, pipeline, BsonDocumentSerializer.Instance, _messageEncoderSettings)
+            var operation = new AggregateOperation<BsonDocument>(_collectionNamespace, pipeline, BsonDocumentSerializer.Instance, MessageEncoderSettings)
             {
                 Collation = _collation,
                 Hint = _hint,
                 MaxTime = _maxTime,
-                ReadConcern = _readConcern
+                ReadConcern = ReadConcern
             };
             return operation;
         }

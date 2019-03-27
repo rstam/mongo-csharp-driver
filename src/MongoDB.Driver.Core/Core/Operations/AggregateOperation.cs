@@ -43,13 +43,10 @@ namespace MongoDB.Driver.Core.Operations
         private Collation _collation;
         private readonly CollectionNamespace _collectionNamespace;
         private string _comment;
-        private readonly DatabaseNamespace _databaseNamespace;
         private BsonValue _hint;
         private TimeSpan? _maxAwaitTime;
         private TimeSpan? _maxTime;
-        private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly IReadOnlyList<BsonDocument> _pipeline;
-        private ReadConcern _readConcern = ReadConcern.Default;
         private readonly IBsonSerializer<TResult> _resultSerializer;
         private bool? _useCursor;
 
@@ -70,10 +67,8 @@ namespace MongoDB.Driver.Core.Operations
             bool retryRequested = false)
             : base(databaseNamespace, retryRequested, ReadConcern.Default, messageEncoderSettings)
         {
-            _databaseNamespace = Ensure.IsNotNull(databaseNamespace, nameof(databaseNamespace));
             _pipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).ToList();
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
-            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         /// <summary>
@@ -90,12 +85,11 @@ namespace MongoDB.Driver.Core.Operations
             IBsonSerializer<TResult> resultSerializer, 
             MessageEncoderSettings messageEncoderSettings,
             bool retryRequested = false)
-            : base(collectionNamespace.DatabaseNamespace, retryRequested, ReadConcern.Default, messageEncoderSettings)
+            : base(Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace)).DatabaseNamespace, retryRequested, ReadConcern.Default, messageEncoderSettings)
         {
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
             _pipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).ToList();
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
-            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         // properties
@@ -233,9 +227,9 @@ namespace MongoDB.Driver.Core.Operations
             EnsureIsReadOnlyPipeline();
 
             using (EventContext.BeginOperation())
-            using (var retryableReadContext = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                return Execute(retryableReadContext, cancellationToken);
+                return Execute(context, cancellationToken);
             }
         }
 
@@ -246,8 +240,36 @@ namespace MongoDB.Driver.Core.Operations
             EnsureIsReadOnlyPipeline();
 
             using (EventContext.BeginOperation())
-            using (var channelSource = await binding.GetReadChannelSourceAsync(cancellationToken).ConfigureAwait(false))
-            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            {
+                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <inheritdoc/>
+        public override IAsyncCursor<TResult> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(context, nameof(context));
+
+            var binding = context.Binding;
+            var channelSource = context.ChannelSource;
+            var channel = context.Channel;
+            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            {
+                var operation = CreateOperation(channel, channelBinding);
+                var result = operation.Execute(channelBinding, cancellationToken);
+                return CreateCursor(channelSource, channel, operation.Command, result);
+            }
+        }
+        
+        /// <inheritdoc/>
+        public override async Task<IAsyncCursor<TResult>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(context, nameof(context));
+
+            var binding = context.Binding;
+            var channelSource = context.ChannelSource;
+            var channel = context.Channel;
             using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 var operation = CreateOperation(channel, channelBinding);
@@ -255,37 +277,9 @@ namespace MongoDB.Driver.Core.Operations
                 return CreateCursor(channelSource, channel, operation.Command, result);
             }
         }
-        
-        /// <inheritdoc/>
-        public override IAsyncCursor<TResult> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
-            CancellationToken cancellationToken)
-        {
-            var binding = context.Binding;
-            var session = binding.Session;
-            var channelSource = context.ChannelSource;
-            var server = channelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
-            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
-            {
-                var operation = CreateOperation(channel, channelBinding);
-                var commandResult = operation.Execute(channelBinding, cancellationToken);
-                return CreateCursor(channelSource, channel, operation.Command, commandResult);
-            }
-        }
-        
-        /// <inheritdoc/>
-        public override async Task<IAsyncCursor<TResult>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
-            CancellationToken cancellationToken)
-        {
-            var operation = CreateOperation(context.Channel, context.Binding);
-            var result = await operation.ExecuteAsync(context.Binding, cancellationToken).ConfigureAwait(false);
-            return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
-        }
-        
+
         /// <inheritdoc />
-        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt,
-            long? transactionNumber)
+        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt, long? transactionNumber)
         {
             return CreateCommand(connectionDescription, session);
         }
@@ -297,7 +291,7 @@ namespace MongoDB.Driver.Core.Operations
         /// <returns>An AggregateExplainOperation.</returns>
         public IReadOperation<BsonDocument> ToExplainOperation(ExplainVerbosity verbosity)
         {
-            return new AggregateExplainOperation(_collectionNamespace, _pipeline, _messageEncoderSettings)
+            return new AggregateExplainOperation(_collectionNamespace, _pipeline, MessageEncoderSettings)
             {
                 AllowDiskUse = _allowDiskUse,
                 Collation = _collation,
@@ -307,10 +301,10 @@ namespace MongoDB.Driver.Core.Operations
 
         internal BsonDocument CreateCommand(ConnectionDescription connectionDescription, ICoreSession session)
         {
-            Feature.ReadConcern.ThrowIfNotSupported(connectionDescription.ServerVersion, _readConcern);
+            Feature.ReadConcern.ThrowIfNotSupported(connectionDescription.ServerVersion, ReadConcern);
             Feature.Collation.ThrowIfNotSupported(connectionDescription.ServerVersion, _collation);
 
-            var readConcern = ReadConcernHelper.GetReadConcernForCommand(session, connectionDescription, _readConcern);
+            var readConcern = ReadConcernHelper.GetReadConcernForCommand(session, connectionDescription, ReadConcern);
             var command = new BsonDocument
             {
                 { "aggregate", _collectionNamespace == null ? (BsonValue)1 : _collectionNamespace.CollectionName },
@@ -340,7 +334,7 @@ namespace MongoDB.Driver.Core.Operations
 
         private ReadCommandOperation<AggregateResult> CreateOperation(IChannel channel, IBinding binding)
         {
-            var databaseNamespace = _collectionNamespace == null ? _databaseNamespace : _collectionNamespace.DatabaseNamespace;
+            var databaseNamespace = _collectionNamespace == null ? DatabaseNamespace : _collectionNamespace.DatabaseNamespace;
             var command = CreateCommand(channel.ConnectionDescription, binding.Session);
             var serializer = new AggregateResultDeserializer(_resultSerializer);
             return new ReadCommandOperation<AggregateResult>(databaseNamespace, command, serializer, MessageEncoderSettings);

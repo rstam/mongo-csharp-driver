@@ -35,7 +35,6 @@ namespace MongoDB.Driver.Core.Operations
     {
         // fields
         private readonly CollectionNamespace _collectionNamespace;
-        private readonly MessageEncoderSettings _messageEncoderSettings;
 
         // constructors
         /// <summary>
@@ -46,10 +45,9 @@ namespace MongoDB.Driver.Core.Operations
         public ListIndexesUsingCommandOperation(
             CollectionNamespace collectionNamespace,
             MessageEncoderSettings messageEncoderSettings) 
-            : base(collectionNamespace.DatabaseNamespace, messageEncoderSettings)
+            : base(Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace)).DatabaseNamespace, messageEncoderSettings)
         {
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
-            _messageEncoderSettings = messageEncoderSettings;
         }
 
         // properties
@@ -199,7 +197,7 @@ namespace MongoDB.Driver.Core.Operations
         {
             var databaseNamespace = _collectionNamespace.DatabaseNamespace;
             var command = CreateCommand();
-            return new ReadCommandOperation<BsonDocument>(databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings);
+            return new ReadCommandOperation<BsonDocument>(databaseNamespace, command, BsonDocumentSerializer.Instance, MessageEncoderSettings);
         }
 
         private IAsyncCursor<BsonDocument> CreateCursor(IChannelSourceHandle channelSource, BsonDocument result, BsonDocument command)
@@ -215,7 +213,7 @@ namespace MongoDB.Driver.Core.Operations
                 0,
                 0,
                 BsonDocumentSerializer.Instance,
-                _messageEncoderSettings);
+                MessageEncoderSettings);
 
             return cursor;
         }

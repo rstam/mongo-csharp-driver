@@ -83,22 +83,11 @@ namespace MongoDB.Driver.Core.Operations
         {   
             Ensure.IsNotNull(binding, nameof(binding));
 
+            using (EventContext.BeginOperation())
             using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
                 var operation = CreateOperation(context.Channel);
-                var retryableOperation = operation as IRetryableReadOperation<IAsyncCursor<BsonDocument>>;
-                if (retryableOperation != null)
-                {
-                    return retryableOperation.Execute(context, cancellationToken);
-                }
-                using (var channelBinding = new ChannelReadBinding(
-                    context.ChannelSource.Server, 
-                    context.Channel,
-                    context.Binding.ReadPreference, 
-                    context.Binding.Session.Fork()))
-                {
-                    return operation.Execute(channelBinding, cancellationToken);
-                }
+                return operation.ExecuteWithRetriesIfRetryable(context, cancellationToken);
             }
         }
 
@@ -108,12 +97,10 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())
-            using (var channelSource = await binding.GetReadChannelSourceAsync(cancellationToken).ConfigureAwait(false))
-            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
             {
-                var operation = CreateOperation(channel);
-                return await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                var operation = CreateOperation(context.Channel);
+                return await operation.ExecuteWithRetriesIfRetryableAsync(context, cancellationToken).ConfigureAwait(false);
             }
         }
 

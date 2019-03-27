@@ -59,12 +59,10 @@ namespace MongoDB.Driver.Core.Operations
         private TimeSpan? _maxAwaitTime;
         private int? _maxScan;
         private TimeSpan? _maxTime;
-        private readonly MessageEncoderSettings _messageEncoderSettings;
         private BsonDocument _min;
         private bool? _noCursorTimeout;
         private bool? _oplogReplay;
         private BsonDocument _projection;
-        private ReadConcern _readConcern = ReadConcern.Default;
         private readonly IBsonSerializer<TDocument> _resultSerializer;
         private bool? _returnKey;
         private bool? _showRecordId;
@@ -117,7 +115,6 @@ namespace MongoDB.Driver.Core.Operations
             
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
-            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
             _cursorType = CursorType.NonTailable;
 
         }
@@ -426,13 +423,13 @@ namespace MongoDB.Driver.Core.Operations
         // methods
         internal BsonDocument CreateCommand(ConnectionDescription connectionDescription, ICoreSession session)
         {
-            Feature.ReadConcern.ThrowIfNotSupported(connectionDescription.ServerVersion, _readConcern);
+            Feature.ReadConcern.ThrowIfNotSupported(connectionDescription.ServerVersion, ReadConcern);
             Feature.Collation.ThrowIfNotSupported(connectionDescription.ServerVersion, _collation);
 
             var firstBatchSize = _firstBatchSize ?? (_batchSize > 0 ? _batchSize : null);
             var isShardRouter = connectionDescription.IsMasterResult.ServerType == ServerType.ShardRouter;
 
-            var readConcern = ReadConcernHelper.GetReadConcernForCommand(session, connectionDescription, _readConcern);
+            var readConcern = ReadConcernHelper.GetReadConcernForCommand(session, connectionDescription, ReadConcern);
             return new BsonDocument
             {
                 { "find", _collectionNamespace.CollectionName },
@@ -476,7 +473,7 @@ namespace MongoDB.Driver.Core.Operations
                 _batchSize,
                 _limit < 0 ? Math.Abs(_limit.Value) : _limit,
                 _resultSerializer,
-                _messageEncoderSettings,
+                MessageEncoderSettings,
                 _cursorType == CursorType.TailableAwait ? _maxAwaitTime : null);
         }
 
@@ -488,7 +485,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (batch)
             {
-                var documents = CursorBatchDeserializationHelper.DeserializeBatch(batch, _resultSerializer, _messageEncoderSettings);
+                var documents = CursorBatchDeserializationHelper.DeserializeBatch(batch, _resultSerializer, MessageEncoderSettings);
                 return new CursorBatch<TDocument>(cursorId, documents);
             }
         }
@@ -614,7 +611,7 @@ namespace MongoDB.Driver.Core.Operations
                 _collectionNamespace.DatabaseNamespace,
                 command,
                 __findCommandResultSerializer,
-                _messageEncoderSettings);
+                MessageEncoderSettings);
             return operation;
         }
     }

@@ -49,7 +49,7 @@ namespace MongoDB.Driver.Tests
             result.BatchSize.Should().Be(options.BatchSize);
             result.Collation.Should().BeSameAs(options.Collation);
             result.CollectionNamespace.Should().BeNull();
-            result.DatabaseNamespace.Should().BeNull();
+            result.DatabaseNamespace.Should().Be(DatabaseNamespace.Admin);
             result.FullDocument.Should().Be(options.FullDocument);
             result.MaxAwaitTime.Should().Be(options.MaxAwaitTime);
             result.MessageEncoderSettings.Should().BeSameAs(messageEncoderSettings);
@@ -127,7 +127,7 @@ namespace MongoDB.Driver.Tests
             result.BatchSize.Should().Be(options.BatchSize);
             result.Collation.Should().BeSameAs(options.Collation);
             result.CollectionNamespace.Should().BeSameAs(collectionNamespace);
-            result.DatabaseNamespace.Should().BeNull();
+            result.DatabaseNamespace.Should().Be(collectionNamespace.DatabaseNamespace);
             result.FullDocument.Should().Be(options.FullDocument);
             result.MaxAwaitTime.Should().Be(options.MaxAwaitTime);
             result.MessageEncoderSettings.Should().BeSameAs(messageEncoderSettings);

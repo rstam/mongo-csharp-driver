@@ -98,7 +98,7 @@ namespace MongoDB.Driver.Core.Operations
             get { return _nameOnly; }
             set { _nameOnly = value; }
         }
-        
+
         /// <summary>
         /// Gets or sets whether or not retry was requested.
         /// </summary>
@@ -111,24 +111,19 @@ namespace MongoDB.Driver.Core.Operations
         /// <inheritdoc/>
         public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
-            
             Ensure.IsNotNull(binding, nameof(binding));
 
+            using (EventContext.BeginOperation())
             using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
                 var operation = CreateOperation(context.Channel);
-                var retryableOperation = operation as IRetryableReadOperation<IAsyncCursor<BsonDocument>>;
-                if (retryableOperation != null)
+                if (operation is IRetryableReadOperation<IAsyncCursor<BsonDocument>> retryableOperation)
                 {
                     return retryableOperation.Execute(context, cancellationToken);
                 }
-                using (var channelBinding = new ChannelReadBinding(
-                    context.ChannelSource.Server, 
-                    context.Channel,
-                    context.Binding.ReadPreference, 
-                    context.Binding.Session.Fork()))
+                else
                 {
-                    return operation.Execute(channelBinding, cancellationToken);
+                    return operation.ExecuteWithChannelBinding(context, cancellationToken);
                 }
             }
         }
@@ -139,12 +134,17 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())
-            using (var channelSource = await binding.GetReadChannelSourceAsync(cancellationToken).ConfigureAwait(false))
-            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                var operation = CreateOperation(channel);
-                return await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                var operation = CreateOperation(context.Channel);
+                if (operation is IRetryableReadOperation<IAsyncCursor<BsonDocument>> retryableOperation)
+                {
+                    return await retryableOperation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    return await operation.ExecuteWithChannelBindingAsync(context, cancellationToken).ConfigureAwait(false);
+                }
             }
         }
 

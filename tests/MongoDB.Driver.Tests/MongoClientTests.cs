@@ -332,7 +332,7 @@ namespace MongoDB.Driver.Tests
             changeStreamOperation.BatchSize.Should().Be(options.BatchSize);
             changeStreamOperation.Collation.Should().BeSameAs(options.Collation);
             changeStreamOperation.CollectionNamespace.Should().BeNull();
-            changeStreamOperation.DatabaseNamespace.Should().BeNull();
+            changeStreamOperation.DatabaseNamespace.Should().Be(DatabaseNamespace.Admin);
             changeStreamOperation.FullDocument.Should().Be(options.FullDocument);
             changeStreamOperation.MaxAwaitTime.Should().Be(options.MaxAwaitTime);
             changeStreamOperation.MessageEncoderSettings.Should().NotBeNull();

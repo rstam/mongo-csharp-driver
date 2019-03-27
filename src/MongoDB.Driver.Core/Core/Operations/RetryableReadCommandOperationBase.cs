@@ -52,8 +52,6 @@ namespace MongoDB.Driver.Core.Operations
                 readConcern: ReadConcern.Default,
                 messageEncoderSettings: messageEncoderSettings)
         {
-            DatabaseNamespace = Ensure.IsNotNull(databaseNamespace, nameof(databaseNamespace));
-            MessageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         /// <summary>

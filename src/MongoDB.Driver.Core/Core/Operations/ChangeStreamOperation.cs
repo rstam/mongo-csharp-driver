@@ -84,17 +84,15 @@ namespace MongoDB.Driver.Core.Operations
     public class ChangeStreamOperation<TResult> : RetryableReadCommandOperationBase<IAsyncCursor<TResult>>, IChangeStreamOperation<TResult>
     {
         // private fields
+        private readonly bool _allChangesForCluster;
         private int? _batchSize;
         private Collation _collation;
         private readonly CollectionNamespace _collectionNamespace;
-        private readonly DatabaseNamespace _databaseNamespace;
         private BsonDocument _documentResumeToken;
         private ChangeStreamFullDocumentOption _fullDocument = ChangeStreamFullDocumentOption.Default;
         private BsonTimestamp _initialOperationTime;
         private TimeSpan? _maxAwaitTime;
-        private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly IReadOnlyList<BsonDocument> _pipeline;
-        private ReadConcern _readConcern = ReadConcern.Default;
         private readonly IBsonSerializer<TResult> _resultSerializer;
         private BsonDocument _resumeAfter;
         private BsonDocument _startAfter;
@@ -113,9 +111,9 @@ namespace MongoDB.Driver.Core.Operations
             MessageEncoderSettings messageEncoderSettings)
             : base(DatabaseNamespace.Admin, messageEncoderSettings)
         {
+            _allChangesForCluster = true;
             _pipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).ToList();
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
-            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         /// <summary>
@@ -132,10 +130,8 @@ namespace MongoDB.Driver.Core.Operations
             MessageEncoderSettings messageEncoderSettings)
             : base(databaseNamespace, messageEncoderSettings)
         {
-            _databaseNamespace = Ensure.IsNotNull(databaseNamespace, nameof(databaseNamespace));
             _pipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).ToList();
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
-            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         /// <summary>
@@ -150,7 +146,7 @@ namespace MongoDB.Driver.Core.Operations
             IEnumerable<BsonDocument> pipeline,
             IBsonSerializer<TResult> resultSerializer,
             MessageEncoderSettings messageEncoderSettings)
-            : this(pipeline, resultSerializer, messageEncoderSettings)
+            : this(Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace)).DatabaseNamespace, pipeline, resultSerializer, messageEncoderSettings)
         {
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
         }
@@ -266,9 +262,9 @@ namespace MongoDB.Driver.Core.Operations
                 throw new ArgumentException("The binding value passed to ChangeStreamOperation.Execute must implement IReadBindingHandle.", nameof(binding));
             }
 
-            using (var retryableReadContext = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                return Execute(retryableReadContext, cancellationToken);
+                return Execute(context, cancellationToken);
             }
 
         }
@@ -282,9 +278,9 @@ namespace MongoDB.Driver.Core.Operations
                 throw new ArgumentException("The binding value passed to ChangeStreamOperation.Execute must implement IReadBindingHandle.", nameof(binding));
             }
 
-            using (var retryableReadContext = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
             {
-                return await ExecuteAsync(retryableReadContext, cancellationToken).ConfigureAwait(false);
+                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -368,18 +364,18 @@ namespace MongoDB.Driver.Core.Operations
             AggregateOperation<RawBsonDocument> operation;
             if (_collectionNamespace != null)
             {
-                operation = new AggregateOperation<RawBsonDocument>(_collectionNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, _messageEncoderSettings);
+                operation = new AggregateOperation<RawBsonDocument>(_collectionNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, MessageEncoderSettings);
             }
             else
             {
-                var databaseNamespace = _databaseNamespace ?? DatabaseNamespace.Admin;
-                operation = new AggregateOperation<RawBsonDocument>(databaseNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, _messageEncoderSettings);
+                var databaseNamespace = DatabaseNamespace ?? DatabaseNamespace.Admin;
+                operation = new AggregateOperation<RawBsonDocument>(databaseNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, MessageEncoderSettings);
             }
 
             operation.BatchSize = _batchSize;
             operation.Collation = _collation;
             operation.MaxAwaitTime = _maxAwaitTime;
-            operation.ReadConcern = _readConcern;
+            operation.ReadConcern = ReadConcern;
 
             return operation;
         }
@@ -391,7 +387,7 @@ namespace MongoDB.Driver.Core.Operations
             var changeStreamOptions = new BsonDocument
             {
                 { "fullDocument", ToString(_fullDocument) },
-                { "allChangesForCluster", true, _collectionNamespace == null && _databaseNamespace == null },
+                { "allChangesForCluster", true, _allChangesForCluster },
                 { "startAfter", resumeStartValues.StartAfter, resumeStartValues.StartAfter != null},
                 { "startAtOperationTime", resumeStartValues.StartAtOperationTime, resumeStartValues.StartAtOperationTime != null },
                 { "resumeAfter", resumeStartValues.ResumeAfter, resumeStartValues.ResumeAfter != null }
