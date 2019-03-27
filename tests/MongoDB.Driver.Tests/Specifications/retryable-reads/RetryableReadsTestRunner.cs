@@ -65,48 +65,43 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             Run(testCase.Shared, testCase.Test);
         }
 
-        // private methods
-        
-        private void AssertMinimumServerVersion(SemanticVersion expectedVersion, SemanticVersion actualVersion) {
-            actualVersion.Should().Be(expectedVersion);
-        }
-        
+        // private methods       
         private void Run(BsonDocument shared, BsonDocument test) {
-            var expectedMinimumServerVersion = SemanticVersion.Parse(shared["minServerVersion"].AsString);
-            //AssertMinimumServerVersion(expectedMinimumServerVersion, Feature.RetryableReads.FirstSupportedVersion);
-            
-            // RequireServer.Check().Supports(Feature.RetryableReads);
-            if (test.Contains("skipReason"))
-            {
-                throw new SkipException(test["skipReason"].AsString);
-            }
-            if (test.Contains("topology"))
-            {
-                var topologies = test["topology"].AsBsonArray.Cast<BsonString>().Select(t => ToClusterType(t.ToString()));
-                RequireServer.Check().ClusterTypes(topologies.ToArray());
-            };
-           
             JsonDrivenHelper.EnsureAllFieldsAreValid(
-                shared, 
-                "_path", 
-                "minServerVersion", 
-                "data", 
-                "tests", 
-                "database_name", 
+                shared,
+                "_path",
+                "minServerVersion",
+                "data",
+                "tests",
+                "database_name",
                 "collection_name",
                 "bucket_name");
             JsonDrivenHelper.EnsureAllFieldsAreValid(
-                test, 
-                "description", 
-                "clientOptions", 
-                "retryableReads", 
-                "failPoint", 
-                "operations", 
+                test,
+                "description",
+                "clientOptions",
+                "retryableReads",
+                "failPoint",
+                "operations",
                 "result",
                 "expectations",
                 "async",
                 "topology");
 
+            if (shared.TryGetValue("minServerVersion", out var minServerVersion))
+            {
+                RequireServer.Check().VersionGreaterThanOrEqualTo(minServerVersion.AsString);
+            }
+            if (test.TryGetValue("skipReason", out var skipReason))
+            {
+                throw new SkipException(skipReason.AsString);
+            }
+            if (test.TryGetValue("topology", out var topology))
+            {
+                var clusterTypes = topology.AsBsonArray.Select(t => ToClusterType(t.AsString)).ToArray();
+                RequireServer.Check().ClusterTypes(clusterTypes);
+            };
+           
             DropCollection();
             CreateCollection();
             InsertData(shared);
