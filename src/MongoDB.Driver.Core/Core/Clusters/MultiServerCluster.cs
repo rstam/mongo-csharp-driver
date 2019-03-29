@@ -176,7 +176,7 @@ namespace MongoDB.Driver.Core.Clusters
                     _openedEventHandler(new ClusterOpenedEvent(ClusterId, Settings, stopwatch.Elapsed));
                 }
 
-                _monitorServersTask = MonitorServersAsync();
+                _monitorServersTask = MonitorServersAsync(); // store the Task for use as evidence when testing that MonitorServerAsync was called
                 _monitorServersTask.ConfigureAwait(false);
 
                 if (Settings.Scheme == ConnectionStringScheme.MongoDBPlusSrv)
@@ -184,7 +184,7 @@ namespace MongoDB.Driver.Core.Clusters
                     var dnsEndPoint = (DnsEndPoint)Settings.EndPoints.Single();
                     var lookupDomainName = dnsEndPoint.Host;
                     var dnsMonitor = _dnsMonitorFactory.CreateDnsMonitor(this, lookupDomainName, _monitorServersCancellationTokenSource.Token);
-                    _dnsMonitorThread = dnsMonitor.Start();
+                    _dnsMonitorThread = dnsMonitor.Start(); // store the Thread for use as evidence when testing that the DnsMonitor was started
                 }
             }
         }
