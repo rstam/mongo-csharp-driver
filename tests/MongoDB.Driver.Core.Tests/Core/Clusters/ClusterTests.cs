@@ -17,22 +17,21 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using FluentAssertions;
-using MongoDB.Driver.Core.Clusters;
+using MongoDB.Bson.TestHelpers;
+using MongoDB.Bson.TestHelpers.XunitExtensions;
+using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Events;
+using MongoDB.Driver.Core.Helpers;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
-using MongoDB.Driver.Core.Helpers;
 using Moq;
 using Xunit;
-using MongoDB.Bson.TestHelpers.XunitExtensions;
-using System.Reflection;
-using MongoDB.Driver.Core.Bindings;
-using MongoDB.Bson.TestHelpers;
 
 namespace MongoDB.Driver.Core.Clusters
 {

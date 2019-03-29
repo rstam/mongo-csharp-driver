@@ -396,7 +396,6 @@ namespace MongoDB.Driver.Core.Clusters
                             args.NewServerDescription.ReplicaSetConfig.Version.Value,
                             args.NewServerDescription.ElectionId);
 
-
                         if (isReportedPrimaryStale && args.NewServerDescription.ElectionId != null)
                         {
                             // we only invalidate the "newly" reported stale primary if electionId was used.

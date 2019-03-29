@@ -15,12 +15,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using FluentAssertions;
-using MongoDB.Bson;
-using MongoDB.Driver;
 using MongoDB.Driver.Core.Configuration;
 using Xunit;
 

@@ -100,6 +100,7 @@ namespace MongoDB.Driver.Core.Clusters
             act.ShouldThrow<ArgumentException>();
         }
 
+        [Fact]
         public void constructor_should_use_default_DnsMonitorFactory_when_dnsMonitorFactory_is_null()
         {
             var settings = new ClusterSettings();
