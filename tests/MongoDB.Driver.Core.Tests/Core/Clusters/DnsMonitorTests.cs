@@ -61,17 +61,6 @@ namespace MongoDB.Driver.Core.Clusters
             e.ParamName.Should().Be("lookupDomainName");
         }
 
-        [Theory]
-        [InlineData("a.com", "com")]
-        [InlineData("a.b.com", "b.com")]
-        [InlineData("a.b.c.com", "b.c.com")]
-        public void GetParentDomainName_should_return_expected_result(string domainName, string expectedResult)
-        {
-            var result = DnsMonitorReflector.GetParentDomainName(domainName);
-
-            result.Should().Be(expectedResult);
-        }
-
         [Fact]
         public void constructor_should_initialize_instance()
         {
@@ -92,7 +81,6 @@ namespace MongoDB.Driver.Core.Clusters
             subject._cluster().Should().BeSameAs(cluster);
             subject._dnsResolver().Should().BeSameAs(dnsResolver);
             subject._lookupDomainName().Should().Be("a.b.com");
-            subject._parentDomainName().Should().Be("b.com");
             subject._processDnsResultHasEverBeenCalled().Should().BeFalse();
             subject._sdamInformationEventHandler().Should().Be(sdamInformationEventHandler);
             subject._service().Should().Be("_mongodb._tcp.a.b.com");
@@ -332,11 +320,13 @@ namespace MongoDB.Driver.Core.Clusters
         [InlineData("a.b.c.com", "x.d.com", false)]
         [InlineData("a.b.c.com", "x.b.d.com", false)]
         [InlineData("a.b.c.com", "x.d.c.com", false)]
+        [InlineData("a.b.com", "x.bb.com", false)]
         public void IsValidHost_should_return_expected_result(string lookupDomainName, string host, bool expectedResult)
         {
             var subject = CreateSubject(lookupDomainName: lookupDomainName);
+            var endPoint = (DnsEndPoint)EndPointHelper.Parse(host);
 
-            var result = subject.IsValidHost(host);
+            var result = subject.IsValidHost(endPoint);
 
             result.Should().Be(expectedResult);
         }
@@ -518,13 +508,11 @@ namespace MongoDB.Driver.Core.Clusters
     internal static class DnsMonitorReflector
     {
         public static string EnsureLookupDomainNameIsValid(string lookupDomainName) => (string)Reflector.InvokeStatic(typeof(DnsMonitor), nameof(EnsureLookupDomainNameIsValid), lookupDomainName);
-        public static string GetParentDomainName(string domainName) => (string)Reflector.InvokeStatic(typeof(DnsMonitor), nameof(GetParentDomainName), domainName);
 
         public static CancellationToken _cancellationToken(this DnsMonitor obj) => (CancellationToken)Reflector.GetFieldValue(obj, nameof(_cancellationToken));
         public static IDnsMonitoringCluster _cluster(this DnsMonitor obj) => (IDnsMonitoringCluster)Reflector.GetFieldValue(obj, nameof(_cluster));
         public static IDnsResolver _dnsResolver(this DnsMonitor obj) => (IDnsResolver)Reflector.GetFieldValue(obj, nameof(_dnsResolver));
         public static string _lookupDomainName(this DnsMonitor obj) => (string)Reflector.GetFieldValue(obj, nameof(_lookupDomainName));
-        public static string _parentDomainName(this DnsMonitor obj) => (string)Reflector.GetFieldValue(obj, nameof(_parentDomainName));
         public static bool _processDnsResultHasEverBeenCalled(this DnsMonitor obj) => (bool)Reflector.GetFieldValue(obj, nameof(_processDnsResultHasEverBeenCalled));
         public static Action<SdamInformationEvent> _sdamInformationEventHandler(this DnsMonitor obj) => (Action<SdamInformationEvent>)Reflector.GetFieldValue(obj, nameof(_sdamInformationEventHandler));
         public static string _service(this DnsMonitor obj) => (string)Reflector.GetFieldValue(obj, nameof(_service));
@@ -532,7 +520,7 @@ namespace MongoDB.Driver.Core.Clusters
 
         public static TimeSpan ComputeRescanDelay(this DnsMonitor obj, List<SrvRecord> srvRecords) => (TimeSpan)Reflector.Invoke(obj, nameof(ComputeRescanDelay), srvRecords);
         public static List<DnsEndPoint> GetValidEndPoints(this DnsMonitor obj, List<SrvRecord> srvRecords) => (List<DnsEndPoint>)Reflector.Invoke(obj, nameof(GetValidEndPoints), srvRecords);
-        public static bool IsValidHost(this DnsMonitor obj, string host) => (bool)Reflector.Invoke(obj, nameof(IsValidHost), host);
+        public static bool IsValidHost(this DnsMonitor obj, DnsEndPoint endPoint) => (bool)Reflector.Invoke(obj, nameof(IsValidHost), endPoint);
         public static void Monitor(this DnsMonitor obj) => Reflector.Invoke(obj, nameof(Monitor));
     }
 }

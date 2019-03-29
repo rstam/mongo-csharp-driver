@@ -1124,6 +1124,31 @@ namespace MongoDB.Driver.Core.Configuration
 
         private void ValidateResolvedHosts(string original, List<string> resolved)
         {
+            if (resolved.Count == 0)
+            {
+                throw new MongoConfigurationException($"No hosts were found in the SRV record for {original}.");
+            }
+
+            // for each resolved host, make sure that it ends with domain of the parent.
+            foreach(var resolvedHost in resolved)
+            {
+                EndPoint endPoint;
+                if (!EndPointHelper.TryParse(resolvedHost, 0, out endPoint) || !(endPoint is DnsEndPoint))
+                {
+                    throw new MongoConfigurationException($"Unable to parse {resolvedHost} as a hostname.");
+                }
+                var dnsEndPoint = (DnsEndPoint)endPoint;
+
+                var host = ((DnsEndPoint)endPoint).Host;
+                if (!HasValidParentDomain(original, dnsEndPoint))
+                {
+                    throw new MongoConfigurationException($"Hosts in the SRV record must have the same parent domain as the seed host.");
+                }
+            }
+        }
+
+        internal static bool HasValidParentDomain(string original, DnsEndPoint resolvedEndPoint)
+        {
             // Helper functions...
             Func<string, string[]> getParentParts = x => x.Split('.').Skip(1).ToArray();
 
@@ -1147,27 +1172,10 @@ namespace MongoDB.Driver.Core.Configuration
                 return true;
             };
 
-            if (resolved.Count == 0)
-            {
-                throw new MongoConfigurationException($"No hosts were found in the SRV record for {original}.");
-            }
-
-            // for each resolved host, make sure that it ends with domain of the parent.
+            // make sure that the resolve host ends with domain of the parent.
             var originalParentParts = getParentParts(original);
-            foreach(var resolvedHost in resolved)
-            {
-                EndPoint endPoint;
-                if (!EndPointHelper.TryParse(resolvedHost, 0, out endPoint) || !(endPoint is DnsEndPoint))
-                {
-                    throw new MongoConfigurationException($"Unable to parse {resolvedHost} as a hostname.");
-                }
-
-                var host = ((DnsEndPoint)endPoint).Host;
-                if (!endsWith(getParentParts(host), originalParentParts))
-                {
-                    throw new MongoConfigurationException($"Hosts in the SRV record must have the same parent domain as the seed host.");
-                }
-            }
+            var host = resolvedEndPoint.Host;
+            return endsWith(getParentParts(host), originalParentParts);
         }
 
         private void ValidateResolvedOptions(IEnumerable<string> optionNames)

@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 
@@ -32,12 +33,6 @@ namespace MongoDB.Driver.Core.Clusters
             Ensure.That(lookupDomainName.Count(c => c == '.') >= 2, "LookupDomainName must have at least three components.", nameof(lookupDomainName));
             return lookupDomainName;
         }
-
-        private static string GetParentDomainName(string domainName)
-        {
-            var index = domainName.IndexOf('.');
-            return domainName.Substring(index + 1);
-        }
         #endregion
 
         // private fields
@@ -45,7 +40,6 @@ namespace MongoDB.Driver.Core.Clusters
         private readonly IDnsMonitoringCluster _cluster;
         private readonly IDnsResolver _dnsResolver;
         private readonly string _lookupDomainName;
-        private readonly string _parentDomainName;
         private bool _processDnsResultHasEverBeenCalled;
         private readonly string _service;
         private DnsMonitorState _state;
@@ -60,7 +54,6 @@ namespace MongoDB.Driver.Core.Clusters
             _dnsResolver = Ensure.IsNotNull(dnsResolver, nameof(dnsResolver));
             _lookupDomainName = EnsureLookupDomainNameIsValid(lookupDomainName);
             _cancellationToken = cancellationToken;
-            _parentDomainName = GetParentDomainName(lookupDomainName);
             _service = "_mongodb._tcp." + _lookupDomainName;
             _state = DnsMonitorState.Created;
 
@@ -141,7 +134,7 @@ namespace MongoDB.Driver.Core.Clusters
                     endPoint = new DnsEndPoint(host, endPoint.Port);
                 }
 
-                if (IsValidHost(host))
+                if (IsValidHost(endPoint))
                 {
                     validEndPoints.Add(endPoint);
                 }
@@ -159,9 +152,9 @@ namespace MongoDB.Driver.Core.Clusters
             return validEndPoints;
         }
 
-        private bool IsValidHost(string host)
+        private bool IsValidHost(DnsEndPoint endPoint)
         {
-            return host.EndsWith(_parentDomainName);
+            return ConnectionString.HasValidParentDomain(_lookupDomainName, endPoint);
         }
 
         private void Monitor()
