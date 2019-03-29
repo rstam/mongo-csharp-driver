@@ -410,6 +410,42 @@ namespace MongoDB.Driver.Core.Clusters
         }
 
         [Fact]
+        public void Monitor_should_not_call_ProcessDnsResults_when_there_are_no_valid_hosts()
+        {
+            var mockCluster = new Mock<IDnsMonitoringCluster>();
+            mockCluster
+                .SetupSequence(x => x.ShouldDnsMonitorStop())
+                .Returns(false)
+                .Returns(true);
+            var cts = new CancellationTokenSource();
+            var mockDnsResolver = new Mock<IDnsResolver>();
+            var lookupDomainName = "a.b.com";
+            var service = "_mongodb._tcp." + lookupDomainName;
+            var noSrvRecords = new List<SrvRecord>();
+            mockDnsResolver
+                .Setup(m => m.ResolveSrvRecords(service, cts.Token))
+                .Returns(noSrvRecords);
+            var mockEventSubscriber = new Mock<IEventSubscriber>();
+            var actualEvents = new List<SdamInformationEvent>();
+            var sdamInformationEventHandler = (Action<SdamInformationEvent>)(raisedEvent => actualEvents.Add(raisedEvent));
+            mockEventSubscriber
+                .Setup(m => m.TryGetEventHandler<SdamInformationEvent>(out sdamInformationEventHandler));
+            var subject = CreateSubject(
+                cluster: mockCluster.Object,
+                dnsResolver: mockDnsResolver.Object,
+                lookupDomainName: lookupDomainName,
+                eventSubscriber: mockEventSubscriber.Object,
+                cancellationToken: cts.Token);
+
+            subject.Monitor();
+
+            mockCluster.Verify(m => m.ProcessDnsResults(It.IsAny<List<DnsEndPoint>>()), Times.Never);
+            var actualEvent = actualEvents.OfType<SdamInformationEvent>().Single();
+            var expectedMessage = "A DNS SRV query on \"_mongodb._tcp.a.b.com\" returned no valid hosts.";
+            actualEvent.Message.Should().Be(expectedMessage);
+        }
+
+        [Fact]
         public void Monitor_should_throw_when_cancellation_is_requested()
         {
             var cts = new CancellationTokenSource();

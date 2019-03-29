@@ -189,8 +189,20 @@ namespace MongoDB.Driver.Core.Clusters
                 if (srvRecords != null)
                 {
                     var endPoints = GetValidEndPoints(srvRecords);
-                    _cluster.ProcessDnsResults(endPoints);
-                    _processDnsResultHasEverBeenCalled = true;
+                    if (endPoints.Count > 0)
+                    {
+                        _cluster.ProcessDnsResults(endPoints);
+                        _processDnsResultHasEverBeenCalled = true;
+                    }
+                    else
+                    {
+                        if (_sdamInformationEventHandler != null)
+                        {
+                            var message = $"A DNS SRV query on \"{_service}\" returned no valid hosts.";
+                            var sdamInformationEvent = new SdamInformationEvent(() => message);
+                            _sdamInformationEventHandler(sdamInformationEvent);
+                        }
+                    }
                 }
 
                 if (_cluster.ShouldDnsMonitorStop())
