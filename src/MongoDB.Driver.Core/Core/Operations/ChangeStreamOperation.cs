@@ -278,7 +278,7 @@ namespace MongoDB.Driver.Core.Operations
                 throw new ArgumentException("The binding value passed to ChangeStreamOperation.Execute must implement IReadBindingHandle.", nameof(binding));
             }
 
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
             {
                 return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }

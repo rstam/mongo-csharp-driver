@@ -240,7 +240,7 @@ namespace MongoDB.Driver.Core.Operations
             EnsureIsReadOnlyPipeline();
 
             using (EventContext.BeginOperation())
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
             {
                 return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }

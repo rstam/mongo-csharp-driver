@@ -150,7 +150,7 @@ namespace MongoDB.Driver.Core.Operations
         public override async Task<long> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
             {
                 return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }
