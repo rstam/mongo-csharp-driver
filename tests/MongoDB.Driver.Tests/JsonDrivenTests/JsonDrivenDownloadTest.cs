@@ -1,4 +1,4 @@
-﻿/* Copyright 2018-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -22,14 +22,14 @@ using MongoDB.Driver.GridFS;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenDownloadTest : JsonDrivenGridFsTest
+    public sealed class JsonDrivenDownloadTest : JsonDrivenGridFSTest
     {
         // private fields
-        private FilterDefinition<BsonDocument> _filter = new BsonDocument();
-        private GridFSBucketOptions _options = new GridFSBucketOptions();
         private GridFSDownloadOptions _downloadOptions = new GridFSDownloadOptions();
-        private IClientSessionHandle _session;
+        private FilterDefinition<BsonDocument> _filter = new BsonDocument();
         private ObjectId _id;
+        private GridFSBucketOptions _options = new GridFSBucketOptions();
+        private IClientSessionHandle _session;
 
         // public constructors
         public JsonDrivenDownloadTest(IMongoDatabase database, string bucketName, Dictionary<string, object> objectMap)
@@ -52,16 +52,14 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            new GridFSBucket(_database, _options).
-                DownloadAsBytes(_id, _downloadOptions, cancellationToken);
+            var bucket = new GridFSBucket(_database, _options);
+            bucket.DownloadAsBytes(_id, _downloadOptions, cancellationToken);
         }
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            await new GridFSBucket(_database, _options)
-                .DownloadAsBytesAsync(_id, _downloadOptions, cancellationToken)
-                .ConfigureAwait(false);
-            
+            var bucket = new GridFSBucket(_database, _options);
+            await bucket.DownloadAsBytesAsync(_id, _downloadOptions, cancellationToken).ConfigureAwait(false);           
         }
 
         protected override void SetArgument(string name, BsonValue value)

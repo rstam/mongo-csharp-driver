@@ -1,4 +1,4 @@
-﻿/* Copyright 2018-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -27,8 +27,8 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
     public sealed class JsonDrivenMapReduceTest : JsonDrivenCollectionTest
     {
         // private fields
-        private MapReduceOptions<BsonDocument, BsonDocument> _options = new MapReduceOptions<BsonDocument, BsonDocument>();
         private BsonJavaScript _map;
+        private MapReduceOptions<BsonDocument, BsonDocument> _options = new MapReduceOptions<BsonDocument, BsonDocument>();
         private BsonJavaScript _reduce;
         private List<BsonDocument> _result;
         private IClientSessionHandle _session;
@@ -63,6 +63,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             { 
                 cursor = _collection.MapReduce(_session,_map, _reduce, _options, cancellationToken);
             }
+
             _result = cursor.ToList();
         }
 
@@ -77,6 +78,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
             {
                 cursor = await _collection.MapReduceAsync(_session, _map, _reduce, _options, cancellationToken).ConfigureAwait(false);
             }
+
             _result = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
         }
 

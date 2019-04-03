@@ -37,6 +37,7 @@ namespace MongoDB.Driver.Core.Operations
         private readonly DatabaseNamespace _databaseNamespace;
         private readonly MessageEncoderSettings _messageEncoderSettings;
         private bool? _nameOnly;
+        private bool _retryRequested;
 
         // constructors
         /// <summary>
@@ -105,7 +106,11 @@ namespace MongoDB.Driver.Core.Operations
         /// <value>
         /// Whether retry was requested.
         /// </value>
-        public bool RetryRequested { get; set; }
+        public bool RetryRequested
+        {
+            get => _retryRequested;
+            set => _retryRequested = value;
+        }
 
         // public methods
         /// <inheritdoc/>

@@ -1,4 +1,4 @@
-﻿/* Copyright 2018-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,13 +19,13 @@ using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public abstract class JsonDrivenGridFsTest : JsonDrivenCommandTest
+    public abstract class JsonDrivenGridFSTest : JsonDrivenCommandTest
     {
         // protected fields
         protected IMongoDatabase _database;
 
         // constructors
-        protected JsonDrivenGridFsTest(IMongoDatabase database, Dictionary<string, object> objectMap)
+        protected JsonDrivenGridFSTest(IMongoDatabase database, Dictionary<string, object> objectMap)
             : base(objectMap)
         {
             _database = database;

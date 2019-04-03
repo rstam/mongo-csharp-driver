@@ -832,17 +832,16 @@ namespace MongoDB.Driver
             bool retryRequested)
         {
             return new RetryableCountCommandOperation(
-                    collectionNamespace: _collectionNamespace,
-                    collation: null,
-                    filter: null,
-                    hint: null,
-                    limit: null,
-                    maxTime: options?.MaxTime,
-                    readConcern: _settings.ReadConcern,
-                    skip: null,
-                    messageEncoderSettings: _messageEncoderSettings,
-                    retryRequested: retryRequested)
-                ;
+                collectionNamespace: _collectionNamespace,
+                collation: null,
+                filter: null,
+                hint: null,
+                limit: null,
+                maxTime: options?.MaxTime,
+                readConcern: _settings.ReadConcern,
+                skip: null,
+                messageEncoderSettings: _messageEncoderSettings,
+                retryRequested: retryRequested);
         }
 
         private FindOneAndDeleteOperation<TProjection> CreateFindOneAndDeleteOperation<TProjection>(FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection> options)
@@ -1037,7 +1036,8 @@ namespace MongoDB.Driver
             CountOptions options,
             bool retryRequested)
         {
-            return new RetryableCountCommandOperation(_collectionNamespace,
+            return new RetryableCountCommandOperation(
+                _collectionNamespace,
                 options.Collation,
                 filter.Render(_documentSerializer, _settings.SerializerRegistry),
                 options.Hint,
@@ -1046,8 +1046,7 @@ namespace MongoDB.Driver
                 _settings.ReadConcern,
                 options.Skip,
                 _messageEncoderSettings,
-                retryRequested)
-            ;
+                retryRequested);
         }
 
         private IBsonSerializer<TField> GetValueSerializerForDistinct<TField>(RenderedFieldDefinition<TField> renderedField, IBsonSerializerRegistry serializerRegistry)

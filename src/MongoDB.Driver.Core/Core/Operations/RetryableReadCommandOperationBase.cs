@@ -1,4 +1,4 @@
-﻿/* Copyright 2017-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -35,7 +35,11 @@ namespace MongoDB.Driver.Core.Operations
     /// </summary>
     public abstract class RetryableReadCommandOperationBase<TResult> : IReadOperation<TResult>, IRetryableReadOperation<TResult>
     {
+        private readonly DatabaseNamespace _databaseNamespace;
+        private bool _isOrdered = true;
+        private readonly MessageEncoderSettings _messageEncoderSettings;
         private ReadConcern _readConcern = ReadConcern.Default;
+        private bool _retryRequested;
 
         // constructors
         /// <summary>
@@ -67,10 +71,10 @@ namespace MongoDB.Driver.Core.Operations
             ReadConcern readConcern,
             MessageEncoderSettings messageEncoderSettings)
         {
-            DatabaseNamespace = Ensure.IsNotNull(databaseNamespace, nameof(databaseNamespace));
-            MessageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
-            ReadConcern = readConcern;
-            RetryRequested = retryRequested;
+            _databaseNamespace = Ensure.IsNotNull(databaseNamespace, nameof(databaseNamespace));
+            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
+            _readConcern = readConcern;
+            _retryRequested = retryRequested;
         }
 
 
@@ -81,13 +85,17 @@ namespace MongoDB.Driver.Core.Operations
         /// <value>
         /// The database namespace.
         /// </value>
-        public DatabaseNamespace DatabaseNamespace { get; }
+        public DatabaseNamespace DatabaseNamespace => _databaseNamespace;
 
         /// <summary>
         /// Gets or sets a value indicating whether the server should process the requests in order.
         /// </summary>
         /// <value>A value indicating whether the server should process the requests in order.</value>
-        public bool IsOrdered { get; set; } = true;
+        public bool IsOrdered
+        {
+            get => _isOrdered;
+            set => _isOrdered = value;
+        }
 
         /// <summary>
         /// Gets the message encoder settings.
@@ -95,13 +103,7 @@ namespace MongoDB.Driver.Core.Operations
         /// <value>
         /// The message encoder settings.
         /// </value>
-        public MessageEncoderSettings MessageEncoderSettings { get; }
-
-        /// <summary>
-        /// Gets or sets a value indicating whether retry is enabled for the operation.
-        /// </summary>
-        /// <value>A value indicating whether retry is enabled.</value>
-        public bool RetryRequested { get; set; }
+        public MessageEncoderSettings MessageEncoderSettings => _messageEncoderSettings;
 
         /// <summary>
         /// Gets or sets the Read concern.
@@ -111,8 +113,18 @@ namespace MongoDB.Driver.Core.Operations
         /// </value>
         public ReadConcern ReadConcern
         {
-            get { return _readConcern;}
-            set { _readConcern = Ensure.IsNotNull(value, nameof(value)); }
+            get => _readConcern;
+            set => _readConcern = Ensure.IsNotNull(value, nameof(value));
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether retry is enabled for the operation.
+        /// </summary>
+        /// <value>A value indicating whether retry is enabled.</value>
+        public bool RetryRequested
+        {
+            get => _retryRequested;
+            set => _retryRequested = value;
         }
 
         // public methods
@@ -151,7 +163,8 @@ namespace MongoDB.Driver.Core.Operations
         { //TODO: lookatme
             var args = GetCommandArgs(context, attempt, transactionNumber);
 
-            return ParseCommandResult(context, 
+            return ParseCommandResult(
+                context, 
                 context.Channel.Command<BsonDocument>(
                     session: context.ChannelSource.Session.Fork(),
                     readPreference: ReadPreference.Primary,
@@ -172,19 +185,21 @@ namespace MongoDB.Driver.Core.Operations
         {
             var args = GetCommandArgs(context, attempt, transactionNumber);
 
-            return ParseCommandResultAsync(context, context.Channel.CommandAsync<BsonDocument>(
-                session: context.ChannelSource.Session.Fork(),
-                readPreference: ReadPreference.Primary,
-                databaseNamespace: DatabaseNamespace,
-                command: args.Command,
-                commandPayloads: null,
-                commandValidator: NoOpElementNameValidator.Instance,
-                additionalOptions: null,
-                postWriteAction: args.PostReadAction,
-                responseHandling: args.ResponseHandling,
-                resultSerializer: BsonDocumentSerializer.Instance,
-                messageEncoderSettings: args.MessageEncoderSettings,
-                cancellationToken: cancellationToken));
+            return ParseCommandResultAsync(
+                context, 
+                context.Channel.CommandAsync<BsonDocument>(
+                    session: context.ChannelSource.Session.Fork(),
+                    readPreference: ReadPreference.Primary,
+                    databaseNamespace: DatabaseNamespace,
+                    command: args.Command,
+                    commandPayloads: null,
+                    commandValidator: NoOpElementNameValidator.Instance,
+                    additionalOptions: null,
+                    postWriteAction: args.PostReadAction,
+                    responseHandling: args.ResponseHandling,
+                    resultSerializer: BsonDocumentSerializer.Instance,
+                    messageEncoderSettings: args.MessageEncoderSettings,
+                    cancellationToken: cancellationToken));
         }
 
         // protected methods
@@ -225,8 +240,6 @@ namespace MongoDB.Driver.Core.Operations
             return (TResult)(object)commandResult;
         }
         
-
-
         // private methods
         private MessageEncoderSettings CreateMessageEncoderSettings(IChannelHandle channel)
         {
@@ -248,8 +261,7 @@ namespace MongoDB.Driver.Core.Operations
         protected CommandArgs GetCommandArgs(RetryableReadContext context, int attempt, long? transactionNumber)
         {
             return new CommandArgs(
-                command: CreateCommand(context.Binding.Session, context.Channel.ConnectionDescription, attempt,
-                    transactionNumber),
+                command: CreateCommand(context.Binding.Session, context.Channel.ConnectionDescription, attempt, transactionNumber),
                 postReadAction: GetPostReadAction(),
                 responseHandling: GetResponseHandling(),
                 messageEncoderSettings: CreateMessageEncoderSettings(context.Channel)
@@ -300,18 +312,22 @@ namespace MongoDB.Driver.Core.Operations
                 ResponseHandling = responseHandling;
                 MessageEncoderSettings = messageEncoderSettings;
             }
+
             /// <summary>
             /// 
             /// </summary>
             public BsonDocument Command { get; }
+
             /// <summary>
             /// 
             /// </summary>
             public Action<IMessageEncoderPostProcessor> PostReadAction { get; }
+
             /// <summary>
             /// 
             /// </summary>
             public CommandResponseHandling ResponseHandling { get; }
+
             /// <summary>
             /// 
             /// </summary>

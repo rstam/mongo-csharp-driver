@@ -36,6 +36,7 @@ namespace MongoDB.Driver.Core.Operations
         // fields
         private ReadConcern _readConcern = ReadConcern.Default;
         private readonly IBsonSerializer<TResult> _resultSerializer;
+        private bool _retryRequested;
 
         // constructors
         /// <summary>
@@ -81,7 +82,11 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc/>
-        public bool RetryRequested { get; set; }
+        public bool RetryRequested
+        {
+            get => _retryRequested;
+            set => _retryRequested = value;
+        }
 
         // methods
         /// <inheritdoc/>

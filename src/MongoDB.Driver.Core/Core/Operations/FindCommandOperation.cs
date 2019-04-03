@@ -84,11 +84,12 @@ namespace MongoDB.Driver.Core.Operations
             IBsonSerializer<TDocument> resultSerializer,
             MessageEncoderSettings messageEncoderSettings,
             bool retryRequested = false) 
-            : this(collectionNamespace: collectionNamespace,
-                   resultSerializer: resultSerializer,
-                   readConcern: ReadConcern.Default, 
-                   messageEncoderSettings: messageEncoderSettings,
-                   retryRequested: retryRequested)
+            : this(
+                collectionNamespace: collectionNamespace,
+                resultSerializer: resultSerializer,
+                readConcern: ReadConcern.Default, 
+                messageEncoderSettings: messageEncoderSettings,
+                retryRequested: retryRequested)
         {
         }
 
@@ -537,7 +538,6 @@ namespace MongoDB.Driver.Core.Operations
         { //TODO: lookatme
             var args = GetCommandArgs(context, attempt, transactionNumber);
             
-
             using (EventContext.BeginOperation())
             {
                 var binding = context.Binding;
@@ -562,7 +562,6 @@ namespace MongoDB.Driver.Core.Operations
         { //TODO: lookatme
             var args = GetCommandArgs(context, attempt, transactionNumber);
             
-
             using (EventContext.BeginOperation())
             {
                 var binding = context.Binding;

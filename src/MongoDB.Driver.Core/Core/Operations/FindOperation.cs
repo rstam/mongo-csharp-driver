@@ -30,8 +30,6 @@ namespace MongoDB.Driver.Core.Operations
     /// <typeparam name="TDocument">The type of the returned documents.</typeparam>
     public class FindOperation<TDocument> : IReadOperation<IAsyncCursor<TDocument>>
     {
-        
-
         // fields
         private bool? _allowPartialResults;
         private int? _batchSize;
@@ -358,7 +356,6 @@ namespace MongoDB.Driver.Core.Operations
             get { return _retryRequested; }
             set { _retryRequested = value; }
         }
-
         
         /// <summary>
         /// Gets or sets whether to only return the key values.

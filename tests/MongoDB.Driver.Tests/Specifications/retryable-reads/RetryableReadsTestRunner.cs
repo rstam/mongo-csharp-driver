@@ -1,4 +1,4 @@
-﻿/* Copyright 2018-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             Run(testCase.Shared, testCase.Test);
         }
 
-        // private methods       
+        // private methods
         private void Run(BsonDocument shared, BsonDocument test) {
             JsonDrivenHelper.EnsureAllFieldsAreValid(
                 shared,
@@ -101,7 +101,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
                 var clusterTypes = topology.AsBsonArray.Select(t => ToClusterType(t.AsString)).ToArray();
                 RequireServer.Check().ClusterTypes(clusterTypes);
             };
-           
+
             DropCollection();
             CreateCollection();
             InsertData(shared);
@@ -182,7 +182,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             var chunksDocuments = shared["data"][chunksCollectionName].AsBsonArray.Cast<BsonDocument>().ToList();
             var client = DriverTestConfiguration.Client;
             var database = client.GetDatabase(_databaseName);
-            
+
             database.DropCollection(filesCollectionName);
             database.DropCollection(chunksCollectionName);
             database.GetCollection<BsonDocument>(filesCollectionName)
@@ -238,12 +238,12 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             return client.StartSession(options);
         }
 
-        private static ClusterType ToClusterType(string s) => 
+        private static ClusterType ToClusterType(string s) =>
             s == "single" ? ClusterType.Standalone :
             s == "replicaset" ? ClusterType.ReplicaSet :
             s == "sharded" ? ClusterType.Sharded :
             ClusterType.Unknown;
-        
+
 
         private ClientSessionOptions CreateSessionOptions(BsonDocument test, string sessionKey)
         {
@@ -292,7 +292,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
         private void ExecuteOperations(IMongoClient client, Dictionary<string, object> objectMap, BsonDocument test)
         {
             var factory = new JsonDrivenTestFactory(client, _databaseName, _collectionName, _bucketName, objectMap);
-            
+
             foreach (var operation in test["operations"].AsBsonArray.Cast<BsonDocument>())
             {
                 var receiver = operation["object"].AsString;
@@ -309,10 +309,10 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
                     jsonDrivenTest.Act(CancellationToken.None);
                 }
                 jsonDrivenTest.Assert();
-            }            
+            }
         }
-        
-        
+
+
 
         private void AssertEvents(EventCapturer actualEvents, BsonDocument test, Dictionary<string, BsonValue> sessionIdMap)
         {

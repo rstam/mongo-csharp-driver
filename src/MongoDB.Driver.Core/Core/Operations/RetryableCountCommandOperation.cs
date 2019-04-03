@@ -1,4 +1,4 @@
-﻿/* Copyright 2017-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -14,17 +14,11 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Misc;
-using MongoDB.Driver.Core.WireProtocol.Messages;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 
 namespace MongoDB.Driver.Core.Operations
@@ -34,7 +28,15 @@ namespace MongoDB.Driver.Core.Operations
     /// </summary>
     public class RetryableCountCommandOperation : RetryableReadCommandOperationBase<long>
     {
-        
+        // private fields
+        private readonly Collation _collation;
+        private readonly CollectionNamespace _collectionNamespace;
+        private readonly BsonDocument _filter;
+        private readonly BsonValue _hint;
+        private readonly long? _limit;
+        private readonly TimeSpan? _maxTime;
+        private readonly long? _skip;
+
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="RetryableCountCommandOperation" /> class.
@@ -44,7 +46,8 @@ namespace MongoDB.Driver.Core.Operations
         public RetryableCountCommandOperation(
             CollectionNamespace collectionNamespace,
             MessageEncoderSettings messageEncoderSettings)
-            : this(collectionNamespace: collectionNamespace,
+            : this(
+                collectionNamespace: collectionNamespace,
                 collation: null,
                 filter: null,
                 hint: null,
@@ -87,23 +90,23 @@ namespace MongoDB.Driver.Core.Operations
                 readConcern: readConcern,
                 messageEncoderSettings: messageEncoderSettings)
         {
-            Collation = collation;
-            CollectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
-            Filter = filter;
-            Hint = hint;
-            Limit = limit;
-            MaxTime = Ensure.IsNullOrInfiniteOrGreaterThanOrEqualToZero(maxTime, nameof(maxTime));;
-            Skip = skip;
+            _collation = collation;
+            _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
+            _filter = filter;
+            _hint = hint;
+            _limit = limit;
+            _maxTime = Ensure.IsNullOrInfiniteOrGreaterThanOrEqualToZero(maxTime, nameof(maxTime));;
+            _skip = skip;
         }
 
         // public properties
         /// <summary>
-        /// Gets or sets the collation.
+        /// Gets the collation.
         /// </summary>
         /// <value>
         /// The collation.
         /// </value>
-        public Collation Collation { get; }
+        public Collation Collation => _collation;
 
         /// <summary>
         /// Gets the collection namespace.
@@ -111,53 +114,52 @@ namespace MongoDB.Driver.Core.Operations
         /// <value>
         /// The collection namespace.
         /// </value>
-        public CollectionNamespace CollectionNamespace { get; }
+        public CollectionNamespace CollectionNamespace => _collectionNamespace;
 
         /// <summary>
-        /// Gets or sets the filter.
+        /// Gets the filter.
         /// </summary>
         /// <value>
         /// The filter.
         /// </value>
-        public BsonDocument Filter { get; }
+        public BsonDocument Filter => _filter;
 
         /// <summary>
-        /// Gets or sets the index hint.
+        /// Gets the index hint.
         /// </summary>
         /// <value>
         /// The index hint.
         /// </value>
-        public BsonValue Hint { get; }
+        public BsonValue Hint => _hint;
 
         /// <summary>
-        /// Gets or sets a limit on the number of matching documents to count.
+        /// Gets a limit on the number of matching documents to count.
         /// </summary>
         /// <value>
         /// A limit on the number of matching documents to count.
         /// </value>
-        public long? Limit { get; }
+        public long? Limit => _limit;
 
         /// <summary>
-        /// Gets or sets the maximum time the server should spend on this operation.
+        /// Gets the maximum time the server should spend on this operation.
         /// </summary>
         /// <value>
         /// The maximum time the server should spend on this operation.
         /// </value>
-        public TimeSpan? MaxTime { get; }
+        public TimeSpan? MaxTime => _maxTime;
 
         /// <summary>
-        /// Gets or sets the number of documents to skip before counting the remaining matching documents.
+        /// Gets the number of documents to skip before counting the remaining matching documents.
         /// </summary>
         /// <value>
         /// The number of documents to skip before counting the remaining matching documents.
         /// </value>
-        public long? Skip { get; }
+        public long? Skip => _skip;
 
         // protected methods
         /// <inheritdoc />
         protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt, long? transactionNumber)
-        {
-           
+        {         
             var operation = new CountOperation(CollectionNamespace, MessageEncoderSettings)
             {
                 Collation = Collation,
@@ -183,6 +185,5 @@ namespace MongoDB.Driver.Core.Operations
         {
             return commandResult["n"].ToInt64();
         }
-
     }
 }

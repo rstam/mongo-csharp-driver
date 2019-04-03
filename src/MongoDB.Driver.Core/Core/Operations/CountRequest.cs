@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ namespace MongoDB.Driver.Core.Operations
     /// </summary>
     public sealed class CountRequest : ReadRequest
     {
-        // fields
+        // private fields
         private readonly BsonDocument _document;
 
         // constructors
@@ -42,15 +42,12 @@ namespace MongoDB.Driver.Core.Operations
 
         // properties
         /// <summary>
-        /// Gets or sets the document.
+        /// Gets the document.
         /// </summary>
         /// <value>
         /// The document.
         /// </value>
-        public BsonDocument Document
-        {
-            get { return _document; }
-        }
+        public BsonDocument Document => _document;
 
         // public methods
         /// <inheritdoc />

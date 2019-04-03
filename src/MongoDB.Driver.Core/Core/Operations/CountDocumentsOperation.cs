@@ -159,6 +159,7 @@ namespace MongoDB.Driver.Core.Operations
         /// <inheritdoc/>
         public override long ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
         {
+            Ensure.IsNotNull(context, nameof(context));
             var binding = context.Binding;
             var channelSource = context.ChannelSource;
             var channel = context.Channel;
@@ -174,6 +175,7 @@ namespace MongoDB.Driver.Core.Operations
         /// <inheritdoc/>
         public override async Task<long> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
         {
+            Ensure.IsNotNull(context, nameof(context));
             var binding = context.Binding;
             var channelSource = context.ChannelSource;
             var channel = context.Channel;

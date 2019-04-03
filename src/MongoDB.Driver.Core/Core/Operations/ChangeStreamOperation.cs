@@ -295,33 +295,29 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <inheritdoc />
-        public override IAsyncCursor<TResult> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber,
-            CancellationToken cancellationToken)
+        public override IAsyncCursor<TResult> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
         {
-
             var binding = context.Binding;
             var bindingHandle = binding as IReadBindingHandle;
             if (bindingHandle == null)
             {
                 throw new ArgumentException("RetryableReadContext's Binding must implement IReadBindingHandle.", nameof(context));
             }
-            var session = binding.Session;
-            var channelSource = context.ChannelSource;
-            var server = channelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
+
             IAsyncCursor<RawBsonDocument> cursor;
-            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+            var channelSource = context.ChannelSource;
+            var channel = context.Channel;
+            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 cursor = ExecuteAggregateOperation(channelBinding, resuming: false, cancellationToken);
                 SaveInitialOperationTimeIfRequired(channel, channelBinding, cursor);
             }
+
             return new ChangeStreamCursor<TResult>(cursor, _resultSerializer, bindingHandle.Fork(), this);
         }
 
         /// <inheritdoc />
-        public override async Task<IAsyncCursor<TResult>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber,
-            CancellationToken cancellationToken)
+        public override async Task<IAsyncCursor<TResult>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
         {
             var binding = context.Binding;
             var bindingHandle = binding as IReadBindingHandle;
@@ -329,17 +325,16 @@ namespace MongoDB.Driver.Core.Operations
             {
                 throw new ArgumentException("RetryableReadContext's Binding must implement IReadBindingHandle.", nameof(context));
             }
-            var session = binding.Session;
-            var channelSource = context.ChannelSource;
-            var server = channelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
+
             IAsyncCursor<RawBsonDocument> cursor;
-            using (var channelBinding = new ChannelReadBinding(server, channel, readPreference, session.Fork()))
+            var channelSource = context.ChannelSource;
+            var channel = context.Channel;
+            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 cursor = await ExecuteAggregateOperationAsync(channelBinding, resuming: false, cancellationToken).ConfigureAwait(false);
                 SaveInitialOperationTimeIfRequired(channel, channelBinding, cursor);
             }
+
             return new ChangeStreamCursor<TResult>(cursor, _resultSerializer, bindingHandle.Fork(), this);
         }
 

@@ -162,8 +162,8 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 var operation = CreateOperation(channel, channelBinding);
-                var result = operation.Execute(channelBinding, cancellationToken);
-                return new SingleBatchAsyncCursor<TValue>(result);
+                var values = operation.Execute(channelBinding, cancellationToken);
+                return new SingleBatchAsyncCursor<TValue>(values);
             }
         }
 
@@ -177,8 +177,8 @@ namespace MongoDB.Driver.Core.Operations
             using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
                 var operation = CreateOperation(channel, channelBinding);
-                var result = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
-                return new SingleBatchAsyncCursor<TValue>(result);
+                var values = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                return new SingleBatchAsyncCursor<TValue>(values);
             }
         }
 

@@ -1,4 +1,4 @@
-﻿/* Copyright 2017-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,14 +19,11 @@ using System.Threading.Tasks;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Misc;
-using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Core.Operations
 {
     internal static class RetryableReadOperationExecutor
     {
-        delegate TResult ExecuteAttempt<out TResult>(int attempt);
-        
         // public static methods
         public static TResult Execute<TResult>(IRetryableReadOperation<TResult> operation, IReadBinding binding, bool retryRequested, CancellationToken cancellationToken)
         {
@@ -38,21 +35,17 @@ namespace MongoDB.Driver.Core.Operations
 
         public static TResult Execute<TResult>(IRetryableReadOperation<TResult> operation, RetryableReadContext context, CancellationToken cancellationToken)
         {
-            var initialServerVersion = context.Channel.ConnectionDescription.ServerVersion;
-            ExecuteAttempt<TResult> executeOperation = attempt => 
-                operation.ExecuteAttempt(context, attempt, transactionNumber: null, cancellationToken: cancellationToken);
-            var shouldNotRetry = !context.RetryRequested 
-                                 || !AreRetryableReadsSupported(context.Channel.ConnectionDescription) 
-                                 || context.Binding.Session.IsInTransaction; 
-            if (shouldNotRetry) // TODO: rename variable, reorder flow (currently parallels retry-writes executor)   
+            var shouldRetry = context.RetryRequested && AreRetryableReadsSupported(context) && !context.Binding.Session.IsInTransaction;
+            if (!shouldRetry)
             {
-                return executeOperation(attempt: 1);
+                return operation.ExecuteAttempt(context, attempt: 1, transactionNumber: null, cancellationToken);
             }
 
+            var initialServerVersion = context.Channel.ConnectionDescription.ServerVersion;
             Exception originalException;
             try
             {
-                return executeOperation(attempt: 1);
+                return operation.ExecuteAttempt(context, attempt: 1, transactionNumber: null, cancellationToken);
 
             }
             catch (Exception ex) when (RetryabilityHelper.IsRetryableReadException(ex))
@@ -75,14 +68,14 @@ namespace MongoDB.Driver.Core.Operations
                 throw originalException;
             }
             
-            if (!AreRetryableReadsSupported(context.Channel.ConnectionDescription))
+            if (!AreRetryableReadsSupported(context))
             {
                 throw originalException;
             }
 
             try
             {
-                return executeOperation(attempt: 2);
+                return operation.ExecuteAttempt(context, attempt: 2, transactionNumber: null, cancellationToken);
             }
             catch (Exception ex) when (ShouldThrowOriginalException(ex))
             {
@@ -100,22 +93,17 @@ namespace MongoDB.Driver.Core.Operations
 
         public static async Task<TResult> ExecuteAsync<TResult>(IRetryableReadOperation<TResult> operation, RetryableReadContext context, CancellationToken cancellationToken)
         {
-            var initialServerVersion = context.Channel.ConnectionDescription.ServerVersion;
-            Func<bool> isRetrySupported = () => AreRetryableReadsSupported(context.Channel.ConnectionDescription);
-            ExecuteAttempt<Task<TResult>> executeOperationAsync = attempt => 
-                operation.ExecuteAttemptAsync(context, attempt, transactionNumber: null, cancellationToken: cancellationToken);
-            var shouldNotRetry = !context.RetryRequested || !isRetrySupported()|| context.Binding.Session.IsInTransaction; 
-            
-            if (shouldNotRetry)
+            var shouldRetry = context.RetryRequested && AreRetryableReadsSupported(context) && !context.Binding.Session.IsInTransaction;
+            if (!shouldRetry)
             {
-                return await executeOperationAsync(attempt: 1).ConfigureAwait(false);
+                return await operation.ExecuteAttemptAsync(context, attempt: 1, transactionNumber: null, cancellationToken).ConfigureAwait(false);
             }
 
+            var initialServerVersion = context.Channel.ConnectionDescription.ServerVersion;
             Exception originalException;
             try
             {
-                return await executeOperationAsync(attempt: 1).ConfigureAwait(false);
-
+                return await operation.ExecuteAttemptAsync(context, attempt: 1, transactionNumber: null, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (RetryabilityHelper.IsRetryableReadException(ex))
             {
@@ -137,14 +125,14 @@ namespace MongoDB.Driver.Core.Operations
                 throw originalException;
             }
 
-            if (!isRetrySupported())
+            if (!AreRetryableReadsSupported(context))
             {
                 throw originalException;
             }
 
             try
             {
-                return await executeOperationAsync(attempt: 2).ConfigureAwait(false);
+                return await operation.ExecuteAttemptAsync(context, attempt: 2, transactionNumber: null, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ShouldThrowOriginalException(ex))
             {
@@ -153,9 +141,9 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // privates static methods
-        private static bool AreRetryableReadsSupported(ConnectionDescription connectionDescription)
+        private static bool AreRetryableReadsSupported(RetryableReadContext context)
         {
-            return Feature.RetryableReads.IsSupported(connectionDescription.ServerVersion);
+            return Feature.RetryableReads.IsSupported(context.Channel.ConnectionDescription.ServerVersion);
         }
 
         private static bool ShouldThrowOriginalException(Exception retryException)

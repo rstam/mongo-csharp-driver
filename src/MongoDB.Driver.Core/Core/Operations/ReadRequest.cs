@@ -1,4 +1,4 @@
-/* Copyright 2010-present MongoDB Inc.
+/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ using MongoDB.Driver.Core.Connections;
 namespace MongoDB.Driver.Core.Operations
 {
     /// <summary>
-    /// Represents a request to write something to the database.
+    /// Represents a request to read something from the database.
     /// </summary>
 #if NET452
     [Serializable]

@@ -1,4 +1,4 @@
-﻿/* Copyright 2018-present MongoDB Inc.
+﻿/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -50,7 +50,6 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-
             _result = _collection.EstimatedDocumentCount(_options, cancellationToken);
 
         }
@@ -59,6 +58,5 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         {
             _result = await _collection.EstimatedDocumentCountAsync(_options, cancellationToken).ConfigureAwait(false);
         }
-
     }
 }
