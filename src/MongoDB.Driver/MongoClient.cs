@@ -452,7 +452,7 @@ namespace MongoDB.Driver
             {
                 Filter = options.Filter?.Render(BsonDocumentSerializer.Instance, BsonSerializer.SerializerRegistry),
                 NameOnly = options.NameOnly,
-                RetryRequested = Settings.RetryReads
+                RetryRequested = _settings.RetryReads
             };
         }
 

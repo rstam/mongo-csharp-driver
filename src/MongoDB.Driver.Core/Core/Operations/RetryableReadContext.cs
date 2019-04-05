@@ -129,21 +129,6 @@ namespace MongoDB.Driver.Core.Operations
         public bool RetryRequested => _retryRequested;
 
         // public methods
-        /// <summary>
-        /// Disables retries.
-        /// </summary>
-        /// <param name="requests">The requests.</param>
-        public void DisableRetriesIfAnyReadRequestIsNotRetryable(IEnumerable<ReadRequest> requests)
-        {
-            if (_retryRequested)
-            {
-                if (requests.Any(r => !r.IsRetryable(_channel.ConnectionDescription)))
-                {
-                    _retryRequested = false;
-                }
-            }
-        }
-
         /// <inheritdoc />
         public void Dispose()
         {

@@ -13,15 +13,12 @@
 * limitations under the License.
 */
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
-using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 
@@ -30,20 +27,22 @@ namespace MongoDB.Driver.Core.Operations
     /// <summary>
     /// Represents the listDatabases command.
     /// </summary>
-    public class ListDatabasesOperation : RetryableReadCommandOperationBase<IAsyncCursor<BsonDocument>>
+    public class ListDatabasesOperation : IReadOperation<IAsyncCursor<BsonDocument>>
     {
         // fields
         private BsonDocument _filter;
+        private MessageEncoderSettings _messageEncoderSettings;
         private bool? _nameOnly;
+        private bool _retryRequested;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="ListDatabasesOperation"/> class.
         /// </summary>
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
-        public ListDatabasesOperation(MessageEncoderSettings messageEncoderSettings) 
-            : base(DatabaseNamespace.Admin, messageEncoderSettings)
+        public ListDatabasesOperation(MessageEncoderSettings messageEncoderSettings)
         {
+            _messageEncoderSettings = messageEncoderSettings;
         }
 
         // properties
@@ -60,6 +59,17 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <summary>
+        /// Gets the message encoder settings.
+        /// </summary>
+        /// <value>
+        /// The message encoder settings.
+        /// </value>
+        public MessageEncoderSettings MessageEncoderSettings
+        {
+            get { return _messageEncoderSettings; }
+        }
+
+        /// <summary>
         /// Gets or sets the NameOnly flag.
         /// </summary>
         /// <value>
@@ -71,29 +81,35 @@ namespace MongoDB.Driver.Core.Operations
             set { _nameOnly = value; }
         }
 
+        /// <summary>
+        /// Gets or sets whether or not retry was requested.
+        /// </summary>
+        /// <value>
+        /// Whether retry was requested.
+        /// </value>
+        public bool RetryRequested
+        {
+            get { return _retryRequested; }
+            set { _retryRequested = value; }
+        }
+
         // public methods
-        /// <inheritdoc />
-        public override IAsyncCursor<BsonDocument> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
-            Ensure.IsNotNull(context, nameof(context));
+            Ensure.IsNotNull(binding, nameof(binding));
             var operation = CreateOperation();
-            var reply = operation.ExecuteWithChannelBinding(context, cancellationToken);
+            var reply = operation.Execute(binding, cancellationToken);
             return CreateCursor(reply);
         }
 
-        /// <inheritdoc />
-        public override async Task<IAsyncCursor<BsonDocument>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        public async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
-            Ensure.IsNotNull(context, nameof(context));
+            Ensure.IsNotNull(binding, nameof(binding));
             var operation = CreateOperation();
-            var reply = await operation.ExecuteWithChannelBindingAsync(context, cancellationToken).ConfigureAwait(false);
+            var reply = await operation.ExecuteAsync(binding, cancellationToken).ConfigureAwait(false);
             return CreateCursor(reply);
-        }
-
-        /// <inheritdoc />
-        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt, long? transactionNumber)
-        {
-            return CreateCommand();
         }
 
         // private methods
@@ -116,7 +132,10 @@ namespace MongoDB.Driver.Core.Operations
         private ReadCommandOperation<BsonDocument> CreateOperation()
         {
             var command = CreateCommand();
-            return new ReadCommandOperation<BsonDocument>(DatabaseNamespace.Admin, command, BsonDocumentSerializer.Instance, MessageEncoderSettings);
+            return new ReadCommandOperation<BsonDocument>(DatabaseNamespace.Admin, command, BsonDocumentSerializer.Instance, _messageEncoderSettings)
+            {
+                RetryRequested = _retryRequested
+            };
         }
     }
 }

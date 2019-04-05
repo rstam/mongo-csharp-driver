@@ -18,7 +18,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Misc;
-using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Core.Operations
 {
@@ -124,116 +123,6 @@ namespace MongoDB.Driver.Core.Operations
             using (var writeBinding = new ChannelSourceReadWriteBinding(channelSource.Fork(), ReadPreference.Primary, session.Fork()))
             {
                 return await operation.ExecuteAsync(writeBinding, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary>
-        /// Executes a read operation using a channel source.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="operation">The read operation.</param>
-        /// <param name="context">The retryable read context.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// The result of the operation.
-        /// </returns>
-        public static TResult ExecuteWithChannelBinding<TResult>(
-            this IReadOperation<TResult> operation,
-            RetryableReadContext context,
-            CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(operation, nameof(operation));
-
-            var server = context.ChannelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
-            var session = context.Binding.Session;
-
-            using (var channelBinding = new ChannelReadBinding(server, channel.Fork(), readPreference, session.Fork()))
-            {
-                return operation.Execute(channelBinding, cancellationToken);
-            }
-        }
-
-        /// <summary>
-        /// Executes a read operation using a channel source.
-        /// </summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="operation">The read operation.</param>
-        /// <param name="context">The retryable read context.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>
-        /// The result of the operation.
-        /// </returns>
-        public static async Task<TResult> ExecuteWithChannelBindingAsync<TResult>(
-            this IReadOperation<TResult> operation,
-            RetryableReadContext context,
-            CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(operation, nameof(operation));
-
-            var server = context.ChannelSource.Server;
-            var channel = context.Channel;
-            var readPreference = context.Binding.ReadPreference;
-            var session = context.Binding.Session;
-
-            using (var channelBinding = new ChannelReadBinding(server, channel.Fork(), readPreference, session.Fork()))
-            {
-                return await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
-            }
-        }
-
-        /// <summary>Executes the with retries if retryable.</summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="operation">The operation.</param>
-        /// <param name="context">The context.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The result.</returns>
-        public static TResult ExecuteWithRetriesIfRetryable<TResult>(
-            this IReadOperation<TResult> operation,
-            RetryableReadContext context,
-            CancellationToken cancellationToken)
-        {
-            if (operation is IRetryableReadOperation<TResult> retryableOperation)
-            {
-                return retryableOperation.Execute(context, cancellationToken);
-            }
-            else
-            {
-                var binding = context.Binding;
-                var channel = context.Channel;
-                var channelSource = context.ChannelSource;
-                using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel.Fork(), binding.ReadPreference, binding.Session.Fork()))
-                {
-                    return operation.Execute(channelBinding, cancellationToken);
-                }
-            }
-        }
-
-        /// <summary>Executes the with retries if retryable.</summary>
-        /// <typeparam name="TResult">The type of the result.</typeparam>
-        /// <param name="operation">The operation.</param>
-        /// <param name="context">The context.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The result.</returns>
-        public static async Task<TResult> ExecuteWithRetriesIfRetryableAsync<TResult>(
-            this IReadOperation<TResult> operation,
-            RetryableReadContext context,
-            CancellationToken cancellationToken)
-        {
-            if (operation is IRetryableReadOperation<TResult> retryableOperation)
-            {
-                return await retryableOperation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                var binding = context.Binding;
-                var channel = context.Channel;
-                var channelSource = context.ChannelSource;
-                using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel.Fork(), binding.ReadPreference, binding.Session.Fork()))
-                {
-                    return await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
-                }
             }
         }
     }

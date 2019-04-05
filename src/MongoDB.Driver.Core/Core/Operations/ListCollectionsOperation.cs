@@ -119,17 +119,10 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
                 var operation = CreateOperation(context.Channel);
-                if (operation is IRetryableReadOperation<IAsyncCursor<BsonDocument>> retryableOperation)
-                {
-                    return retryableOperation.Execute(context, cancellationToken);
-                }
-                else
-                {
-                    return operation.ExecuteWithChannelBinding(context, cancellationToken);
-                }
+                return operation.Execute(context, cancellationToken);
             }
         }
 
@@ -139,30 +132,22 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())
-            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
+            using (var context = await RetryableReadContext.CreateAsync(binding, _retryRequested, cancellationToken).ConfigureAwait(false))
             {
                 var operation = CreateOperation(context.Channel);
-                if (operation is IRetryableReadOperation<IAsyncCursor<BsonDocument>> retryableOperation)
-                {
-                    return await retryableOperation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-                }
-                else
-                {
-                    return await operation.ExecuteWithChannelBindingAsync(context, cancellationToken).ConfigureAwait(false);
-                }
+                return await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // private methods
-        private IReadOperation<IAsyncCursor<BsonDocument>> CreateOperation(IChannel channel)
+        private IExecutableInRetryableReadContext<IAsyncCursor<BsonDocument>> CreateOperation(IChannel channel)
         {
             if (Feature.ListCollectionsCommand.IsSupported(channel.ConnectionDescription.ServerVersion))
             {
                 return new ListCollectionsUsingCommandOperation(_databaseNamespace, _messageEncoderSettings)
                 {
                     Filter = _filter,
-                    NameOnly = _nameOnly,
-                    RetryRequested = RetryRequested
+                    NameOnly = _nameOnly
                 };
             }
             else

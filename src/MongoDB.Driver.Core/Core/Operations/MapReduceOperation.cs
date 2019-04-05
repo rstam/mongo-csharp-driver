@@ -31,12 +31,11 @@ namespace MongoDB.Driver.Core.Operations
     /// Represents a map-reduce operation.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
-    public class MapReduceOperation<TResult> : MapReduceOperationBase, IReadOperation<IAsyncCursor<TResult>>, IRetryableReadOperation<IAsyncCursor<TResult>>
+    public class MapReduceOperation<TResult> : MapReduceOperationBase, IReadOperation<IAsyncCursor<TResult>>
     {
         // fields
         private ReadConcern _readConcern = ReadConcern.Default;
         private readonly IBsonSerializer<TResult> _resultSerializer;
-        private bool _retryRequested;
 
         // constructors
         /// <summary>
@@ -81,13 +80,6 @@ namespace MongoDB.Driver.Core.Operations
             get { return _resultSerializer; }
         }
 
-        /// <inheritdoc/>
-        public bool RetryRequested
-        {
-            get => _retryRequested;
-            set => _retryRequested = value;
-        }
-
         // methods
         /// <inheritdoc/>
         protected override BsonDocument CreateOutputOptions()
@@ -99,17 +91,15 @@ namespace MongoDB.Driver.Core.Operations
         public IAsyncCursor<TResult> Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-            
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
-            {
-                return Execute(context, cancellationToken);
-            }
-        }
 
-        /// <inheritdoc />
-        public IAsyncCursor<TResult> Execute(RetryableReadContext context, CancellationToken cancellationToken)
-        {
-            return RetryableReadOperationExecutor.Execute(this, context, cancellationToken);
+            using (var channelSource = binding.GetReadChannelSource(cancellationToken))
+            using (var channel = channelSource.GetChannel(cancellationToken))
+            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
+            {
+                var operation = CreateOperation(channelBinding.Session, channel.ConnectionDescription);
+                var result = operation.Execute(channelBinding, cancellationToken);
+                return new SingleBatchAsyncCursor<TResult>(result);
+            }
         }
 
         /// <inheritdoc/>
@@ -117,32 +107,14 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
+            using (var channelSource = await binding.GetReadChannelSourceAsync(cancellationToken).ConfigureAwait(false))
+            using (var channel = await channelSource.GetChannelAsync(cancellationToken).ConfigureAwait(false))
+            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
             {
-                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+                var operation = CreateOperation(channelBinding.Session, channel.ConnectionDescription);
+                var result = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
+                return new SingleBatchAsyncCursor<TResult>(result);
             }
-        }
-
-        /// <inheritdoc />
-        public Task<IAsyncCursor<TResult>> ExecuteAsync(RetryableReadContext context, CancellationToken cancellationToken)
-        {
-            return RetryableReadOperationExecutor.ExecuteAsync(this, context, cancellationToken);
-        }
-
-        /// <inheritdoc />
-        public IAsyncCursor<TResult> ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
-        {
-            var operation = CreateOperation(context.Binding.Session, context.Channel.ConnectionDescription);
-            var result = operation.ExecuteWithChannelBinding(context, cancellationToken);
-            return new SingleBatchAsyncCursor<TResult>(result);
-        }
-
-        /// <inheritdoc />
-        public async Task<IAsyncCursor<TResult>> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
-        {
-            var operation = CreateOperation(context.Binding.Session, context.Channel.ConnectionDescription);
-            var result = await operation.ExecuteWithChannelBindingAsync(context, cancellationToken).ConfigureAwait(false);
-            return new SingleBatchAsyncCursor<TResult>(result);
         }
 
         /// <inheritdoc/>

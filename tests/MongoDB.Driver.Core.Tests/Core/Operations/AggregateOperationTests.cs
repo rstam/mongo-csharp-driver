@@ -96,7 +96,7 @@ namespace MongoDB.Driver.Core.Operations
             var subject = new AggregateOperation<BsonDocument>(_collectionNamespace, __pipeline, __resultSerializer, _messageEncoderSettings);
 
             subject.CollectionNamespace.Should().Be(_collectionNamespace);
-            subject.DatabaseNamespace.Should().Be(_collectionNamespace.DatabaseNamespace);
+            subject.DatabaseNamespace.Should().BeNull();
             subject.Pipeline.Should().Equal(__pipeline);
             subject.ResultSerializer.Should().BeSameAs(__resultSerializer);
             subject.MessageEncoderSettings.Should().BeSameAs(_messageEncoderSettings);

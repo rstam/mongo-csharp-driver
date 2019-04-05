@@ -29,7 +29,7 @@ namespace MongoDB.Driver
             ChangeStreamOptions options,
             ReadConcern readConcern,
             MessageEncoderSettings messageEncoderSettings,
-            bool retryRequested = false)
+            bool retryRequested)
         {
             var renderedPipeline = RenderPipeline(pipeline, BsonDocumentSerializer.Instance);
 
@@ -51,7 +51,7 @@ namespace MongoDB.Driver
             ChangeStreamOptions options,
             ReadConcern readConcern,
             MessageEncoderSettings messageEncoderSettings,
-            bool retryRequested = false)
+            bool retryRequested)
         {
             var renderedPipeline = RenderPipeline(pipeline, BsonDocumentSerializer.Instance);
 
@@ -75,7 +75,7 @@ namespace MongoDB.Driver
             ChangeStreamOptions options,
             ReadConcern readConcern,
             MessageEncoderSettings messageEncoderSettings,
-            bool retryRequested = false)
+            bool retryRequested)
         {
             var renderedPipeline = RenderPipeline(pipeline, documentSerializer);
 

@@ -594,11 +594,11 @@ namespace MongoDB.Driver.Core.Operations
             {
                 if (async)
                 {
-                    subject.ExecuteAsync(null, CancellationToken.None).GetAwaiter().GetResult();
+                    subject.ExecuteAsync(binding: null, CancellationToken.None).GetAwaiter().GetResult();
                 }
                 else
                 {
-                    subject.Execute(null, CancellationToken.None);
+                    subject.Execute(binding: null, CancellationToken.None);
                 }
             });
 

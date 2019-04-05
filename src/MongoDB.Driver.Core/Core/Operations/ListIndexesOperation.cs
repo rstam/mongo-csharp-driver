@@ -89,10 +89,10 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
+            using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
                 var operation = CreateOperation(context.Channel);
-                return operation.ExecuteWithRetriesIfRetryable(context, cancellationToken);
+                return operation.Execute(context, cancellationToken);
             }
         }
 
@@ -102,22 +102,19 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())
-            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
+            using (var context = await RetryableReadContext.CreateAsync(binding, _retryRequested, cancellationToken).ConfigureAwait(false))
             {
                 var operation = CreateOperation(context.Channel);
-                return await operation.ExecuteWithRetriesIfRetryableAsync(context, cancellationToken).ConfigureAwait(false);
+                return await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // private methods
-        private IReadOperation<IAsyncCursor<BsonDocument>> CreateOperation(IChannel channel)
+        private IExecutableInRetryableReadContext<IAsyncCursor<BsonDocument>> CreateOperation(IChannel channel)
         {
             if (Feature.ListIndexesCommand.IsSupported(channel.ConnectionDescription.ServerVersion))
             {
-                return new ListIndexesUsingCommandOperation(_collectionNamespace, _messageEncoderSettings) 
-                {
-                    RetryRequested = RetryRequested    
-                };
+                return new ListIndexesUsingCommandOperation(_collectionNamespace, _messageEncoderSettings);
             }
             else
             {

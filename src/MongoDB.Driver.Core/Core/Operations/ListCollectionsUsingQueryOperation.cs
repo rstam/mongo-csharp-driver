@@ -30,7 +30,7 @@ namespace MongoDB.Driver.Core.Operations
     /// <summary>
     /// Represents a list collections operation.
     /// </summary>
-    public class ListCollectionsUsingQueryOperation : IReadOperation<IAsyncCursor<BsonDocument>>
+    public class ListCollectionsUsingQueryOperation : IReadOperation<IAsyncCursor<BsonDocument>>, IExecutableInRetryableReadContext<IAsyncCursor<BsonDocument>>
     {
         // fields
         private BsonDocument _filter;
@@ -92,10 +92,21 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
+            using (var context = RetryableReadContext.Create(binding, retryRequested: false, cancellationToken))
+            {
+                return Execute(context, cancellationToken);
+            }
+        }
+
+        /// <inheritdoc/>
+        public IAsyncCursor<BsonDocument> Execute(RetryableReadContext context, CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(context, nameof(context));
+
             using (EventContext.BeginOperation())
             {
                 var operation = CreateOperation();
-                var cursor = operation.Execute(binding, cancellationToken);
+                var cursor = operation.Execute(context, cancellationToken);
                 return new BatchTransformingAsyncCursor<BsonDocument, BsonDocument>(cursor, NormalizeQueryResponse);
             }
         }
@@ -105,10 +116,21 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
+            using (var context = await RetryableReadContext.CreateAsync(binding, retryRequested: false, cancellationToken).ConfigureAwait(false))
+            {
+                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task<IAsyncCursor<BsonDocument>> ExecuteAsync(RetryableReadContext context, CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(context, nameof(context));
+
             using (EventContext.BeginOperation())
             {
                 var operation = CreateOperation();
-                var cursor = await operation.ExecuteAsync(binding, cancellationToken).ConfigureAwait(false);
+                var cursor = await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
                 return new BatchTransformingAsyncCursor<BsonDocument, BsonDocument>(cursor, NormalizeQueryResponse);
             }
         }

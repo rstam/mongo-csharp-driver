@@ -163,7 +163,7 @@ namespace MongoDB.Driver.Tests
             }";
             var operationResult = BsonDocument.Parse(listDatabaseNamesResult);
             operationExecutor.EnqueueResult(CreateListDatabasesOperationCursor(operationResult));
-            
+
             IList<string> databaseNames;
             if (async)
             {
@@ -230,7 +230,7 @@ namespace MongoDB.Driver.Tests
                 Filter = filterDefinition,
                 NameOnly = nameOnly
             };
-            
+
             if (usingSession)
             {
                 if (async)
@@ -292,7 +292,7 @@ namespace MongoDB.Driver.Tests
                 StartAtOperationTime = new BsonTimestamp(1, 2)
             };
             var cancellationToken = new CancellationTokenSource().Token;
-            var renderedPipeline = new[] { BsonDocument.Parse("{ $limit : 1 }") };      
+            var renderedPipeline = new[] { BsonDocument.Parse("{ $limit : 1 }") };
 
             if (usingSession)
             {
@@ -332,7 +332,7 @@ namespace MongoDB.Driver.Tests
             changeStreamOperation.BatchSize.Should().Be(options.BatchSize);
             changeStreamOperation.Collation.Should().BeSameAs(options.Collation);
             changeStreamOperation.CollectionNamespace.Should().BeNull();
-            changeStreamOperation.DatabaseNamespace.Should().Be(DatabaseNamespace.Admin);
+            changeStreamOperation.DatabaseNamespace.Should().BeNull();
             changeStreamOperation.FullDocument.Should().Be(options.FullDocument);
             changeStreamOperation.MaxAwaitTime.Should().Be(options.MaxAwaitTime);
             changeStreamOperation.MessageEncoderSettings.Should().NotBeNull();

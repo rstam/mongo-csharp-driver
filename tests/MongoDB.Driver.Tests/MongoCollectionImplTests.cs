@@ -403,7 +403,7 @@ namespace MongoDB.Driver
 
         [Theory]
         [ParameterAttributeData]
-        public void Count_should_execute_a_RetryableCountOperation(
+        public void Count_should_execute_a_CountOperation(
             [Values(false, true)] bool usingSession,
             [Values(false, true)] bool async)
         {
@@ -454,7 +454,7 @@ namespace MongoDB.Driver
             var call = _operationExecutor.GetReadCall<long>();
             VerifySessionAndCancellationToken(call, session, cancellationToken);
 
-            var operation = call.Operation.Should().BeOfType<RetryableCountCommandOperation>().Subject;
+            var operation = call.Operation.Should().BeOfType<CountOperation>().Subject;
             operation.Collation.Should().BeSameAs(options.Collation);
             operation.CollectionNamespace.Should().Be(subject.CollectionNamespace);
             operation.Filter.Should().Be(filter);
@@ -934,14 +934,14 @@ namespace MongoDB.Driver
             var call = _operationExecutor.GetReadCall<long>();
             VerifySessionAndCancellationToken(call, null, cancellationToken);
 
-            var operation = call.Operation.Should().BeOfType<RetryableCountCommandOperation>().Subject;
+            var operation = call.Operation.Should().BeOfType<CountOperation>().Subject;
             operation.Collation.Should().BeNull();
             operation.CollectionNamespace.Should().Be(subject.CollectionNamespace);
             operation.Filter.Should().BeNull();
             operation.Hint.Should().BeNull();
             operation.Limit.Should().NotHaveValue();
             operation.MaxTime.Should().Be(options.MaxTime);
-            operation.ReadConcern.Should().Be(subject.Settings.ReadConcern);
+            operation.ReadConcern.Should().Be(ReadConcern.Default);
             operation.Skip.Should().NotHaveValue();
         }
 
@@ -1623,7 +1623,7 @@ namespace MongoDB.Driver
             var storageEngine = new BsonDocument("awesome", true);
             var maxTime = milliseconds != null ? TimeSpan.FromMilliseconds(milliseconds.Value) : (TimeSpan?)null;
             var createManyIndexesOptions = usingCreateManyIndexesOptions ? new CreateManyIndexesOptions { MaxTime = maxTime } : null;
-            
+
             var options = new CreateIndexOptions<BsonDocument>
             {
                 Background = true,
@@ -2402,7 +2402,7 @@ namespace MongoDB.Driver
                 null,
                 new List<WriteRequest>());
             _operationExecutor.EnqueueException<BulkWriteOperationResult>(operationException);
-            
+
             Exception exception;
             if (usingSession)
             {
@@ -2791,7 +2791,7 @@ namespace MongoDB.Driver
             operation.BatchSize.Should().Be(options.BatchSize);
             operation.Collation.Should().Be(options.Collation);
             operation.CollectionNamespace.Should().Be(subject.CollectionNamespace);
-            operation.DatabaseNamespace.Should().Be(subject.CollectionNamespace.DatabaseNamespace);
+            operation.DatabaseNamespace.Should().BeNull();
             operation.FullDocument.Should().Be(options.FullDocument);
             operation.MaxAwaitTime.Should().Be(options.MaxAwaitTime);
             operation.MessageEncoderSettings.Should().NotBeNull();

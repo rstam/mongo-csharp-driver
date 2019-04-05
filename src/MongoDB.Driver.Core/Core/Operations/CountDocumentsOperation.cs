@@ -20,7 +20,6 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
-using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 
@@ -29,7 +28,7 @@ namespace MongoDB.Driver.Core.Operations
     /// <summary>
     /// Represents a count documents operation.
     /// </summary>
-    public class CountDocumentsOperation : RetryableReadCommandOperationBase<long>
+    public class CountDocumentsOperation : IReadOperation<long>
     {
         // private fields
         private Collation _collation;
@@ -38,6 +37,9 @@ namespace MongoDB.Driver.Core.Operations
         private BsonValue _hint;
         private long? _limit;
         private TimeSpan? _maxTime;
+        private readonly MessageEncoderSettings _messageEncoderSettings;
+        private ReadConcern _readConcern = ReadConcern.Default;
+        private bool _retryRequested;
         private long? _skip;
 
         // constructors
@@ -47,9 +49,9 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="collectionNamespace">The collection namespace.</param>
         /// <param name="messageEncoderSettings">The message encoder settings.</param>
         public CountDocumentsOperation(CollectionNamespace collectionNamespace, MessageEncoderSettings messageEncoderSettings)
-            : base(Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace)).DatabaseNamespace, messageEncoderSettings)
         {
             _collectionNamespace = Ensure.IsNotNull(collectionNamespace, nameof(collectionNamespace));
+            _messageEncoderSettings = Ensure.IsNotNull(messageEncoderSettings, nameof(messageEncoderSettings));
         }
 
         // public properties
@@ -124,6 +126,39 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         /// <summary>
+        /// Gets the message encoder settings.
+        /// </summary>
+        /// <value>
+        /// The message encoder settings.
+        /// </value>
+        public MessageEncoderSettings MessageEncoderSettings
+        {
+            get { return _messageEncoderSettings; }
+        }
+
+        /// <summary>
+        /// Gets or sets the read concern.
+        /// </summary>
+        /// <value>
+        /// The read concern.
+        /// </value>
+        public ReadConcern ReadConcern
+        {
+            get { return _readConcern; }
+            set { _readConcern = Ensure.IsNotNull(value, nameof(value)); }
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to retry.
+        /// </summary>
+        /// <value>Whether to retry.</value>
+        public bool RetryRequested
+        {
+            get => _retryRequested;
+            set => _retryRequested = value;
+        }
+
+        /// <summary>
         /// Gets or sets the number of documents to skip before counting the remaining matching documents.
         /// </summary>
         /// <value>
@@ -137,73 +172,38 @@ namespace MongoDB.Driver.Core.Operations
 
         // public methods
         /// <inheritdoc/>
-        public override long Execute(IReadBinding binding, CancellationToken cancellationToken)
+        public long Execute(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-            using (var context = RetryableReadContext.Create(binding, RetryRequested, cancellationToken))
-            {
-                return Execute(context, cancellationToken);
-            }            
+
+            var operation = CreateOperation();
+            var cursor = operation.Execute(binding, cancellationToken);
+            var result = cursor.ToList(cancellationToken);
+            return ExtractCountFromResult(result);
         }
 
         /// <inheritdoc/>
-        public override async Task<long> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
+        public async Task<long> ExecuteAsync(IReadBinding binding, CancellationToken cancellationToken)
         {
             Ensure.IsNotNull(binding, nameof(binding));
-            using (var context = await RetryableReadContext.CreateAsync(binding, RetryRequested, cancellationToken).ConfigureAwait(false))
-            {
-                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-            }
-        }
 
-        /// <inheritdoc/>
-        public override long ExecuteAttempt(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(context, nameof(context));
-            var binding = context.Binding;
-            var channelSource = context.ChannelSource;
-            var channel = context.Channel;
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
-            {
-                var operation = CreateOperation();
-                var cursor = operation.Execute(channelBinding, cancellationToken);
-                var result = cursor.ToList(cancellationToken);
-                return ExtractCountFromResult(result);
-            }
-        }
-
-        /// <inheritdoc/>
-        public override async Task<long> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(context, nameof(context));
-            var binding = context.Binding;
-            var channelSource = context.ChannelSource;
-            var channel = context.Channel;
-            using (var channelBinding = new ChannelReadBinding(channelSource.Server, channel, binding.ReadPreference, binding.Session.Fork()))
-            {
-                var operation = CreateOperation();
-                var cursor = await operation.ExecuteAsync(channelBinding, cancellationToken).ConfigureAwait(false);
-                var result = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
-                return ExtractCountFromResult(result);
-            }
-        }
-
-        /// <inheritdoc />
-        protected override BsonDocument CreateCommand(ICoreSessionHandle session, ConnectionDescription connectionDescription, int attempt, long? transactionNumber)
-        {
-            return CreateOperation().CreateCommand(connectionDescription, session);
+            var operation = CreateOperation();
+            var cursor = await operation.ExecuteAsync(binding, cancellationToken).ConfigureAwait(false);
+            var result = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
+            return ExtractCountFromResult(result);
         }
 
         // private methods
         private AggregateOperation<BsonDocument> CreateOperation()
         {
             var pipeline = CreatePipeline();
-            var operation = new AggregateOperation<BsonDocument>(_collectionNamespace, pipeline, BsonDocumentSerializer.Instance, MessageEncoderSettings)
+            var operation = new AggregateOperation<BsonDocument>(_collectionNamespace, pipeline, BsonDocumentSerializer.Instance, _messageEncoderSettings)
             {
                 Collation = _collation,
                 Hint = _hint,
                 MaxTime = _maxTime,
-                ReadConcern = ReadConcern
+                ReadConcern = _readConcern,
+                RetryRequested = _retryRequested
             };
             return operation;
         }

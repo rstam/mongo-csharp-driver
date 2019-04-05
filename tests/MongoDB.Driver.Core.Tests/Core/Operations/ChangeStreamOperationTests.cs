@@ -206,7 +206,7 @@ namespace MongoDB.Driver.Core.Operations
             subject.BatchSize.Should().NotHaveValue();
             subject.Collation.Should().BeNull();
             subject.CollectionNamespace.Should().BeSameAs(collectionNamespace);
-            subject.DatabaseNamespace.Should().Be(collectionNamespace.DatabaseNamespace);
+            subject.DatabaseNamespace.Should().BeNull();
             subject.FullDocument.Should().Be(ChangeStreamFullDocumentOption.Default);
             subject.MaxAwaitTime.Should().NotHaveValue();
             subject.MessageEncoderSettings.Should().BeSameAs(messageEncoderSettings);
