@@ -22,20 +22,18 @@ using MongoDB.Driver.GridFS;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenDownloadTest : JsonDrivenGridFSTest
+    public sealed class JsonDrivenGridFSDownloadTest : JsonDrivenGridFSTest
     {
         // private fields
         private GridFSDownloadOptions _downloadOptions = new GridFSDownloadOptions();
         private FilterDefinition<BsonDocument> _filter = new BsonDocument();
         private ObjectId _id;
-        private GridFSBucketOptions _options = new GridFSBucketOptions();
         private IClientSessionHandle _session;
 
         // public constructors
-        public JsonDrivenDownloadTest(IMongoDatabase database, string bucketName, Dictionary<string, object> objectMap)
-            : base(database, objectMap)
+        public JsonDrivenGridFSDownloadTest(IMongoDatabase database, string bucketName, Dictionary<string, object> objectMap)
+            : base(database, bucketName, objectMap)
         {
-            _options.BucketName = bucketName;
         }
 
         // public methods
@@ -52,13 +50,13 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            var bucket = new GridFSBucket(_database, _options);
+            var bucket = new GridFSBucket(_database, _bucketOptions);
             bucket.DownloadAsBytes(_id, _downloadOptions, cancellationToken);
         }
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            var bucket = new GridFSBucket(_database, _options);
+            var bucket = new GridFSBucket(_database, _bucketOptions);
             await bucket.DownloadAsBytesAsync(_id, _downloadOptions, cancellationToken).ConfigureAwait(false);           
         }
 
@@ -69,6 +67,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 case "session":
                     _session = (IClientSessionHandle)_objectMap[value.AsString];
                     return;
+
                 case "id":
                     _id = value.AsObjectId;
                     return; 

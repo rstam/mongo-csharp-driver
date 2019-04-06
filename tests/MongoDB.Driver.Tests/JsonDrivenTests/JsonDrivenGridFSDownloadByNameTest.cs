@@ -22,20 +22,18 @@ using MongoDB.Driver.GridFS;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
-    public sealed class JsonDrivenDownloadByNameTest : JsonDrivenGridFSTest
+    public sealed class JsonDrivenGridFSDownloadByNameTest : JsonDrivenGridFSTest
     {
         // private fields
         private GridFSDownloadByNameOptions _downloadOptions = new GridFSDownloadByNameOptions();
         private string _fileName;
         private FilterDefinition<BsonDocument> _filter = new BsonDocument();
-        private GridFSBucketOptions _options = new GridFSBucketOptions();
         private IClientSessionHandle _session;
 
         // public constructors
-        public JsonDrivenDownloadByNameTest(IMongoDatabase database, string bucketName, Dictionary<string, object> objectMap)
-            : base(database, objectMap)
+        public JsonDrivenGridFSDownloadByNameTest(IMongoDatabase database, string bucketName, Dictionary<string, object> objectMap)
+            : base(database, bucketName, objectMap)
         {
-            _options.BucketName = bucketName;
         }
 
         // public methods
@@ -52,13 +50,13 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
 
         protected override void CallMethod(CancellationToken cancellationToken)
         {
-            var bucket = new GridFSBucket(_database, _options);
+            var bucket = new GridFSBucket(_database, _bucketOptions);
             bucket.DownloadAsBytesByName(_fileName, _downloadOptions, cancellationToken);
         }
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)
         {
-            var bucket = new GridFSBucket(_database, _options);
+            var bucket = new GridFSBucket(_database, _bucketOptions);
             await bucket.DownloadAsBytesByNameAsync(_fileName, _downloadOptions, cancellationToken).ConfigureAwait(false);           
         }
 
@@ -69,6 +67,7 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 case "session":
                     _session = (IClientSessionHandle)_objectMap[value.AsString];
                     return;
+
                 case "filename":
                     _fileName = value.AsString;
                     return; 

@@ -16,19 +16,22 @@
 using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
+using MongoDB.Driver.GridFS;
 
 namespace MongoDB.Driver.Tests.JsonDrivenTests
 {
     public abstract class JsonDrivenGridFSTest : JsonDrivenCommandTest
     {
         // protected fields
+        protected GridFSBucketOptions _bucketOptions;
         protected IMongoDatabase _database;
 
         // constructors
-        protected JsonDrivenGridFSTest(IMongoDatabase database, Dictionary<string, object> objectMap)
+        protected JsonDrivenGridFSTest(IMongoDatabase database, string bucketName, Dictionary<string, object> objectMap)
             : base(objectMap)
         {
             _database = database;
+            _bucketOptions = new GridFSBucketOptions { BucketName = bucketName };
         }
 
         // public methods

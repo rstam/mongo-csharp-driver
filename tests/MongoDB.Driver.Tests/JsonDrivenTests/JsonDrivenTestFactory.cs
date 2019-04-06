@@ -42,6 +42,17 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         // public methods
         public JsonDrivenTest CreateTest(string receiver, string name)
         {
+            if (receiver == "client")
+            {
+                switch (name)
+                {
+                    case "listDatabaseNames": return new JsonDrivenListDatabaseNamesTest(_client, _objectMap);
+                    case "listDatabases": return new JsonDrivenListDatabasesTest(_client, _objectMap);
+                    case "watch": return new JsonDrivenClientWatchTest(_client, _objectMap);
+                    default: throw new FormatException($"Invalid method name: \"{name}\".");
+                }
+            }
+
             if (receiver.StartsWith("session"))
             {
                 switch (name)
@@ -54,20 +65,10 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 }
             }
             
-            if (receiver == "client")
-            {
-                switch (name)
-                {
-                    case "listDatabaseNames": return new JsonDrivenListDatabaseNamesTest(_client, _objectMap);
-                    case "listDatabases": return new JsonDrivenListDatabasesTest(_client, _objectMap);
-                    case "watch": return new JsonDrivenClientWatchTest(_client, _objectMap);
-                    default: throw new FormatException($"Invalid method name: \"{name}\".");
-                }
-            }
-
-            var database = _client.GetDatabase(_databaseName);
             if (receiver == "database")
             {
+                var database = _client.GetDatabase(_databaseName);
+
                 switch (name)
                 {
                     case "listCollectionNames": return new JsonDrivenListCollectionNamesTest(database, _objectMap);
@@ -78,19 +79,11 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                 }
             }
 
-            if (receiver == "gridfsbucket")
-            {
-                switch (name)
-                {
-                    case "download": return new JsonDrivenDownloadTest(database, _bucketName, _objectMap);
-                    case "download_by_name": return new JsonDrivenDownloadByNameTest(database, _bucketName, _objectMap);
-                    default: throw new FormatException($"Invalid method name: \"{name}\".");
-                }
-            }
-
-            var collection = database.GetCollection<BsonDocument>(_collectionName);
             if (receiver == "collection")
             {
+                var database = _client.GetDatabase(_databaseName);
+                var collection = database.GetCollection<BsonDocument>(_collectionName);
+
                 switch (name)
                 {
                     case "aggregate": return new JsonDrivenAggregateTest(collection, _objectMap);
@@ -113,6 +106,18 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
                     case "updateMany": return new JsonDrivenUpdateManyTest(collection, _objectMap);
                     case "updateOne": return new JsonDrivenUpdateOneTest(collection, _objectMap);
                     case "watch": return new JsonDrivenCollectionWatchTest(collection, _objectMap);
+                    default: throw new FormatException($"Invalid method name: \"{name}\".");
+                }
+            }
+
+            if (receiver == "gridfsbucket")
+            {
+                var database = _client.GetDatabase(_databaseName);
+
+                switch (name)
+                {
+                    case "download": return new JsonDrivenGridFSDownloadTest(database, _bucketName, _objectMap);
+                    case "download_by_name": return new JsonDrivenGridFSDownloadByNameTest(database, _bucketName, _objectMap);
                     default: throw new FormatException($"Invalid method name: \"{name}\".");
                 }
             }
