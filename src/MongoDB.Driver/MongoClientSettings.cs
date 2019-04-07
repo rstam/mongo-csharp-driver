@@ -93,7 +93,7 @@ namespace MongoDB.Driver
             _readEncoding = null;
             _readPreference = ReadPreference.Primary;
             _replicaSetName = null;
-            _retryReads = false;
+            _retryReads = true;
             _retryWrites = false;
             _scheme = ConnectionStringScheme.MongoDB;
             _sdamLogFilename = null;
@@ -675,7 +675,7 @@ namespace MongoDB.Driver
             clientSettings.ReadEncoding = null; // ReadEncoding must be provided in code
             clientSettings.ReadPreference = (url.ReadPreference == null) ? ReadPreference.Primary : url.ReadPreference;
             clientSettings.ReplicaSetName = url.ReplicaSetName;
-            clientSettings.RetryReads = url.RetryReads.GetValueOrDefault(false);
+            clientSettings.RetryReads = url.RetryReads.GetValueOrDefault(true);
             clientSettings.RetryWrites = url.RetryWrites.GetValueOrDefault(false);
             clientSettings.LocalThreshold = url.LocalThreshold;
             clientSettings.Scheme = url.Scheme;

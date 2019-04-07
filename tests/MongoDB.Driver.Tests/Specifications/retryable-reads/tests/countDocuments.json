@@ -1,4 +1,19 @@
 {
+  "runOn": [
+    {
+      "minServerVersion": "4.0",
+      "topology": [
+        "single",
+        "replicaset"
+      ]
+    },
+    {
+      "minServerVersion": "4.1.7",
+      "topology": [
+        "sharded"
+      ]
+    }
+  ],
   "database_name": "retryable-reads-tests",
   "collection_name": "coll",
   "data": [
@@ -11,13 +26,9 @@
       "x": 22
     }
   ],
-  "minServerVersion": "4.1.7",
   "tests": [
     {
       "description": "CountDocuments succeeds on first attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "operations": [
         {
           "name": "countDocuments",
@@ -39,7 +50,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -54,9 +65,6 @@
     },
     {
       "description": "CountDocuments succeeds on second attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -90,7 +98,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -111,7 +119,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -162,7 +170,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -177,9 +185,6 @@
     },
     {
       "description": "CountDocuments fails on second attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -213,7 +218,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -234,7 +239,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }

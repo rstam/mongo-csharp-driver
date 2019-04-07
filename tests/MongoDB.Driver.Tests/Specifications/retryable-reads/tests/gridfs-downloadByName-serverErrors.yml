@@ -1,7 +1,13 @@
+runOn:
+    -
+        minServerVersion: "4.0"
+        topology: ["single", "replicaset"]
+    -
+        minServerVersion: "4.1.7"
+        topology: ["sharded"]
+
 database_name: &database_name "retryable-reads-tests"
 bucket_name: "fs"
-
-minServerVersion: '4.1.7' # 4.2
 
 data:
     fs.files:
@@ -18,8 +24,6 @@ data:
 tests:
     -
         description: "DownloadByName succeeds after InterruptedAtShutdown"
-        clientOptions:
-            retryReads: true
         failPoint: &failCommand_failPoint
             configureFailPoint: failCommand
             mode: { times: 1 }
@@ -47,8 +51,6 @@ tests:
                     database_name: *database_name
     -
         description: "DownloadByName succeeds after InterruptedDueToStepDown"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 11602 }
@@ -59,8 +61,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after NotMaster"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 10107 }
@@ -71,8 +71,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after NotMasterNoSlaveOk"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 13435 }
@@ -83,8 +81,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after NotMasterOrSecondary"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 13436 }
@@ -95,8 +91,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after PrimarySteppedDown"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 189 }
@@ -107,8 +101,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after ShutdownInProgress"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 91 }
@@ -119,8 +111,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after HostNotFound"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 7 }
@@ -131,8 +121,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after HostUnreachable"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 6 }
@@ -143,8 +131,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after NetworkTimeout"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 89 }
@@ -155,8 +141,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName succeeds after SocketException"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [find], errorCode: 9001 }
@@ -167,8 +151,6 @@ tests:
              - *find_chunks_command_started_event
     -
         description: "DownloadByName fails after two NotMaster errors"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             mode: { times: 2 }

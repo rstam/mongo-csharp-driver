@@ -1,4 +1,19 @@
 {
+  "runOn": [
+    {
+      "minServerVersion": "4.0",
+      "topology": [
+        "single",
+        "replicaset"
+      ]
+    },
+    {
+      "minServerVersion": "4.1.7",
+      "topology": [
+        "sharded"
+      ]
+    }
+  ],
   "database_name": "retryable-reads-tests",
   "collection_name": "coll",
   "data": [
@@ -15,13 +30,9 @@
       "x": 33
     }
   ],
-  "minServerVersion": "4.1.7",
   "tests": [
     {
       "description": "Aggregate succeeds on first attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "operations": [
         {
           "name": "aggregate",
@@ -81,9 +92,6 @@
     },
     {
       "description": "Aggregate succeeds on second attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -242,9 +250,6 @@
     },
     {
       "description": "Aggregate fails on second attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -329,9 +334,6 @@
     },
     {
       "description": "Aggregate with $out does not retry",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {

@@ -1,4 +1,19 @@
 {
+  "runOn": [
+    {
+      "minServerVersion": "4.0",
+      "topology": [
+        "single",
+        "replicaset"
+      ]
+    },
+    {
+      "minServerVersion": "4.1.7",
+      "topology": [
+        "sharded"
+      ]
+    }
+  ],
   "database_name": "retryable-reads-tests",
   "collection_name": "coll",
   "data": [
@@ -11,13 +26,9 @@
       "x": 22
     }
   ],
-  "minServerVersion": "4.1.7",
   "tests": [
     {
       "description": "CountDocuments succeeds after InterruptedAtShutdown",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -51,7 +62,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -72,7 +83,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -87,9 +98,6 @@
     },
     {
       "description": "CountDocuments succeeds after InterruptedDueToStepDown",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -123,7 +131,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -144,7 +152,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -159,9 +167,6 @@
     },
     {
       "description": "CountDocuments succeeds after NotMaster",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -195,7 +200,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -216,7 +221,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -231,9 +236,6 @@
     },
     {
       "description": "CountDocuments succeeds after NotMasterNoSlaveOk",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -267,7 +269,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -288,7 +290,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -303,9 +305,6 @@
     },
     {
       "description": "CountDocuments succeeds after NotMasterOrSecondary",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -339,7 +338,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -360,7 +359,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -375,9 +374,6 @@
     },
     {
       "description": "CountDocuments succeeds after PrimarySteppedDown",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -411,7 +407,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -432,7 +428,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -447,9 +443,6 @@
     },
     {
       "description": "CountDocuments succeeds after ShutdownInProgress",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -483,7 +476,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -504,7 +497,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -519,9 +512,6 @@
     },
     {
       "description": "CountDocuments succeeds after HostNotFound",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -555,7 +545,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -576,7 +566,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -591,9 +581,6 @@
     },
     {
       "description": "CountDocuments succeeds after HostUnreachable",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -627,7 +614,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -648,7 +635,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -663,9 +650,6 @@
     },
     {
       "description": "CountDocuments succeeds after NetworkTimeout",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -699,7 +683,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -720,7 +704,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -735,9 +719,6 @@
     },
     {
       "description": "CountDocuments succeeds after SocketException",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -771,7 +752,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -792,7 +773,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -807,9 +788,6 @@
     },
     {
       "description": "CountDocuments fails after two NotMaster errors",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -843,7 +821,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -864,7 +842,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }
@@ -915,7 +893,7 @@
                 },
                 {
                   "$group": {
-                    "_id": null,
+                    "_id": 1,
                     "n": {
                       "$sum": 1
                     }

@@ -1,3 +1,11 @@
+runOn:
+    -
+        minServerVersion: "4.0"
+        topology: ["single", "replicaset"]
+    -
+        minServerVersion: "4.1.7"
+        topology: ["sharded"]
+
 database_name: &database_name "retryable-reads-tests"
 collection_name: &collection_name "coll"
 
@@ -5,13 +13,9 @@ data:
     - { _id: 1, x: 11 }
     - { _id: 2, x: 22 }
 
-minServerVersion: '4.1.7' # 4.2
-
 tests:
     -
         description: "Count succeeds on first attempt"
-        clientOptions:
-            retryReads: true
         operations:
             - &retryable_operation_succeeds
                 <<: &retryable_operation
@@ -27,8 +31,6 @@ tests:
                     database_name: *database_name
     -
         description: "Count succeeds on second attempt"
-        clientOptions:
-            retryReads: true
         failPoint:  &failCommand_failPoint
             configureFailPoint: failCommand
             mode: { times: 1 }
@@ -53,8 +55,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Count fails on second attempt"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             mode: { times: 2 }

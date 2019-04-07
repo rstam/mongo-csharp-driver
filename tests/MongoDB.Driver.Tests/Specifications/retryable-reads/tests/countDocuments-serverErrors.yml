@@ -1,3 +1,11 @@
+runOn:
+    -
+        minServerVersion: "4.0"
+        topology: ["single", "replicaset"]
+    -
+        minServerVersion: "4.1.7"
+        topology: ["sharded"]
+
 database_name: &database_name "retryable-reads-tests"
 collection_name: &collection_name "coll"
 
@@ -5,13 +13,9 @@ data:
     - { _id: 1, x: 11 }
     - { _id: 2, x: 22 }
 
-minServerVersion: '4.1.7' # 4.2
-
 tests:
     -
         description: "CountDocuments succeeds after InterruptedAtShutdown"
-        clientOptions:
-            retryReads: true
         failPoint: &failCommand_failPoint
             configureFailPoint: failCommand
             mode: { times: 1 }
@@ -28,13 +32,11 @@ tests:
                 command_started_event:
                     command:
                         aggregate: *collection_name
-                        pipeline: [{'$match': {}}, {'$group': {'_id': null, 'n': {'$sum': 1}}}]
+                        pipeline: [{'$match': {}}, {'$group': {'_id': 1, 'n': {'$sum': 1}}}]
                     database_name: *database_name
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after InterruptedDueToStepDown"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 11602 }
@@ -44,8 +46,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after NotMaster"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 10107 }
@@ -55,8 +55,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after NotMasterNoSlaveOk"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 13435 }
@@ -66,8 +64,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after NotMasterOrSecondary"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 13436 }
@@ -77,8 +73,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after PrimarySteppedDown"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 189 }
@@ -88,8 +82,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after ShutdownInProgress"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 91 }
@@ -99,8 +91,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after HostNotFound"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 7 }
@@ -110,8 +100,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after HostUnreachable"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 6 }
@@ -121,8 +109,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after NetworkTimeout"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 89 }
@@ -132,8 +118,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments succeeds after SocketException"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [aggregate], errorCode: 9001 }
@@ -143,8 +127,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "CountDocuments fails after two NotMaster errors"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             mode: { times: 2 }

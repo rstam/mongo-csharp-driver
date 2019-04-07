@@ -1,4 +1,18 @@
 {
+  "runOn": [
+    {
+      "minServerVersion": "4.0",
+      "topology": [
+        "replicaset"
+      ]
+    },
+    {
+      "minServerVersion": "4.1.7",
+      "topology": [
+        "sharded"
+      ]
+    }
+  ],
   "database_name": "retryable-reads-tests",
   "collection_name": "coll",
   "data": [
@@ -15,17 +29,9 @@
       "x": 33
     }
   ],
-  "minServerVersion": "4.1.7",
   "tests": [
     {
       "description": "db.coll.watch succeeds after InterruptedAtShutdown",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -81,13 +87,6 @@
     },
     {
       "description": "db.coll.watch succeeds after InterruptedDueToStepDown",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -143,13 +142,6 @@
     },
     {
       "description": "db.coll.watch succeeds after NotMaster",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -205,13 +197,6 @@
     },
     {
       "description": "db.coll.watch succeeds after NotMasterNoSlaveOk",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -267,13 +252,6 @@
     },
     {
       "description": "db.coll.watch succeeds after NotMasterOrSecondary",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -329,13 +307,6 @@
     },
     {
       "description": "db.coll.watch succeeds after PrimarySteppedDown",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -391,13 +362,6 @@
     },
     {
       "description": "db.coll.watch succeeds after ShutdownInProgress",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -453,13 +417,6 @@
     },
     {
       "description": "db.coll.watch succeeds after HostNotFound",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -515,13 +472,6 @@
     },
     {
       "description": "db.coll.watch succeeds after HostUnreachable",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -577,13 +527,6 @@
     },
     {
       "description": "db.coll.watch succeeds after NetworkTimeout",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -639,13 +582,6 @@
     },
     {
       "description": "db.coll.watch succeeds after SocketException",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -701,13 +637,6 @@
     },
     {
       "description": "db.coll.watch fails after two NotMaster errors",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -764,10 +693,6 @@
     },
     {
       "description": "db.coll.watch fails after NotMaster when retryReads is false",
-      "topology": [
-        "replicaset",
-        "sharded"
-      ],
       "clientOptions": {
         "retryReads": false
       },

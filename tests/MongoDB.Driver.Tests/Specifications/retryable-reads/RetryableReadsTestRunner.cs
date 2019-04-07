@@ -70,7 +70,7 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             JsonDrivenHelper.EnsureAllFieldsAreValid(
                 shared,
                 "_path",
-                "minServerVersion",
+                "runOn",
                 "data",
                 "tests",
                 "database_name",
@@ -85,22 +85,16 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
                 "operations",
                 "result",
                 "expectations",
-                "async",
-                "topology");
+                "async");
 
-            if (shared.TryGetValue("minServerVersion", out var minServerVersion))
+            if (shared.TryGetValue("runOn", out var runOn))
             {
-                RequireServer.Check().VersionGreaterThanOrEqualTo(minServerVersion.AsString);
+                RequireServer.Check().RunOn(runOn.AsBsonArray);
             }
             if (test.TryGetValue("skipReason", out var skipReason))
             {
                 throw new SkipException(skipReason.AsString);
             }
-            if (test.TryGetValue("topology", out var topology))
-            {
-                var clusterTypes = topology.AsBsonArray.Select(t => ToClusterType(t.AsString)).ToArray();
-                RequireServer.Check().ClusterTypes(clusterTypes);
-            };
 
             DropCollection();
             CreateCollection();
@@ -237,13 +231,6 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             var options = CreateSessionOptions(test, sessionKey);
             return client.StartSession(options);
         }
-
-        private static ClusterType ToClusterType(string s) =>
-            s == "single" ? ClusterType.Standalone :
-            s == "replicaset" ? ClusterType.ReplicaSet :
-            s == "sharded" ? ClusterType.Sharded :
-            ClusterType.Unknown;
-
 
         private ClientSessionOptions CreateSessionOptions(BsonDocument test, string sessionKey)
         {

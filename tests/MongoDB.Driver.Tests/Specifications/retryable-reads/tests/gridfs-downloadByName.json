@@ -1,7 +1,21 @@
 {
+  "runOn": [
+    {
+      "minServerVersion": "4.0",
+      "topology": [
+        "single",
+        "replicaset"
+      ]
+    },
+    {
+      "minServerVersion": "4.1.7",
+      "topology": [
+        "sharded"
+      ]
+    }
+  ],
   "database_name": "retryable-reads-tests",
   "bucket_name": "fs",
-  "minServerVersion": "4.1.7",
   "data": {
     "fs.files": [
       {
@@ -38,9 +52,6 @@
   "tests": [
     {
       "description": "DownloadByName succeeds on first attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "operations": [
         {
           "name": "download_by_name",
@@ -82,9 +93,6 @@
     },
     {
       "description": "DownloadByName succeeds on second attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {
@@ -190,9 +198,6 @@
     },
     {
       "description": "DownloadByName fails on second attempt",
-      "clientOptions": {
-        "retryReads": true
-      },
       "failPoint": {
         "configureFailPoint": "failCommand",
         "mode": {

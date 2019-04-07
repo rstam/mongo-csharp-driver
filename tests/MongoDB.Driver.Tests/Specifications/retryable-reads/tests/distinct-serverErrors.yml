@@ -1,3 +1,11 @@
+runOn:
+    -
+        minServerVersion: "4.0"
+        topology: ["single", "replicaset"]
+    -
+        minServerVersion: "4.1.7"
+        topology: ["sharded"]
+
 database_name: &database_name "retryable-reads-tests"
 collection_name: &collection_name "coll"
 
@@ -6,13 +14,9 @@ data:
     - {_id: 2, x: 22}
     - {_id: 3, x: 33}
 
-minServerVersion: '4.1.7' # 4.2
-
 tests:
     -
         description: "Distinct succeeds after InterruptedAtShutdown"
-        clientOptions:
-            retryReads: true
         failPoint: &failCommand_failPoint
             configureFailPoint: failCommand
             mode: { times: 1 }
@@ -38,8 +42,6 @@ tests:
             - *retryable_command_started_event
     -
         description: "Distinct succeeds after InterruptedDueToStepDown"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 11602 }
@@ -49,8 +51,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after NotMaster"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 10107 }
@@ -60,8 +60,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after NotMasterNoSlaveOk"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 13435 }
@@ -71,8 +69,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after NotMasterOrSecondary"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 13436 }
@@ -82,8 +78,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after PrimarySteppedDown"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 189 }
@@ -93,8 +87,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after ShutdownInProgress"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 91 }
@@ -104,8 +96,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after HostNotFound"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 7 }
@@ -115,8 +105,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after HostUnreachable"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 6 }
@@ -126,8 +114,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after NetworkTimeout"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 89 }
@@ -137,8 +123,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct succeeds after SocketException"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             data: { failCommands: [distinct], errorCode: 9001 }
@@ -148,8 +132,6 @@ tests:
              - *retryable_command_started_event
     -
         description: "Distinct fails after two NotMaster errors"
-        clientOptions:
-            retryReads: true
         failPoint:
             <<: *failCommand_failPoint
             mode: { times: 2 }

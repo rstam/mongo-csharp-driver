@@ -923,9 +923,9 @@ namespace MongoDB.Driver
             {
                 query.AppendFormat("uuidRepresentation={0};", (_guidRepresentation == GuidRepresentation.CSharpLegacy) ? "csharpLegacy" : MongoUtils.ToCamelCase(_guidRepresentation.ToString()));
             }
-            if (_retryReads.GetValueOrDefault(false))
+            if (!_retryReads.GetValueOrDefault(true))
             {
-                query.AppendFormat("retryReads=true;");
+                query.AppendFormat("retryReads=false;");
             }
             if (_retryWrites.GetValueOrDefault(false))
             {
