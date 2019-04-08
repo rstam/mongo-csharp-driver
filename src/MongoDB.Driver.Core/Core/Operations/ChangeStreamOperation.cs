@@ -358,12 +358,18 @@ namespace MongoDB.Driver.Core.Operations
             AggregateOperation<RawBsonDocument> operation;
             if (_collectionNamespace != null)
             {
-                operation = new AggregateOperation<RawBsonDocument>(_collectionNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, _messageEncoderSettings);
+                operation = new AggregateOperation<RawBsonDocument>(_collectionNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, _messageEncoderSettings)
+                {
+                    RetryRequested = _retryRequested // might be overridden by retryable read context
+                };
             }
             else
             {
                 var databaseNamespace = _databaseNamespace ?? DatabaseNamespace.Admin;
-                operation = new AggregateOperation<RawBsonDocument>(databaseNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, _messageEncoderSettings);
+                operation = new AggregateOperation<RawBsonDocument>(databaseNamespace, combinedPipeline, RawBsonDocumentSerializer.Instance, _messageEncoderSettings)
+                {
+                    RetryRequested = _retryRequested // might be overridden by retryable read context
+                };
             }
 
             operation.BatchSize = _batchSize;

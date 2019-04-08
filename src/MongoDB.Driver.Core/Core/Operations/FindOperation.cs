@@ -528,6 +528,7 @@ namespace MongoDB.Driver.Core.Operations
                 OplogReplay = _oplogReplay,
                 Projection = _projection,
                 ReadConcern = _readConcern,
+                RetryRequested = _retryRequested, // might be overridden by retryable read context
                 ReturnKey = returnKey,
                 ShowRecordId = showRecordId,
                 SingleBatch = _singleBatch,

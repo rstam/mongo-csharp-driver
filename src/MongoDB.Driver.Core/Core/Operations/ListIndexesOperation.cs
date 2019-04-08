@@ -114,7 +114,10 @@ namespace MongoDB.Driver.Core.Operations
         {
             if (Feature.ListIndexesCommand.IsSupported(channel.ConnectionDescription.ServerVersion))
             {
-                return new ListIndexesUsingCommandOperation(_collectionNamespace, _messageEncoderSettings);
+                return new ListIndexesUsingCommandOperation(_collectionNamespace, _messageEncoderSettings)
+                {
+                    RetryRequested = _retryRequested // might be overridden by retryable read context
+                };
             }
             else
             {

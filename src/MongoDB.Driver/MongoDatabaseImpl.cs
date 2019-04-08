@@ -520,7 +520,10 @@ namespace MongoDB.Driver
         {
             var renderedCommand = command.Render(_settings.SerializerRegistry);
             var messageEncoderSettings = GetMessageEncoderSettings();
-            return new ReadCommandOperation<TResult>(_databaseNamespace, renderedCommand.Document, renderedCommand.ResultSerializer, messageEncoderSettings);
+            return new ReadCommandOperation<TResult>(_databaseNamespace, renderedCommand.Document, renderedCommand.ResultSerializer, messageEncoderSettings)
+            {
+                RetryRequested = false
+            };
         }
 
         private ChangeStreamOperation<TResult> CreateChangeStreamOperation<TResult>(

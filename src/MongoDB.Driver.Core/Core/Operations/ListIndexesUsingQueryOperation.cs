@@ -120,7 +120,8 @@ namespace MongoDB.Driver.Core.Operations
             var filter = new BsonDocument("ns", _collectionNamespace.FullName);
             return new FindOperation<BsonDocument>(systemIndexesCollection, BsonDocumentSerializer.Instance, _messageEncoderSettings)
             {
-                Filter = filter
+                Filter = filter,
+                RetryRequested = false
             };
         }
     }

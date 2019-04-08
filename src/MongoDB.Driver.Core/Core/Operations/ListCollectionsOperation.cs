@@ -147,14 +147,16 @@ namespace MongoDB.Driver.Core.Operations
                 return new ListCollectionsUsingCommandOperation(_databaseNamespace, _messageEncoderSettings)
                 {
                     Filter = _filter,
-                    NameOnly = _nameOnly
+                    NameOnly = _nameOnly,
+                    RetryRequested = _retryRequested // might be overridden by retryable read context
                 };
             }
             else
             {
                 return new ListCollectionsUsingQueryOperation(_databaseNamespace, _messageEncoderSettings)
                 {
-                    Filter = _filter
+                    Filter = _filter,
+                    RetryRequested = _retryRequested // might be overridden by retryable read context
                 };
             }
         }

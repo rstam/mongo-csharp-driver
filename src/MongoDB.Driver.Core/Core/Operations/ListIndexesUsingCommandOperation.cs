@@ -154,7 +154,10 @@ namespace MongoDB.Driver.Core.Operations
         {
             var databaseNamespace = _collectionNamespace.DatabaseNamespace;
             var command = new BsonDocument("listIndexes", _collectionNamespace.CollectionName);
-            return new ReadCommandOperation<BsonDocument>(databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings);
+            return new ReadCommandOperation<BsonDocument>(databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings)
+            {
+                RetryRequested = _retryRequested // might be overridden by retryable read context
+            };
         }
 
         private IAsyncCursor<BsonDocument> CreateCursor(IChannelSourceHandle channelSource, BsonDocument result, BsonDocument command)

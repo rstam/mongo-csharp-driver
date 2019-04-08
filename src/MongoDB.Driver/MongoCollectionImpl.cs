@@ -725,7 +725,8 @@ namespace MongoDB.Driver
                 BatchSize = options.BatchSize,
                 Collation = options.Collation,
                 MaxTime = options.MaxTime,
-                ReadConcern = _settings.ReadConcern
+                ReadConcern = _settings.ReadConcern,
+                RetryRequested = _database.Client.Settings.RetryReads
             };
         }
 
@@ -993,7 +994,8 @@ namespace MongoDB.Driver
             {
                 Collation = options.Collation,
                 MaxTime = options.MaxTime,
-                ReadConcern = _settings.ReadConcern
+                ReadConcern = _settings.ReadConcern,
+                RetryRequested = _database.Client.Settings.RetryReads
             };
         }
 

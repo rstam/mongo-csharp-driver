@@ -553,7 +553,10 @@ namespace MongoDB.Driver.Core.Operations
                 _collectionNamespace.DatabaseNamespace,
                 command,
                 __findCommandResultSerializer,
-                _messageEncoderSettings);
+                _messageEncoderSettings)
+            {
+                RetryRequested = _retryRequested // might be overridden by retryable read context
+            };
             return operation;
         }
     }

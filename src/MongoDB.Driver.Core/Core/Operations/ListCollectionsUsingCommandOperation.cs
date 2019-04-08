@@ -168,7 +168,10 @@ namespace MongoDB.Driver.Core.Operations
                 { "filter", _filter, _filter != null },
                 { "nameOnly", () => _nameOnly.Value, _nameOnly.HasValue }
             };
-            return new ReadCommandOperation<BsonDocument>(_databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings);
+            return new ReadCommandOperation<BsonDocument>(_databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings)
+            {
+                RetryRequested = _retryRequested // might be overridden by retryable read context
+            };
         }
 
         private IAsyncCursor<BsonDocument> CreateCursor(IChannelSourceHandle channelSource, BsonDocument command, BsonDocument result)
