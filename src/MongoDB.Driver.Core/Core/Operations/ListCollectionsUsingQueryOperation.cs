@@ -36,6 +36,7 @@ namespace MongoDB.Driver.Core.Operations
         private BsonDocument _filter;
         private readonly DatabaseNamespace _databaseNamespace;
         private readonly MessageEncoderSettings _messageEncoderSettings;
+        private bool _retryRequested;
 
         // constructors
         /// <summary>
@@ -84,6 +85,18 @@ namespace MongoDB.Driver.Core.Operations
         public MessageEncoderSettings MessageEncoderSettings
         {
             get { return _messageEncoderSettings; }
+        }
+
+        /// <summary>
+        /// Gets or sets whether or not retry was requested.
+        /// </summary>
+        /// <value>
+        /// Whether retry was requested.
+        /// </value>
+        public bool RetryRequested
+        {
+            get { return _retryRequested; }
+            set { _retryRequested = value; }
         }
 
         // public methods
@@ -153,7 +166,8 @@ namespace MongoDB.Driver.Core.Operations
 
             return new FindOperation<BsonDocument>(_databaseNamespace.SystemNamespacesCollection, BsonDocumentSerializer.Instance, _messageEncoderSettings)
             {
-                Filter = filter
+                Filter = filter,
+                RetryRequested = _retryRequested
             };
         }
 

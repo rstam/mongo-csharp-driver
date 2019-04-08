@@ -708,7 +708,10 @@ namespace MongoDB.Driver.GridFS
         private ListIndexesOperation CreateListIndexesOperation(CollectionNamespace collectionNamespace)
         {
             var messageEncoderSettings = this.GetMessageEncoderSettings();
-            return new ListIndexesOperation(collectionNamespace, messageEncoderSettings);
+            return new ListIndexesOperation(collectionNamespace, messageEncoderSettings)
+            {
+                RetryRequested = _database.Client.Settings.RetryReads
+            };
         }
 
         private BulkMixedWriteOperation CreateRenameOperation(TFileId id, string newFilename)
