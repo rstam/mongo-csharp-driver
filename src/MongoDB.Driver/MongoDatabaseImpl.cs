@@ -531,12 +531,12 @@ namespace MongoDB.Driver
             ChangeStreamOptions options)
         {
             return ChangeStreamHelper.CreateChangeStreamOperation(
-                database: this, 
-                pipeline: pipeline, 
-                options: options, 
-                readConcern: _settings.ReadConcern, 
-                messageEncoderSettings: GetMessageEncoderSettings(),
-                retryRequested: _client.Settings.RetryReads);
+                this, 
+                pipeline, 
+                options, 
+                _settings.ReadConcern, 
+                GetMessageEncoderSettings(),
+                _client.Settings.RetryReads);
         }
 
         private IEnumerable<string> ExtractCollectionNames(IEnumerable<BsonDocument> collections)

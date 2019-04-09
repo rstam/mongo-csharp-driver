@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Core.Operations
 
         public static TResult Execute<TResult>(IRetryableReadOperation<TResult> operation, RetryableReadContext context, CancellationToken cancellationToken)
         {
-            if (!ShouldReadsBeRetried(context))
+            if (!ShouldReadBeRetried(context))
             {
                 return operation.ExecuteAttempt(context, attempt: 1, transactionNumber: null, cancellationToken);
             }
@@ -92,7 +92,7 @@ namespace MongoDB.Driver.Core.Operations
 
         public static async Task<TResult> ExecuteAsync<TResult>(IRetryableReadOperation<TResult> operation, RetryableReadContext context, CancellationToken cancellationToken)
         {
-            if (!ShouldReadsBeRetried(context))
+            if (!ShouldReadBeRetried(context))
             {
                 return await operation.ExecuteAttemptAsync(context, attempt: 1, transactionNumber: null, cancellationToken).ConfigureAwait(false);
             }
@@ -144,7 +144,7 @@ namespace MongoDB.Driver.Core.Operations
             return Feature.RetryableReads.IsSupported(context.Channel.ConnectionDescription.ServerVersion);
         }
 
-        private static bool ShouldReadsBeRetried(RetryableReadContext context)
+        private static bool ShouldReadBeRetried(RetryableReadContext context)
         {
             return context.RetryRequested && AreRetryableReadsSupported(context) && !context.Binding.Session.IsInTransaction;
         }

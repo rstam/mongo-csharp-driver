@@ -265,7 +265,6 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (EventContext.BeginOperation())
             using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
                 return Execute(context, cancellationToken);
@@ -278,9 +277,12 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(context, nameof(context));
             EnsureIsReadOnlyPipeline();
 
-            var operation = CreateOperation(context);
-            var result = operation.Execute(context, cancellationToken);
-            return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
+            using (EventContext.BeginOperation())
+            {
+                var operation = CreateOperation(context);
+                var result = operation.Execute(context, cancellationToken);
+                return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
+            }
         }
 
         /// <inheritdoc/>
@@ -288,7 +290,6 @@ namespace MongoDB.Driver.Core.Operations
         {
             Ensure.IsNotNull(binding, nameof(binding));
 
-            using (EventContext.BeginOperation())
             using (var context = await RetryableReadContext.CreateAsync(binding, _retryRequested, cancellationToken).ConfigureAwait(false))
             {
                 return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
@@ -301,9 +302,12 @@ namespace MongoDB.Driver.Core.Operations
             Ensure.IsNotNull(context, nameof(context));
             EnsureIsReadOnlyPipeline();
 
-            var operation = CreateOperation(context);
-            var result = await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-            return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
+            using (EventContext.BeginOperation())
+            {
+                var operation = CreateOperation(context);
+                var result = await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+                return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
+            }
         }
 
         /// <summary>

@@ -19,29 +19,6 @@ using System.Threading.Tasks;
 namespace MongoDB.Driver.Core.Operations
 {
     /// <summary>
-    /// Represents an operation (that may or may not be retryable) that can be executed in a retryable write context.
-    /// </summary>
-    /// <typeparam name="TResult">The type of the result.</typeparam>
-    public interface IExecutableInRetryableWriteContext<TResult>
-    {
-        /// <summary>
-        /// Executes the first attempt.
-        /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The result.</returns>
-        TResult Execute(RetryableWriteContext context, CancellationToken cancellationToken);
-
-        /// <summary>
-        /// Executes the first attempt.
-        /// </summary>
-        /// <param name="context">The context.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
-        /// <returns>The result.</returns>
-        Task<TResult> ExecuteAsync(RetryableWriteContext context, CancellationToken cancellationToken);
-    }
-
-    /// <summary>
     /// Represents an operation (that may or may not be retryable) that can be executed in a retryable read context.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
@@ -65,30 +42,26 @@ namespace MongoDB.Driver.Core.Operations
     }
 
     /// <summary>
-    /// Represents a retryable write operation.
+    /// Represents an operation (that may or may not be retryable) that can be executed in a retryable write context.
     /// </summary>
     /// <typeparam name="TResult">The type of the result.</typeparam>
-    public interface IRetryableWriteOperation<TResult> : IExecutableInRetryableWriteContext<TResult>
+    public interface IExecutableInRetryableWriteContext<TResult>
     {
         /// <summary>
         /// Executes the first attempt.
         /// </summary>
         /// <param name="context">The context.</param>
-        /// <param name="attempt">The attempt.</param>
-        /// <param name="transactionNumber">The transaction number.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The result.</returns>
-        TResult ExecuteAttempt(RetryableWriteContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken);
+        TResult Execute(RetryableWriteContext context, CancellationToken cancellationToken);
 
         /// <summary>
         /// Executes the first attempt.
         /// </summary>
         /// <param name="context">The context.</param>
-        /// <param name="attempt">The attempt.</param>
-        /// <param name="transactionNumber">The transaction number.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The result.</returns>
-        Task<TResult> ExecuteAttemptAsync(RetryableWriteContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken);
+        Task<TResult> ExecuteAsync(RetryableWriteContext context, CancellationToken cancellationToken);
     }
 
     /// <summary>
@@ -116,5 +89,32 @@ namespace MongoDB.Driver.Core.Operations
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The result.</returns>
         Task<TResult> ExecuteAttemptAsync(RetryableReadContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken);
+    }
+
+    /// <summary>
+    /// Represents a retryable write operation.
+    /// </summary>
+    /// <typeparam name="TResult">The type of the result.</typeparam>
+    public interface IRetryableWriteOperation<TResult> : IExecutableInRetryableWriteContext<TResult>
+    {
+        /// <summary>
+        /// Executes the first attempt.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="attempt">The attempt.</param>
+        /// <param name="transactionNumber">The transaction number.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The result.</returns>
+        TResult ExecuteAttempt(RetryableWriteContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Executes the first attempt.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <param name="attempt">The attempt.</param>
+        /// <param name="transactionNumber">The transaction number.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>The result.</returns>
+        Task<TResult> ExecuteAttemptAsync(RetryableWriteContext context, int attempt, long? transactionNumber, CancellationToken cancellationToken);
     }
 }

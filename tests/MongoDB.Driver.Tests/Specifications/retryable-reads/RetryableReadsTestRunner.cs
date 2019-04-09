@@ -299,8 +299,6 @@ namespace MongoDB.Driver.Tests.Specifications.retryable_reads
             }
         }
 
-
-
         private void AssertEvents(EventCapturer actualEvents, BsonDocument test, Dictionary<string, BsonValue> sessionIdMap)
         {
             if (test.Contains("expectations"))
