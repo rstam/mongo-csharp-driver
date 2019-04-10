@@ -131,6 +131,7 @@ namespace MongoDB.Driver
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.Pipeline.Should().Equal(renderedPipeline.Documents);
             operation.ReadConcern.Should().Be(_readConcern);
+            operation.RetryRequested.Should().BeTrue();
             operation.ResultSerializer.Should().BeSameAs(renderedPipeline.OutputSerializer);
             operation.UseCursor.Should().Be(options.UseCursor);
         }
@@ -229,6 +230,7 @@ namespace MongoDB.Driver
             findOperation.NoCursorTimeout.Should().NotHaveValue();
             findOperation.OplogReplay.Should().NotHaveValue();
             findOperation.Projection.Should().BeNull();
+            findOperation.RetryRequested.Should().BeTrue();
             findOperation.Skip.Should().Be(null);
             findOperation.Sort.Should().BeNull();
         }
@@ -462,6 +464,7 @@ namespace MongoDB.Driver
             operation.Limit.Should().Be(options.Limit);
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.ReadConcern.Should().Be(_readConcern);
+            operation.RetryRequested.Should().BeTrue();
             operation.Skip.Should().Be(options.Skip);
         }
 
@@ -518,6 +521,7 @@ namespace MongoDB.Driver
             operation.Limit.Should().Be(options.Limit);
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.ReadConcern.Should().Be(_readConcern);
+            operation.RetryRequested.Should().BeTrue();
             operation.Skip.Should().Be(options.Skip);
         }
 
@@ -781,6 +785,7 @@ namespace MongoDB.Driver
             operation.Filter.Should().Be(filterDocument);
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.ReadConcern.Should().Be(_readConcern);
+            operation.RetryRequested.Should().BeTrue();
             operation.ValueSerializer.ValueType.Should().Be(typeof(int));
         }
 
@@ -845,6 +850,7 @@ namespace MongoDB.Driver
             operation.Filter.Should().Be(filterDocument);
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.ReadConcern.Should().Be(_readConcern);
+            operation.RetryRequested.Should().BeTrue();
 
             var documentSerializer = BsonSerializer.SerializerRegistry.GetSerializer<ClassForDistinctWithArrayField>();
             BsonSerializationInfo fieldSerializationInfo;
@@ -905,6 +911,7 @@ namespace MongoDB.Driver
             operation.Filter.Should().Be(filterDocument);
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.ReadConcern.Should().Be(_readConcern);
+            operation.RetryRequested.Should().BeTrue();
 
             var stringSerializer = BsonSerializer.SerializerRegistry.GetSerializer<string>();
             operation.ValueSerializer.Should().BeSameAs(stringSerializer);
@@ -942,6 +949,7 @@ namespace MongoDB.Driver
             operation.Limit.Should().NotHaveValue();
             operation.MaxTime.Should().Be(options.MaxTime);
             operation.ReadConcern.Should().Be(ReadConcern.Default);
+            operation.RetryRequested.Should().BeTrue();
             operation.Skip.Should().NotHaveValue();
         }
 
@@ -1022,6 +1030,7 @@ namespace MongoDB.Driver
             operation.Projection.Should().Be(projectionDocument);
             operation.ReadConcern.Should().Be(_readConcern);
             operation.ResultSerializer.ValueType.Should().Be(typeof(BsonDocument));
+            operation.RetryRequested.Should().BeTrue();
             operation.Skip.Should().Be(options.Skip);
             operation.Sort.Should().Be(sortDocument);
         }
@@ -1101,6 +1110,7 @@ namespace MongoDB.Driver
             operation.Projection.Should().Be(projectionDocument);
             operation.ReadConcern.Should().Be(_readConcern);
             operation.ResultSerializer.ValueType.Should().Be(typeof(BsonDocument));
+            operation.RetryRequested.Should().BeTrue();
             operation.Skip.Should().Be(options.Skip);
             operation.Sort.Should().Be(sortDocument);
         }
@@ -1882,6 +1892,7 @@ namespace MongoDB.Driver
 
             var operation = call.Operation.Should().BeOfType<ListIndexesOperation>().Subject;
             operation.CollectionNamespace.Should().Be(subject.CollectionNamespace);
+            operation.RetryRequested.Should().BeTrue();
         }
 
         [Theory]
@@ -2800,6 +2811,7 @@ namespace MongoDB.Driver
             operation.ReadConcern.Should().Be(subject.Settings.ReadConcern);
             operation.ResultSerializer.ValueType.Should().Be(typeof(ChangeStreamDocument<BsonDocument>));
             operation.ResumeAfter.Should().Be(options.ResumeAfter);
+            operation.RetryRequested.Should().BeTrue();
             operation.StartAfter.Should().Be(options.StartAfter);
             operation.StartAtOperationTime.Should().Be(options.StartAtOperationTime);
         }
@@ -2856,6 +2868,7 @@ namespace MongoDB.Driver
             operation.ReadConcern.Should().Be(subject.Settings.ReadConcern);
             operation.ResultSerializer.ValueType.Should().Be(typeof(ChangeStreamDocument<BsonDocument>));
             operation.ResumeAfter.Should().Be(defaultOptions.ResumeAfter);
+            operation.RetryRequested.Should().BeTrue();
         }
 
         [Theory]

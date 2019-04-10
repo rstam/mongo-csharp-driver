@@ -129,6 +129,7 @@ namespace MongoDB.Driver.Core.Operations
             subject.ReadConcern.Should().Be(ReadConcern.Default);
             subject.ResultSerializer.Should().BeSameAs(resultSerializer);
             subject.ResumeAfter.Should().BeNull();
+            subject.RetryRequested.Should().BeFalse();
             subject.StartAfter.Should().BeNull();
             subject.StartAtOperationTime.Should().BeNull();
         }
@@ -214,6 +215,7 @@ namespace MongoDB.Driver.Core.Operations
             subject.ReadConcern.Should().Be(ReadConcern.Default);
             subject.ResultSerializer.Should().BeSameAs(resultSerializer);
             subject.ResumeAfter.Should().BeNull();
+            subject.RetryRequested.Should().BeFalse();
             subject.StartAfter.Should().BeNull();
             subject.StartAtOperationTime.Should().BeNull();
         }
@@ -414,6 +416,19 @@ namespace MongoDB.Driver.Core.Operations
 
             subject.ResumeAfter = value;
             var result = subject.ResumeAfter;
+
+            result.Should().Be(value);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void RetryRequested_get_and_set_should_work(
+            [Values(false, true)] bool value)
+        {
+            var subject = CreateSubject();
+
+            subject.RetryRequested = value;
+            var result = subject.RetryRequested;
 
             result.Should().Be(value);
         }
@@ -695,6 +710,7 @@ namespace MongoDB.Driver.Core.Operations
             result.Pipeline.Should().Equal(expectedPipeline);
             result.ReadConcern.Should().Be(readConcern);
             result.ResultSerializer.Should().Be(RawBsonDocumentSerializer.Instance);
+            result.RetryRequested.Should().BeFalse();
         }
 
         // private methods

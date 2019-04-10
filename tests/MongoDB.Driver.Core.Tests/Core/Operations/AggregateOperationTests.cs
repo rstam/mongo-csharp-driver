@@ -52,6 +52,7 @@ namespace MongoDB.Driver.Core.Operations
             subject.MaxTime.Should().NotHaveValue();
             subject.ReadConcern.IsServerDefault.Should().BeTrue();
             subject.UseCursor.Should().NotHaveValue();
+            subject.RetryRequested.Should().BeFalse();
         }
 
         [Fact]
@@ -108,6 +109,7 @@ namespace MongoDB.Driver.Core.Operations
             subject.MaxTime.Should().NotHaveValue();
             subject.ReadConcern.IsServerDefault.Should().BeTrue();
             subject.UseCursor.Should().NotHaveValue();
+            subject.RetryRequested.Should().BeFalse();
         }
 
         [Fact]
@@ -254,6 +256,19 @@ namespace MongoDB.Driver.Core.Operations
             var result = subject.ReadConcern;
 
             result.Should().BeSameAs(value);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void RetryRequested_get_and_set_should_work(
+            [Values(false, true)] bool value)
+        {
+            var subject = new AggregateOperation<BsonDocument>(_collectionNamespace, __pipeline, __resultSerializer, _messageEncoderSettings);
+
+            subject.RetryRequested = value;
+            var result = subject.RetryRequested;
+
+            result.Should().Be(value);
         }
 
         [Fact]
