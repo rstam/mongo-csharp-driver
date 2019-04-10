@@ -111,14 +111,6 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 // some missing fields are only missing because the C# driver omits default values
                 switch (name)
                 {
-                    case "mapReduce":
-                        // C# driver emits lowercase mapreduce for backwards compatibility
-                        if (commandName == "mapreduce") 
-                        {
-                            return;
-                        }
-                        break;
-
                     case "new":
                         if (commandName == "findAndModify" && expectedValue == false)
                         {
@@ -144,7 +136,7 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 switch (name)
                 {
                     case "out":
-                        if (commandName == "mapreduce") 
+                        if (commandName == "mapReduce") 
                         {
                             if (expectedValue is BsonString &&
                                 actualValue.IsBsonDocument &&
