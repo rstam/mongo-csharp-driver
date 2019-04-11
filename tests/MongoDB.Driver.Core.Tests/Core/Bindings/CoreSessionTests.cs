@@ -14,12 +14,15 @@
 */
 
 using System;
-using System.Reflection;
+using System.Linq;
+using System.Net;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Clusters;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.Servers;
 using Moq;
 using Xunit;
 
@@ -240,14 +243,148 @@ namespace MongoDB.Driver.Core.Bindings
 
             Mock.Get(subject.ServerSession).Verify(m => m.WasUsed(), Times.Once);
         }
+        
+        [Theory]
+        [ParameterAttributeData]
+        public void EnsureTransactionsAreSupported_should_throw_when_there_are_no_connected_servers(
+            [Values(0, 1, 2, 3)] int numberOfDisconnectedServers)
+        {
+            var clusterDescription = CreateClusterDescriptionWithDisconnectedServers(numberOfDisconnectedServers);
+            var mockCluster = new Mock<ICluster>();
+            mockCluster.SetupGet(m => m.Description).Returns(clusterDescription);
+            var subject = CreateSubject(cluster: mockCluster.Object);
+
+            var exception = Record.Exception(() => subject.EnsureTransactionsAreSupported());
+
+            var e = exception.Should().BeOfType<NotSupportedException>().Subject;
+            e.Message.Should().Be("StartTransaction cannot determine if transactions are supported because there are no connected servers.");
+        }
+
+
+        [Theory]
+        // Scenario: 0 = Disconnected, 1 = Connected does not support transactions, 2 = Connected supports transactions
+        [InlineData(new[] { 1 })]
+        [InlineData(new[] { 0, 1 })]
+        [InlineData(new[] { 1, 0 })]
+        [InlineData(new[] { 1, 1 })]
+        [InlineData(new[] { 1, 2 })]
+        [InlineData(new[] { 2, 1 })]
+        [InlineData(new[] { 0, 0, 1 })]
+        [InlineData(new[] { 0, 1, 0 })]
+        [InlineData(new[] { 0, 1, 1 })]
+        [InlineData(new[] { 0, 1, 2 })]
+        [InlineData(new[] { 1, 1, 0 })]
+        [InlineData(new[] { 1, 1, 1 })]
+        [InlineData(new[] { 1, 1, 2 })]
+        [InlineData(new[] { 2, 1, 0 })]
+        [InlineData(new[] { 2, 1, 1 })]
+        [InlineData(new[] { 2, 1, 2 })]
+        public void EnsureTransactionsAreSupported_should_throw_when_any_connected_replica_set_primary_does_not_support_transactions(int[] scenarios)
+        {
+            var clusterId = new ClusterId(1);
+            var serverDescriptions = scenarios
+                .Select((scenario, i) =>
+                {
+                    var port = 27017 + i;
+                    var endPoint = new DnsEndPoint("localhost", port);
+                    var serverId = new ServerId(clusterId, endPoint);
+                    var state = new[] { ServerState.Disconnected, ServerState.Connected, ServerState.Connected }[scenario];
+                    var supportsTransactions = new[] { false, false, true }[scenario];
+                    var serverVersion = supportsTransactions ? Feature.Transactions.FirstSupportedVersion : Feature.Transactions.LastNotSupportedVersion;
+                    return new ServerDescription(serverId, endPoint, state: state, type: ServerType.ReplicaSetPrimary, version: serverVersion);
+                })
+                .ToList();
+            var clusterDescription = new ClusterDescription(clusterId, ClusterConnectionMode.Automatic, ClusterType.ReplicaSet, serverDescriptions);
+            var mockCluster = new Mock<ICluster>();
+            mockCluster.SetupGet(m => m.Description).Returns(clusterDescription);
+            var subject = CreateSubject(cluster: mockCluster.Object);
+
+            var exception = Record.Exception(() => subject.EnsureTransactionsAreSupported());
+
+            var e = exception.Should().BeOfType<NotSupportedException>().Subject;
+            e.Message.Should().Contain("does not support the Transactions feature.");
+        }
+
+        [Theory]
+        // Scenario: 0 = Disconnected, 1 = Connected does not support transactions, 2 = Connected supports transactions
+        [InlineData(new[] { 1 })]
+        [InlineData(new[] { 0, 1 })]
+        [InlineData(new[] { 1, 0 })]
+        [InlineData(new[] { 1, 1 })]
+        [InlineData(new[] { 1, 2 })]
+        [InlineData(new[] { 2, 1 })]
+        [InlineData(new[] { 0, 0, 1 })]
+        [InlineData(new[] { 0, 1, 0 })]
+        [InlineData(new[] { 0, 1, 1 })]
+        [InlineData(new[] { 0, 1, 2 })]
+        [InlineData(new[] { 1, 1, 0 })]
+        [InlineData(new[] { 1, 1, 1 })]
+        [InlineData(new[] { 1, 1, 2 })]
+        [InlineData(new[] { 2, 1, 0 })]
+        [InlineData(new[] { 2, 1, 1 })]
+        [InlineData(new[] { 2, 1, 2 })]
+        public void EnsureTransactionsAreSupported_should_throw_when_any_connected_shard_router_does_not_support_transactions(int[] scenarios)
+        {
+            var clusterId = new ClusterId(1);
+            var serverDescriptions = scenarios
+                .Select((scenario, i) =>
+                {
+                    var port = 27017 + i;
+                    var endPoint = new DnsEndPoint("localhost", port);
+                    var serverId = new ServerId(clusterId, endPoint);
+                    var state = new[] { ServerState.Disconnected, ServerState.Connected, ServerState.Connected }[scenario];
+                    var supportsTransactions = new[] { false, false, true }[scenario];
+                    var serverVersion = supportsTransactions ? Feature.ShardedTransactions.FirstSupportedVersion : Feature.ShardedTransactions.LastNotSupportedVersion;
+                    return new ServerDescription(serverId, endPoint, state: state, type: ServerType.ShardRouter, version: serverVersion);
+                })
+                .ToList();
+            var clusterDescription = new ClusterDescription(clusterId, ClusterConnectionMode.Automatic, ClusterType.Sharded, serverDescriptions);
+            var mockCluster = new Mock<ICluster>();
+            mockCluster.SetupGet(m => m.Description).Returns(clusterDescription);
+            var subject = CreateSubject(cluster: mockCluster.Object);
+
+            var exception = Record.Exception(() => subject.EnsureTransactionsAreSupported());
+
+            var e = exception.Should().BeOfType<NotSupportedException>().Subject;
+            e.Message.Should().Contain("does not support the ShardedTransactions feature.");
+        }
 
         // private methods
+        private ClusterDescription CreateClusterDescriptionWithDisconnectedServers(int numberOfDisconnectedServers)
+        {
+            var clusterId = new ClusterId(1);
+            var connectionMode = ClusterConnectionMode.Automatic;
+            var type = ClusterType.Unknown;
+            var servers = Enumerable.Range(27017, numberOfDisconnectedServers).Select(port => CreateDisconnectedServerDescription(clusterId, port)).ToList();
+            return new ClusterDescription(clusterId, connectionMode, type, servers);
+        }
+
+        private ServerDescription CreateDisconnectedServerDescription(ClusterId clusterId, int port)
+        {
+            var endPoint = new DnsEndPoint("localhost", port);
+            var serverId = new ServerId(clusterId, endPoint);
+            return new ServerDescription(serverId, endPoint, state: ServerState.Disconnected, type: ServerType.Unknown);
+        }
+
+        private ICluster CreateMockReplicaSetCluster()
+        {
+            var clusterId = new ClusterId(1);
+            var endPoint = new DnsEndPoint("localhost", 27017);
+            var serverId = new ServerId(clusterId, endPoint);
+            var version = Feature.Transactions.FirstSupportedVersion;
+            var servers = new[] { new ServerDescription(serverId, endPoint, state: ServerState.Connected, type: ServerType.ReplicaSetPrimary, version: version) };
+            var clusterDescription = new ClusterDescription(clusterId, ClusterConnectionMode.Automatic, ClusterType.ReplicaSet, servers);
+            var mockCluster = new Mock<ICluster>();
+            mockCluster.SetupGet(m => m.Description).Returns(clusterDescription);
+            return mockCluster.Object;
+        }
+
         private CoreSession CreateSubject(
             ICluster cluster = null,
             ICoreServerSession serverSession = null,
             CoreSessionOptions options = null)
         {
-            cluster = cluster ?? Mock.Of<ICluster>();
+            cluster = cluster ?? CreateMockReplicaSetCluster();
             serverSession = serverSession ?? Mock.Of<ICoreServerSession>();
             options = options ?? new CoreSessionOptions();
             return new CoreSession(cluster, serverSession, options);
@@ -262,5 +399,7 @@ namespace MongoDB.Driver.Core.Bindings
         {
             Reflector.SetFieldValue(obj, nameof(_isCommitTransactionInProgress), value);
         }
+
+        public static void EnsureTransactionsAreSupported(this CoreSession obj) => Reflector.Invoke(obj, nameof(EnsureTransactionsAreSupported));
     }
 }
