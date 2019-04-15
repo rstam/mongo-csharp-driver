@@ -23,6 +23,7 @@ using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
+using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using Moq;
 using Xunit;
 
@@ -221,9 +222,10 @@ namespace MongoDB.Driver.Core.Bindings
             Mock.Get(subject.ServerSession).Verify(m => m.Dispose(), Times.Once);
         }
 
-        [Fact]
+        [SkippableFact]
         public void StartTransaction_should_throw_when_write_concern_is_unacknowledged()
         {
+            RequireServer.Check().ClusterType(ClusterType.ReplicaSet).Supports(Feature.Transactions);
             var cluster = CoreTestConfiguration.Cluster;
             var session = cluster.StartSession();
             var transactionOptions = new TransactionOptions(writeConcern: WriteConcern.Unacknowledged);

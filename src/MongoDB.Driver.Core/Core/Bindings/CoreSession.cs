@@ -453,22 +453,22 @@ namespace MongoDB.Driver.Core.Bindings
 
         private void EnsureTransactionsAreSupported()
         {
-            var connectedServers = _cluster.Description.Servers.Where(s => s.State == ServerState.Connected).ToList();
+            var connectedDataBearingServers = _cluster.Description.Servers.Where(s => s.State == ServerState.Connected && s.IsDataBearing).ToList();
 
-            if (connectedServers.Count == 0)
+            if (connectedDataBearingServers.Count == 0)
             {
                 throw new NotSupportedException("StartTransaction cannot determine if transactions are supported because there are no connected servers.");
             }
 
-            foreach (var connectedServer in connectedServers)
+            foreach (var connectedDataBearingServer in connectedDataBearingServers)
             {
-                if (connectedServer.Type == ServerType.ShardRouter)
+                if (connectedDataBearingServer.Type == ServerType.ShardRouter)
                 {
-                    Feature.ShardedTransactions.ThrowIfNotSupported(connectedServer.Version);
+                    Feature.ShardedTransactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
                 }
                 else
                 {
-                    Feature.Transactions.ThrowIfNotSupported(connectedServer.Version);
+                    Feature.Transactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
                 }
             }
         }
