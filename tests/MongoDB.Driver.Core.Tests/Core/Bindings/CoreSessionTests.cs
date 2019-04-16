@@ -331,7 +331,7 @@ namespace MongoDB.Driver.Core.Bindings
         [InlineData("RN")]
         [InlineData("RN,RT")]
         [InlineData("RT,RN")]
-        public void EnsureTransactionsAreSupported_should_throw_when_any_connected_replica_set_member_does_not_support_transactions(string scenarios)
+        public void EnsureTransactionsAreSupported_should_throw_when_any_connected_data_bearing_server_does_not_support_transactions(string scenarios)
         {
             var clusterId = new ClusterId(1);
             string unsupportedFeatureName = null;
