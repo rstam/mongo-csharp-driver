@@ -91,9 +91,6 @@ namespace MongoDB.Driver.GridFS
             }
         }
 
-        /// <summary>
-        /// Gets or sets whether to retry reads.
-        /// </summary>
         public bool RetryReads
         {
             get => _retryReads;

@@ -85,7 +85,7 @@ namespace MongoDB.Driver.Core.Operations
         // public methods
         /// <inheritdoc/>
         public IAsyncCursor<BsonDocument> Execute(IReadBinding binding, CancellationToken cancellationToken)
-        {   
+        {
             Ensure.IsNotNull(binding, nameof(binding));
 
             using (EventContext.BeginOperation())

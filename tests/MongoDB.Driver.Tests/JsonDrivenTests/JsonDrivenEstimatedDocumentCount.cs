@@ -51,7 +51,6 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         protected override void CallMethod(CancellationToken cancellationToken)
         {
             _result = _collection.EstimatedDocumentCount(_options, cancellationToken);
-
         }
 
         protected override async Task CallMethodAsync(CancellationToken cancellationToken)

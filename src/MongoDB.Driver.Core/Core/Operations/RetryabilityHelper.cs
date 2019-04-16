@@ -44,13 +44,9 @@ namespace MongoDB.Driver.Core.Operations
             };
 
 
-            __retryableReadExceptions = new HashSet<Type>(resumableAndRetryableExceptions)
-            {
-            };
+            __retryableReadExceptions = new HashSet<Type>(resumableAndRetryableExceptions);
             
-            __retryableWriteExceptions = new HashSet<Type>(resumableAndRetryableExceptions)
-            {
-            };
+            __retryableWriteExceptions = new HashSet<Type>(resumableAndRetryableExceptions);
 
             var resumableAndRetryableErrorCodes = new HashSet<ServerErrorCode>
             {
@@ -60,9 +56,7 @@ namespace MongoDB.Driver.Core.Operations
                 ServerErrorCode.SocketException
             };
 
-            __retryableReadErrorCodes = new HashSet<ServerErrorCode>(resumableAndRetryableErrorCodes)
-            {
-            };
+            __retryableReadErrorCodes = new HashSet<ServerErrorCode>(resumableAndRetryableErrorCodes);
 
             __retryableWriteErrorCodes = new HashSet<ServerErrorCode>(resumableAndRetryableErrorCodes)
             {

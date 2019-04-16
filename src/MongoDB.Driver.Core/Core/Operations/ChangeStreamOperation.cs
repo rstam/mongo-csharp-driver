@@ -276,7 +276,12 @@ namespace MongoDB.Driver.Core.Operations
             set => _retryRequested = value;
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Gets or sets the start after.
+        /// </summary>
+        /// <value>
+        /// The start after.
+        /// </value>
         public BsonDocument StartAfter
         {
             get { return _startAfter; }

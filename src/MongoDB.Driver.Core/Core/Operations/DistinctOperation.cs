@@ -171,18 +171,10 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
-                return Execute(context, cancellationToken);
+                var operation = CreateOperation(context);
+                var values = operation.Execute(context, cancellationToken);
+                return new SingleBatchAsyncCursor<TValue>(values);
             }
-        }
-
-        /// <inheritdoc/>
-        public IAsyncCursor<TValue> Execute(RetryableReadContext context, CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(context, nameof(context));
-
-            var operation = CreateOperation(context);
-            var values = operation.Execute(context, cancellationToken);
-            return new SingleBatchAsyncCursor<TValue>(values);
         }
 
         /// <inheritdoc/>
@@ -192,18 +184,10 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = await RetryableReadContext.CreateAsync(binding, _retryRequested, cancellationToken).ConfigureAwait(false))
             {
-                return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+                var operation = CreateOperation(context);
+                var values = await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
+                return new SingleBatchAsyncCursor<TValue>(values);
             }
-        }
-
-        /// <inheritdoc/>
-        public async Task<IAsyncCursor<TValue>> ExecuteAsync(RetryableReadContext context, CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(context, nameof(context));
-
-            var operation = CreateOperation(context);
-            var values = await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-            return new SingleBatchAsyncCursor<TValue>(values);
         }
 
         // private methods
