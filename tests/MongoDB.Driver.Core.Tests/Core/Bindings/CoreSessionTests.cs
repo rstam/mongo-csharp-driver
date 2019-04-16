@@ -270,8 +270,6 @@ namespace MongoDB.Driver.Core.Bindings
         [Theory]
         [InlineData("DU,CP")]
         [InlineData("CP,DU")]
-        [InlineData("DU,CR")]
-        [InlineData("CR,DU")]
         public void EnsureTransactionsAreSupported_should_ignore_disconnected_servers(string scenarios)
         {
             var clusterId = new ClusterId(1);
@@ -283,7 +281,7 @@ namespace MongoDB.Driver.Core.Bindings
                     var serverId = new ServerId(clusterId, endPoint);
                     var state = MapServerStateCode(scenario[0]);
                     var type = MapServerTypeCode(scenario[1]);
-                    var version = type == ServerType.ShardRouter ? Feature.ShardedTransactions.FirstSupportedVersion : Feature.Transactions.FirstSupportedVersion;
+                    var version = Feature.Transactions.FirstSupportedVersion;
                     return CreateServerDescription(serverId, endPoint, state, type, version);
                 })
                 .ToList();
@@ -343,10 +341,10 @@ namespace MongoDB.Driver.Core.Bindings
                     var serverId = new ServerId(clusterId, endPoint);
                     var type = MapServerTypeCode(scenario[0]);
                     var supportsTransactions = MapSupportsTransactionsCode(scenario[1]);
-                    var feature = type == ServerType.ShardRouter ? Feature.ShardedTransactions : Feature.Transactions;
+                    var feature = Feature.Transactions;
                     if (!supportsTransactions)
                     {
-                        unsupportedFeatureName = feature.Name;
+                        unsupportedFeatureName = type == ServerType.ShardRouter ? "ShardedTransactions" : "Transactions";
                     }
                     var version = supportsTransactions ? feature.FirstSupportedVersion : feature.LastNotSupportedVersion;
                     return CreateServerDescription(serverId, endPoint, ServerState.Connected, type, version);

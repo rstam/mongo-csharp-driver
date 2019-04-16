@@ -21,6 +21,7 @@ using MongoDB.Bson;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
+using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Core.Bindings
 {
@@ -455,7 +456,7 @@ namespace MongoDB.Driver.Core.Bindings
             {
                 if (connectedDataBearingServer.Type == ServerType.ShardRouter)
                 {
-                    Feature.ShardedTransactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
+                    throw new NotSupportedException($"Server version {connectedDataBearingServer.Version} does not support the ShardedTransactions feature.");
                 }
                 else
                 {
