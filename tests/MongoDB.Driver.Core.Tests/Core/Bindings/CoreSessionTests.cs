@@ -247,7 +247,7 @@ namespace MongoDB.Driver.Core.Bindings
 
             Mock.Get(subject.ServerSession).Verify(m => m.WasUsed(), Times.Once);
         }
-        
+
         [Theory]
         [ParameterAttributeData]
         public void EnsureTransactionsAreSupported_should_throw_when_there_are_no_connected_servers(
@@ -323,16 +323,15 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         [Theory]
-        [InlineData("PN")]
-        [InlineData("PN,ST")]
-        [InlineData("PT,SN")]
-        [InlineData("RN")]
-        [InlineData("RN,RT")]
-        [InlineData("RT,RN")]
-        public void EnsureTransactionsAreSupported_should_throw_when_any_connected_data_bearing_server_does_not_support_transactions(string scenarios)
+        [InlineData("PN", "Server version 3.6.99 does not support the Transactions feature.")]
+        [InlineData("PN,ST", "Server version 3.6.99 does not support the Transactions feature.")]
+        [InlineData("PT,SN", "Server version 3.6.99 does not support the Transactions feature.")]
+        [InlineData("RN", "Server version 3.6.99 does not support the Transactions feature.")]
+        [InlineData("RN,RT", "Server version 3.6.99 does not support the Transactions feature.")]
+        [InlineData("RT,RN", "This version of the driver does not support sharded transactions.")]
+        public void EnsureTransactionsAreSupported_should_throw_when_any_connected_data_bearing_server_does_not_support_transactions(string scenarios, string expectedMessage)
         {
             var clusterId = new ClusterId(1);
-            string unsupportedFeatureName = null;
             var servers =
                 SplitScenarios(scenarios)
                 .Select((scenario, i) =>
@@ -341,12 +340,7 @@ namespace MongoDB.Driver.Core.Bindings
                     var serverId = new ServerId(clusterId, endPoint);
                     var type = MapServerTypeCode(scenario[0]);
                     var supportsTransactions = MapSupportsTransactionsCode(scenario[1]);
-                    var feature = Feature.Transactions;
-                    if (!supportsTransactions)
-                    {
-                        unsupportedFeatureName = type == ServerType.ShardRouter ? "ShardedTransactions" : "Transactions";
-                    }
-                    var version = supportsTransactions ? feature.FirstSupportedVersion : feature.LastNotSupportedVersion;
+                    var version = supportsTransactions ? (type == ServerType.ShardRouter ? new SemanticVersion(4, 2, 0) : Feature.Transactions.FirstSupportedVersion) : Feature.Transactions.LastNotSupportedVersion;
                     return CreateServerDescription(serverId, endPoint, ServerState.Connected, type, version);
                 })
                 .ToList();
@@ -356,7 +350,38 @@ namespace MongoDB.Driver.Core.Bindings
             var exception = Record.Exception(() => subject.EnsureTransactionsAreSupported());
 
             var e = exception.Should().BeOfType<NotSupportedException>().Subject;
-            e.Message.Should().Contain($"does not support the {unsupportedFeatureName} feature.");
+            e.Message.Should().Contain(expectedMessage);
+        }
+
+        [Theory]
+        [InlineData("3.6", ServerType.ReplicaSetPrimary, "Server version 3.6.0 does not support the Transactions feature.")]
+        [InlineData("4.0", ServerType.ReplicaSetPrimary, null)]
+        [InlineData("4.2", ServerType.ReplicaSetPrimary, null)]
+        [InlineData("3.6", ServerType.ShardRouter, "Server version 3.6.0 does not support the Transactions feature.")]
+        [InlineData("4.0", ServerType.ShardRouter, "Server version 4.0.0 does not support the ShardedTransactions feature.")]
+        [InlineData("4.2", ServerType.ShardRouter, "This version of the driver does not support sharded transactions.")]
+        public void EnsureTransactionsAreSupported_should_have_expected_result_for_server_version_and_type(string versionString, ServerType serverType, string expectedMessage)
+        {
+            var clusterId = new ClusterId(1);
+            var endPoint = new DnsEndPoint("localhost", 27017);
+            var serverId = new ServerId(clusterId, endPoint);
+            var version = SemanticVersion.Parse(versionString);
+            var servers = new[] { CreateServerDescription(serverId, endPoint, ServerState.Connected, serverType, version) };
+            var clusterType = serverType == ServerType.ShardRouter ? ClusterType.Sharded : ClusterType.ReplicaSet;
+            var clusterDescription = CreateClusterDescription(clusterId: clusterId, connectionMode: ClusterConnectionMode.Automatic, type: clusterType, servers: servers);
+            var subject = CreateSubject(clusterDescription);
+
+            var exception = Record.Exception(() => subject.EnsureTransactionsAreSupported());
+
+            if (expectedMessage == null)
+            {
+                exception.Should().BeNull();
+            }
+            else
+            {
+                var e = exception.Should().BeOfType<NotSupportedException>().Subject;
+                e.Message.Should().Contain(expectedMessage);
+            }
         }
 
         // private methods

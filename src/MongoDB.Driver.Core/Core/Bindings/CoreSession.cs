@@ -454,13 +454,17 @@ namespace MongoDB.Driver.Core.Bindings
 
             foreach (var connectedDataBearingServer in connectedDataBearingServers)
             {
+                Feature.Transactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
                 if (connectedDataBearingServer.Type == ServerType.ShardRouter)
                 {
-                    throw new NotSupportedException($"Server version {connectedDataBearingServer.Version} does not support the ShardedTransactions feature.");
-                }
-                else
-                {
-                    Feature.Transactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
+                    if (connectedDataBearingServer.Version < new SemanticVersion(4, 2, 0))
+                    {
+                        throw new NotSupportedException($"Server version {connectedDataBearingServer.Version} does not support the ShardedTransactions feature.");
+                    }
+                    else
+                    {
+                        throw new NotSupportedException("This version of the driver does not support sharded transactions.");
+                    }
                 }
             }
         }
