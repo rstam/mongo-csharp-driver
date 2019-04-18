@@ -13,10 +13,10 @@ title = "SDAM Events"
 
 Server Discovery and Monitoring (SDAM) is the process by which the driver discovers and monitors the set of servers that it is connected to. In
 the case of a standalone configuration the driver will only monitor a single server. In the case of a replica set configuration the driver
-will monitor each member of the replica set (primary, secondaries, etc...). In the case of a sharded configuration the driver will  
+will monitor each member of the replica set (primary, secondaries, etc.). In the case of a sharded configuration the driver will  
 monitor the set of shard routers (mongos instances) that it is connected to.
 
-As the driver monitors the health and state of each server in a configuration it raises a number of events that report what it is finding and
+As the driver monitors the health and state of each server in a configuration, it raises a number of events that report what it is finding and
 how it is reacting to that information. You can subscribe to any or all of these events if you want to observe what SDAM is doing.
 
 See the general [Eventing]({{< relref "events.md" >}}) page for information on how to subscribe to individual events.
