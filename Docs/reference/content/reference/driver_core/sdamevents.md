@@ -33,7 +33,7 @@ var client = new MongoClient(clientSettings);
 
 The `SdamLogFilename` is only configurable in code, not in the connection string. The way to combine using a connection string with SDAM logging is:
 
-```
+```csharp
 var connectionString = "mongodb://localhost"; // presumably loaded via some config mechanism
 var clientSettings = MongoClientSettings.FromConnectionString(connectionString);
 clientSetting.SdamLogFilename = @"c:\sdam.log";
@@ -42,7 +42,7 @@ var client = new MongoClient(clientSettings);
 
 {{% note %}}
 Logging SDAM events results in the file being opened in exclusive mode, so it is possible for multiple instances of `MongoClient` to conflict
-over the use of the file. Whether the multiple `MongoClient` instances actually conflict over the use of the file or not depens on how similar
+over the use of the file. Whether the multiple `MongoClient` instances actually conflict over the use of the file or not depends on how similar
 the `MongoClientSettings` are. If they are different enough to result in the creation of separate underlying `Cluster` instances then they will conflict.
 
 The safest approach when logging SDAM events is to use a single instance of `MongoClient` throughout 
@@ -55,72 +55,72 @@ SDAM logging logs the following events which are raised in the course of monitor
 
 #### ClusterAddedServerEvent
 
-Raised after a server has been added to the cluster.
+The [`ClusterAddedServerEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterAddedServerEvent" >}}) is raised after a server has been added to the cluster.
 
 #### ClusterAddingServerEvent
 
-Raised before a server is added to the cluster.
+The [`ClusterAddingServerEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterAddingServerEvent" >}}) is raised before a server is added to the cluster.
 
 #### ClusterClosedEvent
 
-Raised after a cluster has been closed.
+The [`ClusterClosedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterClosedEvent" >}}) is raised after a cluster has been closed.
 
 #### ClusterClosingEvent
 
-Raised before a cluster is closed.
+The [`ClusterClosingEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterClosingEvent" >}}) is raised before a cluster is closed.
 
 #### ClusterDescriptionChangedEvent
 
-Raised when the cluster description changes.
+The [`ClusterDescriptionChangedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterDescriptionChangedEvent" >}}) is raised when the cluster description changes.
 
 #### ClusterOpenedEvent
 
-Raised after a cluster has been opened.
+The [`ClusterOpenedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterOpenedEvent" >}}) is raised after a cluster has been opened.
 
 #### ClusterOpeningEvent
 
-Raised before a cluster is opened.
+The [`ClusterOpeningEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterOpeningEvent" >}}) is raised before a cluster is opened.
 
 #### ClusterRemovedServerEvent
 
-Raised after a server has been removed from the cluster.
+The [`ClusterRemovedServerEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterRemovedServerEvent" >}}) is raised after a server has been removed from the cluster.
 
 #### ClusterRemovingServerEvent
 
-Raised before a server is removed from the cluster.
+The [`ClusterRemovingServerEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ClusterRemovingServerEvent" >}}) is raised before a server is removed from the cluster.
 
 #### SdamInformationEvent
 
-Raised when something interesting happened that is not covered by a custom event type.
+The [`SdamInformationEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_SdamInformationEvent" >}}) is raised when something interesting happened that is not covered by a custom event type.
 
 #### ServerClosedEvent
 
-Raised after a server has been closed.
+The [`ServerClosedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerClosedEvent" >}}) is raised after a server has been closed.
 
 #### ServerClosingEvent
 
-Raised before a server is closed.
+The [`ServerClosingEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerClosingEvent" >}}) is raised before a server is closed.
 
 #### ServerDescriptionChangedEvent
 
-Raised when the server description has changed.
+The [`ServerDescriptionChangedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerDescriptionChangedEvent" >}}) is raised when the server description has changed.
 
 #### ServerHeartbeatFailedEvent
 
-Raised after a heartbeat has failed.
+The [`ServerHeartbeatFailedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerHeartbeatFailedEvent" >}}) is raised after a heartbeat has failed.
 
 #### ServerHeartbeatStartedEvent
 
-Raised after a heartbeat has started (but before the heartbeat is sent to the server).
+The [`ServerHeartbeatStartedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerHeartbeatStartedEvent" >}}) is raised after a heartbeat has started (but before the heartbeat is sent to the server).
 
 #### ServerHeartbeatSucceededEvent
 
-Raised after a heartbeat has succeeded.
+The [`ServerHeartbeatSucceededEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerHeartbeatSucceededEvent" >}}) is raised after a heartbeat has succeeded.
 
 #### ServerOpenedEvent
 
-Raised after a server has been opened.
+The [`ServerOpenedEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerOpenedEvent" >}}) is raised after a server has been opened.
 
 #### ServerOpeningEvent
 
-Raised before a server is opened.
+The [`ServerOpeningEvent`]({{< apiref "T_MongoDB_Driver_Core_Events_ServerOpeningEvent" >}}) is raised before a server is opened.
