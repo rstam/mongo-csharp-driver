@@ -20,9 +20,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-#if NET452
 using System.Runtime.Serialization;
-#endif
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization.Conventions;
 
@@ -421,6 +419,42 @@ namespace MongoDB.Bson.Serialization
             {
                 BsonSerializer.ConfigLock.ExitWriteLock();
             }
+        }
+
+        // private static methods
+        private static Type GetFormatterServicesType()
+        {
+#if NET452
+            return typeof(FormatterServices);
+#else
+            // TODO: once we depend on newer versions of .NET Standard we should be able to do this without reflection
+
+            Type formatterServicesType;
+            try
+            {
+                // new approach which works on .NET Core 3.0
+                var formattersAssembly = Assembly.Load(new AssemblyName("System.Runtime.Serialization.Formatters"));
+                formatterServicesType = formattersAssembly.GetType("System.Runtime.Serialization.FormatterServices");
+                if (formatterServicesType != null)
+                {
+                    return formatterServicesType;
+                }
+            }
+            catch
+            {
+                // ignore exceptions and continue to fallback code
+            }
+
+            // fallback to previous approach (which worked on older versions of .NET Core)
+            var mscorlibAssembly = typeof(string).GetTypeInfo().Assembly;
+            formatterServicesType = mscorlibAssembly.GetType("System.Runtime.Serialization.FormatterServices");
+            if (formatterServicesType != null)
+            {
+                return formatterServicesType;
+            }
+
+            throw new Exception("Unable to find System.Runtime.Serialization.FormatterServices type.");
+#endif
         }
 
         // public methods
@@ -1303,21 +1337,7 @@ namespace MongoDB.Bson.Serialization
             var message = string.Format("Class map for {0} has been not been frozen yet.", _classType.FullName);
             throw new InvalidOperationException(message);
         }
-
-        private static Type GetFormatterServicesType()
-        {
-#if NET452
-            return typeof(string)
-                .GetTypeInfo()
-                .Assembly
-                .GetType("System.Runtime.Serialization.FormatterServices");
-#else
-            return 
-                Assembly.Load(new AssemblyName("System.Runtime.Serialization.Formatters"))
-                .GetType("System.Runtime.Serialization.FormatterServices");
-#endif
-        }
-	}
+    }
 
     /// <summary>
     /// Represents a mapping between a class and a BSON document.
