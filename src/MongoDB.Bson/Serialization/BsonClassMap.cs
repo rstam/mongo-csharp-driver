@@ -34,13 +34,8 @@ namespace MongoDB.Bson.Serialization
         // private static fields
         private readonly static Dictionary<Type, BsonClassMap> __classMaps = new Dictionary<Type, BsonClassMap>();
         private readonly static Queue<Type> __knownTypesQueue = new Queue<Type>();
-
-        private static readonly MethodInfo __getUninitializedObjectMethodInfo =
-            GetFormatterServicesType()
-            .GetTypeInfo()
-            ?.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
-
         private static int __freezeNestingLevel = 0;
+        private static readonly MethodInfo __getUninitializedObjectMethodInfo = GetGetUninitializedObjectMethodInfo();
 
         // private fields
         private readonly Type _classType;
@@ -429,12 +424,11 @@ namespace MongoDB.Bson.Serialization
 #else
             // TODO: once we depend on newer versions of .NET Standard we should be able to do this without reflection
 
-            Type formatterServicesType;
             try
             {
                 // new approach which works on .NET Core 3.0
                 var formattersAssembly = Assembly.Load(new AssemblyName("System.Runtime.Serialization.Formatters"));
-                formatterServicesType = formattersAssembly.GetType("System.Runtime.Serialization.FormatterServices");
+                var formatterServicesType = formattersAssembly.GetType("System.Runtime.Serialization.FormatterServices");
                 if (formatterServicesType != null)
                 {
                     return formatterServicesType;
@@ -447,14 +441,28 @@ namespace MongoDB.Bson.Serialization
 
             // fallback to previous approach (which worked on older versions of .NET Core)
             var mscorlibAssembly = typeof(string).GetTypeInfo().Assembly;
-            formatterServicesType = mscorlibAssembly.GetType("System.Runtime.Serialization.FormatterServices");
-            if (formatterServicesType != null)
+            return mscorlibAssembly.GetType("System.Runtime.Serialization.FormatterServices");
+#endif
+        }
+
+        private static MethodInfo GetGetUninitializedObjectMethodInfo()
+        {
+            // don't let exceptions leak out of this method because it's called from the type initializer
+            try
             {
-                return formatterServicesType;
+                var formatterServicesType = GetFormatterServicesType();
+                if (formatterServicesType != null)
+                {
+                    var formatterServicesTypeInfo = formatterServicesType.GetTypeInfo();
+                    return formatterServicesTypeInfo.GetMethod("GetUninitializedObject", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static);
+                }
+            }
+            catch
+            {
+                // ignore exceptions
             }
 
-            throw new Exception("Unable to find System.Runtime.Serialization.FormatterServices type.");
-#endif
+            return null;
         }
 
         // public methods
