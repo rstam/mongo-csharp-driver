@@ -13,7 +13,7 @@ The [Getting Started]({{< relref "getting_started\index.md" >}}) guide contains 
 
 The [What's New]({{< relref "what_is_new.md" >}}) section contains the major new features of the driver.
 
-The 2.8.0 driver includes bug fixes and depends on newer versions of some our external dependencies.
+The 2.8.0 driver includes bug fixes and depends on newer versions of several external dependencies.
 
 ## Upgrading
 
