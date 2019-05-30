@@ -50,7 +50,7 @@ namespace MongoDB.Driver.Tests.Specifications.crud
 
             try
             {
-                Execute(collection, outcome, async);
+                Execute(database, collection, outcome, async);
             }
             catch (Exception ex) when (isErrorExpected)
             {
@@ -75,7 +75,7 @@ namespace MongoDB.Driver.Tests.Specifications.crud
 
         protected abstract bool TrySetArgument(string name, BsonValue value);
 
-        protected abstract void Execute(IMongoCollection<BsonDocument> collection, BsonDocument outcome, bool async);
+        protected abstract void Execute(IMongoDatabase database, IMongoCollection<BsonDocument> collection, BsonDocument outcome, bool async);
 
         protected virtual void VerifyCollection(IMongoCollection<BsonDocument> collection, BsonArray expectedData)
         {
@@ -88,9 +88,9 @@ namespace MongoDB.Driver.Tests.Specifications.crud
     {
         private TResult _result;
 
-        protected sealed override void Execute(IMongoCollection<BsonDocument> collection, BsonDocument outcome, bool async)
+        protected sealed override void Execute(IMongoDatabase database, IMongoCollection<BsonDocument> collection, BsonDocument outcome, bool async)
         {
-            _result = ExecuteAndGetResult(collection, async);
+            _result = ExecuteAndGetResult(database, collection, async);
         }
 
         protected override void AssertOutcome(BsonDocument outcome, IMongoDatabase database, IMongoCollection<BsonDocument> collection)
@@ -106,9 +106,8 @@ namespace MongoDB.Driver.Tests.Specifications.crud
 
         protected abstract TResult ConvertExpectedResult(BsonValue expectedResult);
 
-        protected abstract TResult ExecuteAndGetResult(IMongoCollection<BsonDocument> collection, bool async);
+        protected abstract TResult ExecuteAndGetResult(IMongoDatabase database, IMongoCollection<BsonDocument> collection, bool async);
 
         protected abstract void VerifyResult(TResult actualResult, TResult expectedResult);
     }
-
 }
