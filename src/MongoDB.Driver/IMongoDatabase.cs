@@ -54,7 +54,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A cursor.</returns>
-        IAsyncCursor<TResult> Aggregate<TResult>(PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        IAsyncCursor<TResult> Aggregate<TResult>(PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Runs an aggregation pipeline.
@@ -67,7 +67,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A cursor.
         /// </returns>
-        IAsyncCursor<TResult> Aggregate<TResult>(IClientSessionHandle session, PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        IAsyncCursor<TResult> Aggregate<TResult>(IClientSessionHandle session, PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Runs an aggregation pipeline.
@@ -77,7 +77,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A Task whose result is a cursor.</returns>
-        Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Runs an aggregation pipeline.
@@ -90,7 +90,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A Task whose result is a cursor.
         /// </returns>
-        Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(IClientSessionHandle session, PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
+        Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(IClientSessionHandle session, PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options = null, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
         /// Creates the collection with the specified name.

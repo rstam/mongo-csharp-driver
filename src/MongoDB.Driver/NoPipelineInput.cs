@@ -19,34 +19,34 @@ using MongoDB.Bson.Serialization;
 namespace MongoDB.Driver
 {
     /// <summary>
-    /// Represents the void input data type to a database aggregation pipeline. No actual instances of this type can be created.
+    /// Represents the void input data type to a pipeline with no input, such as a database aggregation. No actual instances of this type can be created.
     /// </summary>
-    public sealed class DatabaseAggregateVoid
+    public sealed class NoPipelineInput
     {
-        private DatabaseAggregateVoid()
+        private NoPipelineInput()
         {
         }
     }
 
     /// <summary>
-    /// The serializer for DatabaseAggregateVoid.
+    /// The serializer for NoPipelineInput.
     /// </summary>
-    internal sealed class DatabaseAggregateVoidSerializer : IBsonSerializer<DatabaseAggregateVoid>
+    internal sealed class NoPipelineInputSerializer : IBsonSerializer<NoPipelineInput>
     {
         #region static
         // private static fields
-        private static readonly DatabaseAggregateVoidSerializer __instance = new DatabaseAggregateVoidSerializer();
+        private static readonly NoPipelineInputSerializer __instance = new NoPipelineInputSerializer();
 
         // public static properties
         /// <summary>
         ///  Gets the instance.
         /// </summary>
         /// <value>The instance.</value>
-        public static DatabaseAggregateVoidSerializer Instance => __instance;
+        public static NoPipelineInputSerializer Instance => __instance;
         #endregion
 
         /// <inheritdoc/>
-        public Type ValueType => typeof(DatabaseAggregateVoid);
+        public Type ValueType => typeof(NoPipelineInput);
 
 
         object IBsonSerializer.Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
@@ -55,7 +55,7 @@ namespace MongoDB.Driver
         }
 
         /// <inheritdoc/>
-        public DatabaseAggregateVoid Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
+        public NoPipelineInput Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
             throw new NotSupportedException();
         }
@@ -66,7 +66,7 @@ namespace MongoDB.Driver
         }
 
         /// <inheritdoc/>
-        public void Serialize(BsonSerializationContext context, BsonSerializationArgs args, DatabaseAggregateVoid value)
+        public void Serialize(BsonSerializationContext context, BsonSerializationArgs args, NoPipelineInput value)
         {
             throw new NotSupportedException();
         }

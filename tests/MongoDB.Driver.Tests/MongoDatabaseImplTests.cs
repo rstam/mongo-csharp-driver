@@ -70,8 +70,8 @@ namespace MongoDB.Driver
         {
             var subject = _subject;
             var session = CreateSession(usingSession);
-            var pipeline = new EmptyPipelineDefinition<DatabaseAggregateVoid>()
-                .AppendStage<DatabaseAggregateVoid, DatabaseAggregateVoid, BsonDocument>("{ $currentOp : { } }")
+            var pipeline = new EmptyPipelineDefinition<NoPipelineInput>()
+                .AppendStage<NoPipelineInput, NoPipelineInput, BsonDocument>("{ $currentOp : { } }")
                 .Limit(1);
             var options = new AggregateOptions()
             {
@@ -139,8 +139,8 @@ namespace MongoDB.Driver
             var writeConcern = new WriteConcern(1);
             var subject = CreateSubject(null).WithWriteConcern(writeConcern);
             var session = CreateSession(usingSession);
-            var pipeline = new EmptyPipelineDefinition<DatabaseAggregateVoid>()
-                .AppendStage<DatabaseAggregateVoid, DatabaseAggregateVoid, BsonDocument>("{ $currentOp : { } }")
+            var pipeline = new EmptyPipelineDefinition<NoPipelineInput>()
+                .AppendStage<NoPipelineInput, NoPipelineInput, BsonDocument>("{ $currentOp : { } }")
                 .Out(subject.GetCollection<BsonDocument>("funny"));
             var options = new AggregateOptions()
             {
@@ -1299,9 +1299,9 @@ namespace MongoDB.Driver
                 operationExecutor ?? _operationExecutor);
         }
 
-        private RenderedPipelineDefinition<TOutput> RenderPipeline<TOutput>(IMongoDatabase dataabse, PipelineDefinition<DatabaseAggregateVoid, TOutput> pipeline)
+        private RenderedPipelineDefinition<TOutput> RenderPipeline<TOutput>(IMongoDatabase dataabse, PipelineDefinition<NoPipelineInput, TOutput> pipeline)
         {
-            var inputSerializer = DatabaseAggregateVoidSerializer.Instance;
+            var inputSerializer = NoPipelineInputSerializer.Instance;
             var serializerRegistry = BsonSerializer.SerializerRegistry;
             return pipeline.Render(inputSerializer, serializerRegistry);
         }

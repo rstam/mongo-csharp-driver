@@ -42,8 +42,8 @@ namespace MongoDB.Driver.Tests.Specifications.crud
         protected override DeleteResult ConvertExpectedResult(BsonValue expectedResult)
         {
             return new DeleteResult.Acknowledged(expectedResult["deletedCount"].ToInt64());
-
         }
+
         protected override DeleteResult ExecuteAndGetResult(IMongoDatabase database, IMongoCollection<BsonDocument> collection, bool async)
         {
             if (async)

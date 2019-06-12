@@ -74,15 +74,15 @@ namespace MongoDB.Driver
         }
 
         // public methods
-        public override IAsyncCursor<TResult> Aggregate<TResult>(PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        public override IAsyncCursor<TResult> Aggregate<TResult>(PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
         {
             return UsingImplicitSession(session => Aggregate(session, pipeline, options, cancellationToken), cancellationToken);
         }
 
-        public override IAsyncCursor<TResult> Aggregate<TResult>(IClientSessionHandle session, PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        public override IAsyncCursor<TResult> Aggregate<TResult>(IClientSessionHandle session, PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(session, nameof(session));
-            var renderedPipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).Render(DatabaseAggregateVoidSerializer.Instance, _settings.SerializerRegistry);
+            var renderedPipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).Render(NoPipelineInputSerializer.Instance, _settings.SerializerRegistry);
             options = options ?? new AggregateOptions();
 
             var last = renderedPipeline.Documents.LastOrDefault();
@@ -108,15 +108,15 @@ namespace MongoDB.Driver
             }
         }
 
-        public override Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        public override Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
         {
             return UsingImplicitSessionAsync(session => AggregateAsync(session, pipeline, options, cancellationToken), cancellationToken);
         }
 
-        public override async Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(IClientSessionHandle session, PipelineDefinition<DatabaseAggregateVoid, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
+        public override async Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(IClientSessionHandle session, PipelineDefinition<NoPipelineInput, TResult> pipeline, AggregateOptions options, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(session, nameof(session));
-            var renderedPipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).Render(DatabaseAggregateVoidSerializer.Instance, _settings.SerializerRegistry);
+            var renderedPipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).Render(NoPipelineInputSerializer.Instance, _settings.SerializerRegistry);
             options = options ?? new AggregateOptions();
 
             var last = renderedPipeline.Documents.LastOrDefault();
@@ -501,6 +501,7 @@ namespace MongoDB.Driver
                 Comment = options.Comment,
                 Hint = options.Hint,
                 MaxTime = options.MaxTime,
+                ReadConcern = _settings.ReadConcern,
                 WriteConcern = _settings.WriteConcern
             };
         }
