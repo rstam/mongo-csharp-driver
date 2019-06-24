@@ -33,6 +33,7 @@ namespace MongoDB.Driver.Tests
 {
     public class AggregateFluentTests
     {
+        private Mock<IMongoDatabase> _mockDatabase;
         private Mock<IMongoCollection<C>> _mockCollection;
 
         [Theory]
@@ -736,19 +737,93 @@ namespace MongoDB.Driver.Tests
             }
         }
 
+        [Theory]
+        [ParameterAttributeData]
+        public void ToCursor_should_call_database_Aggregate_with_expected_arguments(
+            [Values(false, true)] bool usingSession,
+            [Values(false, true)] bool async)
+        {
+            var session = usingSession ? new Mock<IClientSessionHandle>().Object : null;
+            var subject =
+                CreateDatabaseSubject(session)
+                .AppendStage<BsonDocument>("{ $currentOp : 1 }");
+            var expectedPipeline = ((AggregateFluent<NoPipelineInput, BsonDocument>)subject)._pipeline();
+            var expectedOptions = subject.Options;
+            var cancellationToken = new CancellationTokenSource().Token;
+
+            if (async)
+            {
+                var _ = subject.ToCursorAsync(cancellationToken).GetAwaiter().GetResult();
+
+                if (usingSession)
+                {
+                    _mockDatabase.Verify(
+                        c => c.AggregateAsync<BsonDocument>(
+                            session,
+                            expectedPipeline,
+                            expectedOptions,
+                            cancellationToken),
+                        Times.Once);
+                }
+                else
+                {
+                    _mockDatabase.Verify(
+                        c => c.AggregateAsync<BsonDocument>(
+                            expectedPipeline,
+                            expectedOptions,
+                            cancellationToken),
+                        Times.Once);
+                }
+            }
+            else
+            {
+                var _ = subject.ToCursor(cancellationToken);
+
+                if (usingSession)
+                {
+                    _mockDatabase.Verify(
+                        c => c.Aggregate<BsonDocument>(
+                            session,
+                            expectedPipeline,
+                            expectedOptions,
+                            cancellationToken),
+                        Times.Once);
+                }
+                else
+                {
+                    _mockDatabase.Verify(
+                        c => c.Aggregate<BsonDocument>(
+                            expectedPipeline,
+                            expectedOptions,
+                            cancellationToken),
+                        Times.Once);
+                }
+            }
+        }
+
         // private methods
         private IAggregateFluent<C> CreateSubject(IClientSessionHandle session = null)
         {
-            var mockDatabase = new Mock<IMongoDatabase>();
-            SetupDatabaseGetCollectionMethod<C>(mockDatabase);
+            _mockDatabase = new Mock<IMongoDatabase>();
+            SetupDatabaseGetCollectionMethod<C>(_mockDatabase);
 
             var settings = new MongoCollectionSettings();
             _mockCollection = new Mock<IMongoCollection<C>>();
-            _mockCollection.SetupGet(c => c.Database).Returns(mockDatabase.Object);
+            _mockCollection.SetupGet(c => c.Database).Returns(_mockDatabase.Object);
             _mockCollection.SetupGet(c => c.DocumentSerializer).Returns(settings.SerializerRegistry.GetSerializer<C>());
             _mockCollection.SetupGet(c => c.Settings).Returns(settings);
             var options = new AggregateOptions();
             var subject = new CollectionAggregateFluent<C, C>(session, _mockCollection.Object, new EmptyPipelineDefinition<C>(), options);
+
+            return subject;
+        }
+
+        private IAggregateFluent<NoPipelineInput> CreateDatabaseSubject(IClientSessionHandle session = null)
+        {
+            _mockDatabase = new Mock<IMongoDatabase>();
+
+            var options = new AggregateOptions();
+            var subject = new DatabaseAggregateFluent<NoPipelineInput>(session, _mockDatabase.Object, new EmptyPipelineDefinition<NoPipelineInput>(), options);
 
             return subject;
         }
@@ -836,8 +911,17 @@ namespace MongoDB.Driver.Tests
     {
         public static IMongoCollection<TDocument> _collection<TDocument, TResult>(this CollectionAggregateFluent<TDocument, TResult> obj)
         {
-            var fieldInfo = typeof(CollectionAggregateFluent<TDocument, TResult>).GetField("_collection", BindingFlags.NonPublic | BindingFlags.Instance);
+            var fieldInfo = typeof(CollectionAggregateFluent<TDocument, TResult>).GetField(nameof(_collection), BindingFlags.NonPublic | BindingFlags.Instance);
             return (IMongoCollection<TDocument>)fieldInfo.GetValue(obj);
+        }
+    }
+
+    internal static class DatabaseAggregateFluentReflector
+    {
+        public static IMongoDatabase _database<TResult>(this DatabaseAggregateFluent<TResult> obj)
+        {
+            var fieldInfo = typeof(DatabaseAggregateFluent<TResult>).GetField(nameof(_database), BindingFlags.NonPublic | BindingFlags.Instance);
+            return (IMongoDatabase)fieldInfo.GetValue(obj);
         }
     }
 }

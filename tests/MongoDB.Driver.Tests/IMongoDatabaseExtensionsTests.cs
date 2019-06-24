@@ -14,6 +14,7 @@
 */
 
 using System.Threading;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using Moq;
@@ -23,6 +24,34 @@ namespace MongoDB.Driver.Tests
 {
     public class IMongoDatabaseExtensionsTests
     {
+        [Theory]
+        [ParameterAttributeData]
+        public void Aggregate_should_return_expected_result(
+            [Values(false, true)] bool usingSession)
+        {
+            var mockDatabase = new Mock<IMongoDatabase>();
+            var database = mockDatabase.Object;
+            var session = usingSession ? new Mock<IClientSessionHandle>().Object : null;
+            var options = new AggregateOptions();
+
+            IAggregateFluent<NoPipelineInput> result;
+            if (usingSession)
+            {
+                result = database.Aggregate(session, options);
+            }
+            else
+            {
+                result = database.Aggregate(options);
+            }
+
+            var fluent = result.Should().BeOfType<DatabaseAggregateFluent<NoPipelineInput>>().Subject;
+            fluent._database().Should().BeSameAs(database);
+            fluent._options().Should().BeSameAs(options);
+            fluent._pipeline().Should().BeOfType<EmptyPipelineDefinition<NoPipelineInput>>();
+            fluent._session().Should().BeSameAs(session);
+        }
+
+
         [Theory]
         [ParameterAttributeData]
         public void Watch_should_call_client_with_expected_arguments(
