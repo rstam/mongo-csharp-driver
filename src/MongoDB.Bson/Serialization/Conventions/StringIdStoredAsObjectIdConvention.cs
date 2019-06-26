@@ -19,7 +19,10 @@ using MongoDB.Bson.Serialization.Serializers;
 namespace MongoDB.Bson.Serialization.Conventions
 {
     /// <summary>
-    /// A convention that sets representation of a string id class member to ObjectId in BSON with a StringObjectIdGenerator.
+    /// A convention that sets the representation of a string id class member to ObjectId in BSON with a StringObjectIdGenerator.
+    /// 
+    /// This convention is only responsible for setting the serializer and idGenerator. It is assumed that this convention runs after
+    /// other conventions that identify which member is the _id and that the _id has already been added to the class map.
     /// </summary>
     public class StringIdStoredAsObjectIdConvention : ConventionBase, IMemberMapConvention
     {
@@ -36,17 +39,19 @@ namespace MongoDB.Bson.Serialization.Conventions
                 return;
             }
 
+            var defaultStringSerializer = BsonSerializer.LookupSerializer(typeof(string));
+            if (memberMap.GetSerializer() != defaultStringSerializer)
+            {
+                return;
+            }
+
             if (memberMap.IdGenerator != null)
             {
                 return;
             }
 
-            var serializer = memberMap.GetSerializer();
-            if (serializer is StringSerializer stringSerializer && stringSerializer.Representation == BsonType.String)
-            {
-                memberMap.SetSerializer(new StringSerializer(representation: BsonType.ObjectId));
-                memberMap.SetIdGenerator(StringObjectIdGenerator.Instance);
-            }
+            memberMap.SetSerializer(new StringSerializer(representation: BsonType.ObjectId));
+            memberMap.SetIdGenerator(StringObjectIdGenerator.Instance);
         }
     }
 }

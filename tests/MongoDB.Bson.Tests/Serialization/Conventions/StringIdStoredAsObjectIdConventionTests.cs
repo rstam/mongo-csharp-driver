@@ -25,18 +25,19 @@ namespace MongoDB.Bson.Tests.Serialization.Conventions
 {
     public class StringIdStoredAsObjectIdConventionTests
     {
+        private readonly IBsonSerializer _defaultInt32Serializer = BsonSerializer.LookupSerializer(typeof(int));
+        private readonly IBsonSerializer _defaultStringSerializer = BsonSerializer.LookupSerializer(typeof(string));
+
         [Fact]
         public void Apply_should_ignore_any_member_that_is_not_the_id()
         {
             var subject = CreateSubject();
             var memberMap = GetMemberMap<TestClassWithStringId>("X");
-            var serializer = memberMap.GetSerializer();
-            var idGenerator = memberMap.IdGenerator;
 
             subject.Apply(memberMap);
 
-            memberMap.GetSerializer().Should().BeSameAs(serializer);
-            memberMap.IdGenerator.Should().BeSameAs(idGenerator);
+            memberMap.GetSerializer().Should().BeSameAs(_defaultStringSerializer);
+            memberMap.IdGenerator.Should().BeNull();
         }
 
         [Fact]
@@ -44,57 +45,38 @@ namespace MongoDB.Bson.Tests.Serialization.Conventions
         {
             var subject = CreateSubject();
             var memberMap = GetIdMemberMap<TestClassWithIntId>();
-            var serializer = memberMap.GetSerializer();
-            var idGenerator = memberMap.IdGenerator;
 
             subject.Apply(memberMap);
 
-            memberMap.GetSerializer().Should().BeSameAs(serializer);
-            memberMap.IdGenerator.Should().BeSameAs(idGenerator);
+            memberMap.GetSerializer().Should().BeSameAs(_defaultInt32Serializer);
+            memberMap.IdGenerator.Should().BeNull();
         }
 
         [Fact]
-        public void Apply_should_ignore_any_id_that_already_has_an_idGenerator()
+        public void Apply_should_ignore_any_id_that_already_has_a_serializer_configured()
         {
             var subject = CreateSubject();
             var memberMap = GetIdMemberMap<TestClassWithStringId>();
-            memberMap.SetIdGenerator(Mock.Of<IIdGenerator>());
-            var serializer = memberMap.GetSerializer();
-            var idGenerator = memberMap.IdGenerator;
+            var serializer = new StringSerializer();
+            memberMap.SetSerializer(serializer);
 
             subject.Apply(memberMap);
 
             memberMap.GetSerializer().Should().BeSameAs(serializer);
-            memberMap.IdGenerator.Should().BeSameAs(idGenerator);
+            memberMap.IdGenerator.Should().BeNull();
         }
 
         [Fact]
-        public void Apply_should_ignore_any_id_that_has_a_serializer_that_is_not_of_type_StringSerializer()
+        public void Apply_should_ignore_any_id_that_already_has_an_idGenerator_configured()
         {
             var subject = CreateSubject();
             var memberMap = GetIdMemberMap<TestClassWithStringId>();
-            memberMap.SetSerializer(new FakeStringSerializer());
-            var serializer = memberMap.GetSerializer();
-            var idGenerator = memberMap.IdGenerator;
+            var idGenerator = Mock.Of<IIdGenerator>();
+            memberMap.SetIdGenerator(idGenerator);
 
             subject.Apply(memberMap);
 
-            memberMap.GetSerializer().Should().BeSameAs(serializer);
-            memberMap.IdGenerator.Should().BeSameAs(idGenerator);
-        }
-
-        [Fact]
-        public void Apply_should_ignore_any_id_that_has_a_serializer_that_is_of_type_StringSerializer_with_a_representation_other_than_string()
-        {
-            var subject = CreateSubject();
-            var memberMap = GetIdMemberMap<TestClassWithStringId>();
-            memberMap.SetSerializer(new StringSerializer(BsonType.ObjectId));
-            var serializer = memberMap.GetSerializer();
-            var idGenerator = memberMap.IdGenerator;
-
-            subject.Apply(memberMap);
-
-            memberMap.GetSerializer().Should().BeSameAs(serializer);
+            memberMap.GetSerializer().Should().BeSameAs(_defaultStringSerializer);
             memberMap.IdGenerator.Should().BeSameAs(idGenerator);
         }
 
@@ -106,8 +88,8 @@ namespace MongoDB.Bson.Tests.Serialization.Conventions
 
             subject.Apply(memberMap);
 
-            var serializer = memberMap.GetSerializer().Should().BeOfType<StringSerializer>().Subject;
-            serializer.Representation.Should().Be(BsonType.ObjectId);
+            var stringSerializer = memberMap.GetSerializer().Should().BeOfType<StringSerializer>().Subject;
+            stringSerializer.Representation.Should().Be(BsonType.ObjectId);
             memberMap.IdGenerator.Should().BeOfType<StringObjectIdGenerator>();
         }
 
@@ -122,10 +104,6 @@ namespace MongoDB.Bson.Tests.Serialization.Conventions
             => new BsonClassMap<T>(cm => cm.AutoMap()).GetMemberMap(memberName);
 
         // nested types
-        private class FakeStringSerializer : SealedClassSerializerBase<string>
-        {
-        }
-
         private class TestClassWithIntId
         {
             public int Id { get; set; }
@@ -134,7 +112,7 @@ namespace MongoDB.Bson.Tests.Serialization.Conventions
         private class TestClassWithStringId
         {
             public string Id { get; set; }
-            public int X { get; set; }
+            public string X { get; set; }
         }
     }
 }
