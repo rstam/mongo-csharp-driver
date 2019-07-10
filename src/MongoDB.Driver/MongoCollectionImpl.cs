@@ -55,12 +55,7 @@ namespace MongoDB.Driver
             _operationExecutor = Ensure.IsNotNull(operationExecutor, nameof(operationExecutor));
             _documentSerializer = Ensure.IsNotNull(documentSerializer, nameof(documentSerializer));
 
-            _messageEncoderSettings = new MessageEncoderSettings
-            {
-                { MessageEncoderSettingsName.GuidRepresentation, _settings.GuidRepresentation },
-                { MessageEncoderSettingsName.ReadEncoding, _settings.ReadEncoding ?? Utf8Encodings.Strict },
-                { MessageEncoderSettingsName.WriteEncoding, _settings.WriteEncoding ?? Utf8Encodings.Strict }
-            };
+            _messageEncoderSettings = GetMessageEncoderSettings();
         }
 
         // properties
@@ -1036,6 +1031,21 @@ namespace MongoDB.Driver
         {
             var binding = new WritableServerBinding(_cluster, session.WrappedCoreSession.Fork());
             return new ReadWriteBindingHandle(binding);
+        }
+
+        private MessageEncoderSettings GetMessageEncoderSettings()
+        {
+            var messageEncoderSettings = new MessageEncoderSettings
+            {
+                { MessageEncoderSettingsName.GuidRepresentation, _settings.GuidRepresentation },
+                { MessageEncoderSettingsName.ReadEncoding, _settings.ReadEncoding ?? Utf8Encodings.Strict },
+                { MessageEncoderSettingsName.WriteEncoding, _settings.WriteEncoding ?? Utf8Encodings.Strict }
+            };
+
+            var client = _database.Client;
+            client.ConfigureAutoEncryptionMessageEncoderSettings(messageEncoderSettings);
+
+            return messageEncoderSettings;
         }
 
         private IBsonSerializer<TField> GetValueSerializerForDistinct<TField>(RenderedFieldDefinition<TField> renderedField, IBsonSerializerRegistry serializerRegistry)

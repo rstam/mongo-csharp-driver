@@ -27,7 +27,17 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders
     /// </summary>
     public static class MessageEncoderSettingsName
     {
-        // encoder settings used by the binary encoders
+        // encoder settings used by the binary encoders        
+        /// <summary>
+        /// The name of the binary document field decryptor setting.
+        /// </summary>
+        public const string BinaryDocumentFieldDecryptor = "BinaryDocumentFieldDecryptor";
+
+        /// <summary>
+        /// The name of the binary document field encryptor setting.
+        /// </summary>
+        public const string BinaryDocumentFieldEncryptor = "BinaryDocumentFieldEncryptor";
+
         /// <summary>
         /// The name of the FixOldBinarySubTypeOnInput setting.
         /// </summary>
@@ -172,6 +182,16 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders
             {
                 return defaultValue;
             }
+        }
+
+        /// <summary>
+        /// Sets the specified setting.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="value">The value.</param>
+        public void Set(string name, object value)
+        {
+            _settings[name] = value;
         }
     }
 }

@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
+using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 
 namespace MongoDB.Driver
 {
@@ -106,6 +107,21 @@ namespace MongoDB.Driver
             Ensure.IsNotNull(session, nameof(session));
             var emptyPipeline = new EmptyPipelineDefinition<ChangeStreamDocument<BsonDocument>>();
             return client.WatchAsync(session, emptyPipeline, options, cancellationToken);
+        }
+
+        // internal extension methods
+        internal static void ConfigureAutoEncryptionMessageEncoderSettings(this IMongoClient client, MessageEncoderSettings messageEncoderSettings)
+        {
+            var autoencryptionOptions = client.Settings.AutoEncryptionOptions;
+            if (autoencryptionOptions != null)
+            {
+                var cryptor = new NoopBinaryDocumentFieldCryptor(); // TODO: replace with a real cryptor
+                if (!autoencryptionOptions.BypassAutoEncryption)
+                {
+                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, cryptor);
+                }
+                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, cryptor);
+            }
         }
     }
 }

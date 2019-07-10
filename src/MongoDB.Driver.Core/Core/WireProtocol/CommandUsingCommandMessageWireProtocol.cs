@@ -40,6 +40,8 @@ namespace MongoDB.Driver.Core.WireProtocol
         private readonly List<Type1CommandMessageSection> _commandPayloads;
         private readonly IElementNameValidator _commandValidator; // TODO: how can this be supported when using CommandMessage?
         private readonly DatabaseNamespace _databaseNamespace;
+        private readonly IBinaryDocumentFieldDecryptor _documentFieldDecryptor;
+        private readonly IBinaryDocumentFieldEncryptor _documentFieldEncryptor;
         private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly Action<IMessageEncoderPostProcessor> _postWriteAction;
         private readonly ReadPreference _readPreference;
@@ -77,6 +79,12 @@ namespace MongoDB.Driver.Core.WireProtocol
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
             _messageEncoderSettings = messageEncoderSettings;
             _postWriteAction = postWriteAction; // can be null
+
+            if (messageEncoderSettings != null)
+            {
+                _documentFieldDecryptor = messageEncoderSettings.GetOrDefault<IBinaryDocumentFieldDecryptor>(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, null);
+                _documentFieldEncryptor = messageEncoderSettings.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null);
+            }
         }
 
         // public methods
@@ -85,6 +93,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             try
             {
                 var message = CreateCommandMessage(connection.Description);
+                message = AutoEncryptFieldsIfNecessary(message, cancellationToken);
 
                 try
                 {
@@ -99,6 +108,7 @@ namespace MongoDB.Driver.Core.WireProtocol
                 {
                     var encoderSelector = new CommandResponseMessageEncoderSelector();
                     var response = (CommandResponseMessage)connection.ReceiveMessage(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken);
+                    response = AutoDecryptFieldsIfNecessary(response, cancellationToken);
                     return ProcessResponse(connection.ConnectionId, response.WrappedMessage);
                 }
                 else
@@ -122,6 +132,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             try
             {
                 var message = CreateCommandMessage(connection.Description);
+                message = await AutoEncryptFieldsIfNecessaryAsync(message, cancellationToken).ConfigureAwait(false);
 
                 try
                 {
@@ -136,6 +147,7 @@ namespace MongoDB.Driver.Core.WireProtocol
                 {
                     var encoderSelector = new CommandResponseMessageEncoderSelector();
                     var response = (CommandResponseMessage)await connection.ReceiveMessageAsync(message.RequestId, encoderSelector, _messageEncoderSettings, cancellationToken).ConfigureAwait(false);
+                    response = await AutoDecryptFieldsIfNecessaryAsync(response, cancellationToken).ConfigureAwait(false);
                     return ProcessResponse(connection.ConnectionId, response.WrappedMessage);
                 }
                 else
@@ -155,6 +167,58 @@ namespace MongoDB.Driver.Core.WireProtocol
         }
 
         // private methods
+        private CommandResponseMessage AutoDecryptFieldsIfNecessary(CommandResponseMessage encryptedResponseMessage, CancellationToken cancellationToken)
+        {
+            if (_documentFieldDecryptor == null)
+            {
+                return encryptedResponseMessage;
+            }
+            else
+            {
+                var messageFieldDecryptor = new CommandMessageFieldDecryptor(_documentFieldDecryptor, _messageEncoderSettings);
+                return messageFieldDecryptor.DecryptFields(encryptedResponseMessage, cancellationToken);
+            }
+        }
+
+        private async Task<CommandResponseMessage> AutoDecryptFieldsIfNecessaryAsync(CommandResponseMessage encryptedResponseMessage, CancellationToken cancellationToken)
+        {
+            if (_documentFieldDecryptor == null)
+            {
+                return encryptedResponseMessage;
+            }
+            else
+            {
+                var messageFieldDecryptor = new CommandMessageFieldDecryptor(_documentFieldDecryptor, _messageEncoderSettings);
+                return await messageFieldDecryptor.DecryptFieldsAsync(encryptedResponseMessage, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        private CommandRequestMessage AutoEncryptFieldsIfNecessary(CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
+        {
+            if (_documentFieldEncryptor == null)
+            {
+                return unencryptedRequestMessage;
+            }
+            else
+            {
+                var helper = new CommandMessageFieldEncryptor(_documentFieldEncryptor, _messageEncoderSettings);
+                return helper.EncryptFields(unencryptedRequestMessage, cancellationToken);
+            }
+        }
+
+        private async Task<CommandRequestMessage> AutoEncryptFieldsIfNecessaryAsync(CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
+        {
+            if (_documentFieldEncryptor == null)
+            {
+                return unencryptedRequestMessage;
+            }
+            else
+            {
+                var helper = new CommandMessageFieldEncryptor(_documentFieldEncryptor, _messageEncoderSettings);
+                return await helper.EncryptFieldsAsync(unencryptedRequestMessage, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         private CommandRequestMessage CreateCommandMessage(ConnectionDescription connectionDescription)
         {
             var requestId = RequestMessage.GetNextRequestId();
