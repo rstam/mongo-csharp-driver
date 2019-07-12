@@ -39,8 +39,7 @@ namespace MongoDB.Driver
             IMongoClient keyVaultClient,
             CollectionNamespace keyVaultNamespace,
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
-            IReadOnlyDictionary<string, BsonDocument> schemaMap
-           )
+            IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
             _bypassAutoEncryption = bypassAutoEncryption;
             _extraOptions = extraOptions;
@@ -57,10 +56,7 @@ namespace MongoDB.Driver
         /// <value>
         ///   <c>true</c> if automatic encryption should be bypasssed; otherwise, <c>false</c>.
         /// </value>
-        public bool BypassAutoEncryption
-        {
-            get => _bypassAutoEncryption;
-        }
+        public bool BypassAutoEncryption => _bypassAutoEncryption;
 
         /// <summary>
         /// Gets the extra options.
@@ -68,10 +64,7 @@ namespace MongoDB.Driver
         /// <value>
         /// The extra options.
         /// </value>
-        public IReadOnlyDictionary<string, object> ExtraOptions
-        {
-            get => _extraOptions;
-        }
+        public IReadOnlyDictionary<string, object> ExtraOptions => _extraOptions;
 
         /// <summary>
         /// Gets the key vault client.
@@ -79,10 +72,7 @@ namespace MongoDB.Driver
         /// <value>
         /// The key vault client.
         /// </value>
-        public IMongoClient KeyVaultClient
-        {
-            get => _keyVaultClient;
-        }
+        public IMongoClient KeyVaultClient => _keyVaultClient;
 
         /// <summary>
         /// Gets the key vault namespace.
@@ -90,10 +80,7 @@ namespace MongoDB.Driver
         /// <value>
         /// The key vault namespace.
         /// </value>
-        public CollectionNamespace KeyVaultNamespace
-        {
-            get => _keyVaultNamespace;
-        }
+        public CollectionNamespace KeyVaultNamespace => _keyVaultNamespace;
 
         /// <summary>
         /// Gets the KMS providers.
@@ -101,10 +88,7 @@ namespace MongoDB.Driver
         /// <value>
         /// The KMS providers.
         /// </value>
-        public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> KmsProviders
-        {
-            get => _kmsProviders;
-        }
+        public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> KmsProviders => _kmsProviders;
 
         /// <summary>
         /// Gets the schema map.
@@ -112,14 +96,11 @@ namespace MongoDB.Driver
         /// <value>
         /// The schema map.
         /// </value>
-        public IReadOnlyDictionary<string, BsonDocument> SchemaMap
-        {
-            get => _schemaMap;
-        }
+        public IReadOnlyDictionary<string, BsonDocument> SchemaMap => _schemaMap;
 
         // nested types        
         /// <summary>
-        /// A builder for AutoEncryptionOptions instances.
+        /// A builder of AutoEncryptionOptions instances.
         /// </summary>
         public class Builder
         {

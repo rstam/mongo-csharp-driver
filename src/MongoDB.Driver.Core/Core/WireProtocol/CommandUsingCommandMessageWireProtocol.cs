@@ -202,7 +202,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             else
             {
                 var helper = new CommandMessageFieldEncryptor(_documentFieldEncryptor, _messageEncoderSettings);
-                return helper.EncryptFields(unencryptedRequestMessage, cancellationToken);
+                return helper.EncryptFields(_databaseNamespace.DatabaseName, unencryptedRequestMessage, cancellationToken);
             }
         }
 
@@ -215,7 +215,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             else
             {
                 var helper = new CommandMessageFieldEncryptor(_documentFieldEncryptor, _messageEncoderSettings);
-                return await helper.EncryptFieldsAsync(unencryptedRequestMessage, cancellationToken).ConfigureAwait(false);
+                return await helper.EncryptFieldsAsync(_databaseNamespace.DatabaseName, unencryptedRequestMessage, cancellationToken).ConfigureAwait(false);
             }
         }
 

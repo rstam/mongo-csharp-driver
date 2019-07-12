@@ -41,17 +41,17 @@ namespace MongoDB.Driver.Core.WireProtocol
         }
 
         // public static methods
-        public CommandRequestMessage EncryptFields(CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
+        public CommandRequestMessage EncryptFields(string databaseName, CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
         {
             var unencryptedDocumentBytes = GetUnencryptedDocumentBytes(unencryptedRequestMessage);
-            var encryptedDocumentBytes = _documentFieldEncryptor.EncryptFields(unencryptedDocumentBytes, cancellationToken);
+            var encryptedDocumentBytes = _documentFieldEncryptor.EncryptFields(databaseName, unencryptedDocumentBytes, cancellationToken);
             return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedDocumentBytes);
         }
 
-        public async Task<CommandRequestMessage> EncryptFieldsAsync(CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
+        public async Task<CommandRequestMessage> EncryptFieldsAsync(string databaseName, CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
         {
             var unencryptedDocumentBytes = GetUnencryptedDocumentBytes(unencryptedRequestMessage);
-            var encryptedDocumentBytes = await _documentFieldEncryptor.EncryptFieldsAsync(unencryptedDocumentBytes, cancellationToken).ConfigureAwait(false);
+            var encryptedDocumentBytes = await _documentFieldEncryptor.EncryptFieldsAsync(databaseName, unencryptedDocumentBytes, cancellationToken).ConfigureAwait(false);
             return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedDocumentBytes);
         }
 

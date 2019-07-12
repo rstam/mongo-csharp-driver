@@ -19,6 +19,7 @@ using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
+using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
@@ -112,11 +113,17 @@ namespace MongoDB.Driver
         // internal extension methods
         internal static void ConfigureAutoEncryptionMessageEncoderSettings(this IMongoClient client, MessageEncoderSettings messageEncoderSettings)
         {
-            var autoencryptionOptions = client.Settings.AutoEncryptionOptions;
-            if (autoencryptionOptions != null)
+            var autoEncryptionOptions = client.Settings.AutoEncryptionOptions;
+            if (autoEncryptionOptions != null)
             {
-                var cryptor = new NoopBinaryDocumentFieldCryptor(); // TODO: replace with a real cryptor
-                if (!autoencryptionOptions.BypassAutoEncryption)
+#if false
+                // use to test the driver with a dummy cryptor
+                var cryptor = new NoopBinaryDocumentFieldCryptor();
+#else
+                var cryptor = new LibMongoCryptController(client, autoEncryptionOptions);
+#endif
+
+                if (!autoEncryptionOptions.BypassAutoEncryption)
                 {
                     messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, cryptor);
                 }

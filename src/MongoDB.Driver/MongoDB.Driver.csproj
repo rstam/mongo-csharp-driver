@@ -63,4 +63,16 @@
     <None Include="..\..\License.txt" Pack="true" PackagePath="$(PackageLicenseFile)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFramework)' == 'net452'">
+    <Reference Include="MongoDB.Crypt">
+      <HintPath>..\..\dependencies\MongoDB.Crypt\net452\MongoDB.Crypt.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.5'">
+    <Reference Include="MongoDB.Crypt">
+      <HintPath>..\..\dependencies\MongoDB.Crypt\netstandard1.5\MongoDB.Crypt.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
 </Project>
