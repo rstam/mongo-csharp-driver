@@ -14,6 +14,7 @@
 */
 
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver
@@ -24,35 +25,35 @@ namespace MongoDB.Driver
     public class ClientEncryptionOptions
     {
         // private fields
-        private IMongoClient _keyVaultClient;
-        private CollectionNamespace _keyVaultNamespace;
-        private IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
+        private readonly IMongoClient _keyVaultClient;
+        private readonly CollectionNamespace _keyVaultNamespace;
+        private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
 
-        // constructors        
+        // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientEncryptionOptions"/> class.
         /// </summary>
         /// <param name="keyVaultClient">The key vault client.</param>
         /// <param name="keyVaultNamespace">The key vault namespace.</param>
         /// <param name="kmsProviders">The KMS providers.</param>
-        private ClientEncryptionOptions(
+        public ClientEncryptionOptions(
             IMongoClient keyVaultClient,
             CollectionNamespace keyVaultNamespace,
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders)            
+            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders)
         {
             _keyVaultClient = Ensure.IsNotNull(keyVaultClient, nameof(keyVaultClient));
             _keyVaultNamespace = Ensure.IsNotNull(keyVaultNamespace, nameof(keyVaultNamespace));
             _kmsProviders = Ensure.IsNotNull(kmsProviders, nameof(kmsProviders));
         }
 
-        // public properties        
+        // public properties
         /// <summary>
-        /// Gets the key value client.
+        /// Gets the key vault client.
         /// </summary>
         /// <value>
-        /// The key value client.
+        /// The key vault client.
         /// </value>
-        public IMongoClient KeyValueClient => _keyVaultClient;
+        public IMongoClient KeyVaultClient => _keyVaultClient;
 
         /// <summary>
         /// Gets the key vault namespace.
@@ -69,67 +70,5 @@ namespace MongoDB.Driver
         /// The KMS providers.
         /// </value>
         public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> KmsProviders => _kmsProviders;
-
-        // nested types        
-        /// <summary>
-        /// A builder of ClientEncryptionOptions instances.
-        /// </summary>
-        public class Builder
-        {
-            // private fields
-            private IMongoClient _keyVaultClient;
-            private CollectionNamespace _keyVaultNamespace;
-            private IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
-
-            // public properties            
-            /// <summary>
-            /// Gets or sets the key value client.
-            /// </summary>
-            /// <value>
-            /// The key value client.
-            /// </value>
-            public IMongoClient KeyValueClient
-            {
-                get => _keyVaultClient;
-                set => _keyVaultClient = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the key vault namespace.
-            /// </summary>
-            /// <value>
-            /// The key vault namespace.
-            /// </value>
-            public CollectionNamespace KeyVaultNamespace
-            {
-                get => _keyVaultNamespace;
-                set => _keyVaultNamespace = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the KMS providers.
-            /// </summary>
-            /// <value>
-            /// The KMS providers.
-            /// </value>
-            public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> KmsProviders
-            {
-                get => _kmsProviders;
-                set => _kmsProviders = value;
-            }
-
-            // public methods            
-            /// <summary>
-            /// Builds the ClientEncryptionOptions instance.
-            /// </summary>
-            /// <returns>The ClientEncryptionOptions instance.</returns>
-            public ClientEncryptionOptions Build()
-            {
-                return new ClientEncryptionOptions(
-                    _keyVaultClient,
-                    _keyVaultNamespace,
-                    _kmsProviders);
-            }
-        }
     }
 }

@@ -28,15 +28,20 @@ namespace MongoDB.Driver
         private readonly BsonDocument _masterKey;
 
         // constructors
-        private DataKeyOptions(
-            IReadOnlyList<string> keyAltNames,
-            BsonDocument masterKey)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="DataKeyOptions"/> class.
+        /// </summary>
+        /// <param name="keyAltNames">The key alt names.</param>
+        /// <param name="masterKey">The master key.</param>
+        public DataKeyOptions(
+            Optional<IReadOnlyList<string>> keyAltNames = default,
+            Optional<BsonDocument> masterKey = default)
         {
-            _keyAltNames = keyAltNames;
-            _masterKey = masterKey;
+            _keyAltNames = keyAltNames.WithDefault(null);
+            _masterKey = masterKey.WithDefault(null);
         }
 
-        // public properties            
+        // public properties
         /// <summary>
         /// Gets the master key.
         /// </summary>
@@ -52,51 +57,5 @@ namespace MongoDB.Driver
         /// The key alt names.
         /// </value>
         public IReadOnlyList<string> KeyAltNames => _keyAltNames;
-
-        // nested types        
-        /// <summary>
-        /// A builder of DataKeyOptions instances.
-        /// </summary>
-        public class Builder
-        {
-            // private fields
-            private BsonDocument _masterKey;
-            private IReadOnlyList<string> _keyAltNames;
-
-            // public properties            
-            /// <summary>
-            /// Gets or sets the key alt names.
-            /// </summary>
-            /// <value>
-            /// The key alt names.
-            /// </value>
-            public IReadOnlyList<string> KeyAltNames
-            {
-                get => _keyAltNames;
-                set => _keyAltNames = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the master key.
-            /// </summary>
-            /// <value>
-            /// The master key.
-            /// </value>
-            public BsonDocument MasterKey
-            {
-                get => _masterKey;
-                set => _masterKey = value;
-            }
-
-            // public methods            
-            /// <summary>
-            /// Builds the instance.
-            /// </summary>
-            /// <returns>An instance of DataKeyOptions.</returns>
-            public DataKeyOptions Build()
-            {
-                return new DataKeyOptions(_keyAltNames, _masterKey);
-            }
-        }
     }
 }

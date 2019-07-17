@@ -139,6 +139,7 @@ namespace MongoDB.Driver.Core.WireProtocol
                 outputStream.WriteByte((byte)BsonType.Document);
                 outputStream.WriteCString(index.ToString());
                 CopyBsonDocument(inputStream, outputStream);
+                index++;
             }
             outputStream.WriteByte(0);
             outputStream.BackpatchSize(arrayStartPosition);

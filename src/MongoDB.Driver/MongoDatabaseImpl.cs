@@ -452,11 +452,12 @@ namespace MongoDB.Driver
         // private methods
         private AggregateOperation<TResult> CreateAggregateOperation<TResult>(RenderedPipelineDefinition<TResult> renderedPipeline, AggregateOptions options)
         {
+            var messageEncoderSettings = GetMessageEncoderSettings();
             return new AggregateOperation<TResult>(
                 _databaseNamespace,
                 renderedPipeline.Documents,
                 renderedPipeline.OutputSerializer,
-                _messageEncoderSettings)
+                messageEncoderSettings)
             {
                 AllowDiskUse = options.AllowDiskUse,
                 BatchSize = options.BatchSize,
@@ -490,10 +491,11 @@ namespace MongoDB.Driver
 
         private AggregateToCollectionOperation CreateAggregateToCollectionOperation<TResult>(RenderedPipelineDefinition<TResult> renderedPipeline, AggregateOptions options)
         {
+            var messageEncoderSettings = GetMessageEncoderSettings();
             return new AggregateToCollectionOperation(
                 _databaseNamespace,
                 renderedPipeline.Documents,
-                _messageEncoderSettings)
+                messageEncoderSettings)
             {
                 AllowDiskUse = options.AllowDiskUse,
                 BypassDocumentValidation = options.BypassDocumentValidation,

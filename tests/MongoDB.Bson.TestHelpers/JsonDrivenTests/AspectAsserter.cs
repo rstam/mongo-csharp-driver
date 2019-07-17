@@ -21,6 +21,11 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
     {
         // public methods
         public abstract void AssertAspects(object actualValue, BsonDocument aspects);
+
+        public virtual void ConfigureTemplateNames(string[] templates)
+        {
+            // do nothing by default
+        }
     }
 
     public abstract class AspectAsserter<TActual> : AspectAsserter

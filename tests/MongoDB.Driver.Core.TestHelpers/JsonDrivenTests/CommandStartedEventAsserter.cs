@@ -27,6 +27,13 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
 {
     public class CommandStartedEventAsserter : AspectAsserter<CommandStartedEvent>
     {
+        private string[] _templates =
+        {
+            "getMore",
+            "afterClusterTime",
+            "recoveryToken"
+        };
+
         // protected methods
         protected override void AssertAspect(CommandStartedEvent actualEvent, string name, BsonValue expectedValue)
         {
@@ -62,23 +69,43 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 var actualModel = actualModels[i];
                 var expectedModel = expectedModels[i];
 
-                if (expectedModel.Contains("multi") && expectedModel["multi"] == false && !actualModel.Contains("multi"))
+                if (!actualModel.Contains("multi"))
                 {
-                    expectedModel.Remove("multi");
+                    actualModel.Add("multi", false);
+                }
+                if (!actualModel.Contains("upsert"))
+                {
+                    actualModel.Add("upsert", false);
                 }
 
-                if (expectedModel.Contains("upsert") && expectedModel["upsert"] == false && !actualModel.Contains("upsert"))
+                if (!expectedModel.Contains("multi"))
                 {
-                    expectedModel.Remove("upsert");
+                    expectedModel.Add("multi", false);
                 }
+                if (!expectedModel.Contains("upsert"))
+                {
+                    expectedModel.Add("upsert", false);
+                }
+
+                // todo: check on evergreen
+                //if (expectedModel.Contains("multi") && expectedModel["multi"] == false && !actualModel.Contains("multi"))
+                //{
+                //    expectedModel.Remove("multi");
+                //}
+
+                //if (expectedModel.Contains("upsert") && expectedModel["upsert"] == false && !actualModel.Contains("upsert"))
+                //{
+                //    expectedModel.Remove("upsert");
+                //}
             }
         }
 
         private void AssertCommandAspects(BsonDocument actualCommand, BsonDocument aspects)
         {
-            RecursiveFieldSetter.SetAll(actualCommand, "getMore", 42L);
-            RecursiveFieldSetter.SetAll(actualCommand, "afterClusterTime", 42);
-            RecursiveFieldSetter.SetAll(actualCommand, "recoveryToken", 42);
+            foreach (var template in _templates)
+            {
+                RecursiveFieldSetter.SetAll(actualCommand, template, 42L);
+            }
 
             foreach (var aspect in aspects)
             {
@@ -119,6 +146,8 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                             return;
                         }
                         break;
+                    case "cursor" when commandName == "listCollections":
+                        return;
                 }
 
                 throw new AssertionFailedException($"Expected field '{name}' in command: {actualCommand.ToJson()}.");
@@ -138,7 +167,7 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 switch (name)
                 {
                     case "out":
-                        if (commandName == "mapReduce") 
+                        if (commandName == "mapReduce")
                         {
                             if (expectedValue is BsonString &&
                                 actualValue.IsBsonDocument &&
@@ -156,6 +185,11 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
 
                 throw new AssertionFailedException($"Expected field '{name}' in command '{commandName}' to be {expectedValue.ToJson()} but found {actualValue.ToJson()}.");
             }
+        }
+
+        public override void ConfigureTemplateNames(string[] templates)
+        {
+            _templates = templates;
         }
     }
 }

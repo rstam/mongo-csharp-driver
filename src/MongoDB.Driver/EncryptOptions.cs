@@ -28,14 +28,20 @@ namespace MongoDB.Driver
         private readonly byte[] _keyId;
 
         // constructors
-        private EncryptOptions(
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EncryptOptions"/> class.
+        /// </summary>
+        /// <param name="algorithm">The encryption algorithm.</param>
+        /// <param name="keyAltName">The key alt name.</param>
+        /// <param name="keyId">The keyId.</param>
+        public EncryptOptions(
             string algorithm,
-            string keyAltName,
-            byte[] keyId)
+            Optional<string> keyAltName = default,
+            Optional<byte[]> keyId = default)
         {
             _algorithm = Ensure.IsNotNull(algorithm, nameof(algorithm));
-            _keyAltName = keyAltName;
-            _keyId = keyId;
+            _keyAltName = keyAltName.WithDefault(null);
+            _keyId = keyId.WithDefault(null);
         }
 
         // public properties                    
@@ -62,64 +68,5 @@ namespace MongoDB.Driver
         /// The key identifier.
         /// </value>
         public byte[] KeyId => _keyId;
-
-        // nested types        
-        /// <summary>
-        /// A builder of EncryptOptions instances.
-        /// </summary>
-        public class Builder
-        {
-            // private fields
-            private string _algorithm;
-            private string _keyAltName;
-            private byte[] _keyId;
-
-            // public properties            
-            /// <summary>
-            /// Gets or sets the algorithm.
-            /// </summary>
-            /// <value>
-            /// The algorithm.
-            /// </value>
-            public string Algorithm
-            {
-                get => _algorithm;
-                set => _algorithm = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the alt key name.
-            /// </summary>
-            /// <value>
-            /// The alt key name.
-            /// </value>
-            public string KeyAltName
-            {
-                get => _keyAltName;
-                set => _keyAltName = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the key identifier.
-            /// </summary>
-            /// <value>
-            /// The key identifier.
-            /// </value>
-            public byte[] KeyId
-            {
-                get => _keyId;
-                set => _keyId = value;
-            }
-
-            // public methods            
-            /// <summary>
-            /// Builds the instance.
-            /// </summary>
-            /// <returns>An EncryptOptions instance.</returns>
-            public EncryptOptions Build()
-            {
-                return new EncryptOptions(_algorithm, _keyAltName, _keyId);
-            }
-        }
     }
 }

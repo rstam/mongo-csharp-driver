@@ -13,12 +13,8 @@
 * limitations under the License.
 */
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders
 {
@@ -27,7 +23,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders
     /// </summary>
     public static class MessageEncoderSettingsName
     {
-        // encoder settings used by the binary encoders        
+        // encoder settings used by the binary encoders
         /// <summary>
         /// The name of the binary document field decryptor setting.
         /// </summary>

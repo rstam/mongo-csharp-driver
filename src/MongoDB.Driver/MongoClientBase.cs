@@ -18,7 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Clusters;
-using MongoDB.Driver.Core.Operations;
+using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
@@ -29,6 +29,9 @@ namespace MongoDB.Driver
     {
         /// <inheritdoc />
         public abstract ICluster Cluster { get; }
+
+        /// <inheritdoc />
+        public abstract IEncryptionSource EncryptionSource { get; }
 
         /// <inheritdoc />
         public abstract MongoClientSettings Settings { get; }
@@ -50,6 +53,12 @@ namespace MongoDB.Driver
 
         /// <inheritdoc />
         public virtual Task DropDatabaseAsync(IClientSessionHandle session, string name, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public virtual ClientEncryption GetClientEncryption(ClientEncryptionOptions options)
         {
             throw new NotImplementedException();
         }
@@ -95,7 +104,7 @@ namespace MongoDB.Driver
 
         /// <inheritdoc />
         public virtual IAsyncCursor<BsonDocument> ListDatabases(
-            ListDatabasesOptions options,                                                
+            ListDatabasesOptions options,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             throw new NotImplementedException();
@@ -111,7 +120,7 @@ namespace MongoDB.Driver
 
         /// <inheritdoc />
         public virtual IAsyncCursor<BsonDocument> ListDatabases(
-            IClientSessionHandle session, 
+            IClientSessionHandle session,
             ListDatabasesOptions options,
             CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -137,7 +146,7 @@ namespace MongoDB.Driver
 
         /// <inheritdoc />
         public virtual Task<IAsyncCursor<BsonDocument>> ListDatabasesAsync(
-            IClientSessionHandle session, 
+            IClientSessionHandle session,
             ListDatabasesOptions options,
             CancellationToken cancellationToken = default(CancellationToken))
         {

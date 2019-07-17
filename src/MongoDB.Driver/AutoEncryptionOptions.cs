@@ -14,7 +14,10 @@
 */
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using MongoDB.Bson;
+using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver
@@ -33,20 +36,29 @@ namespace MongoDB.Driver
         private readonly IReadOnlyDictionary<string, BsonDocument> _schemaMap;
 
         // constructors
-        private AutoEncryptionOptions(
-            bool bypassAutoEncryption,
-            IReadOnlyDictionary<string, object> extraOptions,
-            IMongoClient keyVaultClient,
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AutoEncryptionOptions"/> class.
+        /// </summary>
+        /// <param name="keyVaultNamespace">The keyVault namespace.</param>
+        /// <param name="kmsProviders">The kms providers.</param>
+        /// <param name="bypassAutoEncryption">The bypass auto encryption flag.</param>
+        /// <param name="extraOptions">The extra options.</param>
+        /// <param name="keyVaultClient">The keyVault client.</param>
+        /// <param name="schemaMap">The schema map.</param>
+        public AutoEncryptionOptions(
             CollectionNamespace keyVaultNamespace,
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
-            IReadOnlyDictionary<string, BsonDocument> schemaMap)
+            Optional<bool> bypassAutoEncryption = default,
+            Optional<IReadOnlyDictionary<string, object>> extraOptions = default,
+            Optional<IMongoClient> keyVaultClient = default,
+            Optional<IReadOnlyDictionary<string, BsonDocument>> schemaMap = default)
         {
-            _bypassAutoEncryption = bypassAutoEncryption;
-            _extraOptions = extraOptions;
-            _keyVaultClient = keyVaultClient;
             _keyVaultNamespace = Ensure.IsNotNull(keyVaultNamespace, nameof(keyVaultNamespace));
             _kmsProviders = Ensure.IsNotNull(kmsProviders, nameof(kmsProviders));
-            _schemaMap = schemaMap;
+            _bypassAutoEncryption = bypassAutoEncryption.WithDefault(false);
+            _extraOptions = extraOptions.WithDefault(null);
+            _keyVaultClient = keyVaultClient.WithDefault(null);
+            _schemaMap = schemaMap.WithDefault(null);
         }
 
         // public properties
@@ -98,108 +110,68 @@ namespace MongoDB.Driver
         /// </value>
         public IReadOnlyDictionary<string, BsonDocument> SchemaMap => _schemaMap;
 
-        // nested types        
         /// <summary>
-        /// A builder of AutoEncryptionOptions instances.
+        /// Returns a new instance of the <see cref="AutoEncryptionOptions"/> class.
         /// </summary>
-        public class Builder
+        /// <param name="keyVaultNamespace">The keyVault namespace.</param>
+        /// <param name="kmsProviders">The kms providers.</param>
+        /// <param name="bypassAutoEncryption">The bypass auto encryption flag.</param>
+        /// <param name="extraOptions">The extra options.</param>
+        /// <param name="keyVaultClient">The keyVault client.</param>
+        /// <param name="schemaMap">The schema map.</param>
+        /// <returns>A new instance of <see cref="AutoEncryptionOptions"/>.</returns>
+        public AutoEncryptionOptions With(
+            Optional<CollectionNamespace> keyVaultNamespace = default,
+            Optional<IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>> kmsProviders = default,
+            Optional<bool> bypassAutoEncryption = default,
+            Optional<IReadOnlyDictionary<string, object>> extraOptions = default,
+            Optional<IMongoClient> keyVaultClient = default,
+            Optional<IReadOnlyDictionary<string, BsonDocument>> schemaMap = default)
         {
-            // private fields
-            private bool _bypassAutoEncryption;
-            private IReadOnlyDictionary<string, object> _extraOptions;
-            private IMongoClient _keyVaultClient;
-            private CollectionNamespace _keyVaultNamespace;
-            private IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
-            private IReadOnlyDictionary<string, BsonDocument> _schemaMap;
+            return new AutoEncryptionOptions(
+                keyVaultNamespace.WithDefault(_keyVaultNamespace),
+                kmsProviders.WithDefault(_kmsProviders),
+                bypassAutoEncryption.WithDefault(_bypassAutoEncryption),
+                new Optional<IReadOnlyDictionary<string, object>>(extraOptions.WithDefault(_extraOptions)),
+                new Optional<IMongoClient>(keyVaultClient.WithDefault(_keyVaultClient)),
+                new Optional<IReadOnlyDictionary<string, BsonDocument>>(schemaMap.WithDefault(_schemaMap)));
+        }
 
-            // public properties            
-            /// <summary>
-            /// Gets or sets a value indicating whether to bypass automatic encryption.
-            /// </summary>
-            /// <value>
-            ///   <c>true</c> if automatic encryption should be bypasssed; otherwise, <c>false</c>.
-            /// </value>
-            public bool BypassAutoEncryption
+        /// <summary>
+        /// Gets a new instance of the <see cref="AutoEncryptionOptions"/> initialized with values from a <see cref="ClientEncryptionOptions"/>.
+        /// </summary>
+        /// <param name="clientEncryptionOptions">The client encryption options.</param>
+        /// <returns>A new instance of <see cref="AutoEncryptionOptions"/>.</returns>
+        public static AutoEncryptionOptions FromClientEncryptionOptions(ClientEncryptionOptions clientEncryptionOptions)
+        {
+            return new AutoEncryptionOptions(
+                keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
+                kmsProviders: clientEncryptionOptions.KmsProviders,
+                keyVaultClient: new Optional<IMongoClient>(clientEncryptionOptions.KeyVaultClient));
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            var sb = new StringBuilder();
+            sb.AppendFormat("BypassAutoEncryption={0};", _bypassAutoEncryption);
+            sb.AppendFormat("KmsProviders={0};", _kmsProviders.ToJson());
+
+            if (_keyVaultNamespace != null)
             {
-                get => _bypassAutoEncryption;
-                set => _bypassAutoEncryption = value;
+                sb.AppendFormat("KeyVaultNamespace={0};", _keyVaultNamespace.FullName);
             }
 
-            /// <summary>
-            /// Gets or sets the extra options.
-            /// </summary>
-            /// <value>
-            /// The extra options.
-            /// </value>
-            public IReadOnlyDictionary<string, object> ExtraOptions
+            if (_extraOptions != null)
             {
-                get => _extraOptions;
-                set => _extraOptions = value;
+                sb.AppendFormat("ExtraOptions={0};", _extraOptions.ToJson());
             }
 
-            /// <summary>
-            /// Gets or sets the key vault client.
-            /// </summary>
-            /// <value>
-            /// The key vault client.
-            /// </value>
-            public IMongoClient KeyVaultClient
+            if (_schemaMap != null)
             {
-                get => _keyVaultClient;
-                set => _keyVaultClient = value;
+                sb.AppendFormat("SchemaMap={0};", _schemaMap.ToJson());
             }
-
-            /// <summary>
-            /// Gets or sets the key vault namespace.
-            /// </summary>
-            /// <value>
-            /// The key vault namespace.
-            /// </value>
-            public CollectionNamespace KeyVaultNamespace
-            {
-                get => _keyVaultNamespace;
-                set => _keyVaultNamespace = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the KMS providers.
-            /// </summary>
-            /// <value>
-            /// The KMS providers.
-            /// </value>
-            public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> KmsProviders
-            {
-                get => _kmsProviders;
-                set => _kmsProviders = value;
-            }
-
-            /// <summary>
-            /// Gets or sets the schema map.
-            /// </summary>
-            /// <value>
-            /// The schema map.
-            /// </value>
-            public IReadOnlyDictionary<string, BsonDocument> SchemaMap
-            {
-                get => _schemaMap;
-                set => _schemaMap = value;
-            }
-
-            // public methods            
-            /// <summary>
-            /// Builds the AutoEncryptionOptions instance.
-            /// </summary>
-            /// <returns>An AutoEncryptionOptions. </returns>
-            public AutoEncryptionOptions Build()
-            {
-                return new AutoEncryptionOptions(
-                    _bypassAutoEncryption,
-                    _extraOptions,
-                    _keyVaultClient,
-                    _keyVaultNamespace,
-                    _kmsProviders,
-                    _schemaMap);
-            }
+            return sb.ToString();
         }
     }
 }

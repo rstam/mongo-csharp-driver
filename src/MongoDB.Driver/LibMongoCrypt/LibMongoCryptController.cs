@@ -28,47 +28,80 @@ using MongoDB.Driver.Core.WireProtocol;
 
 namespace MongoDB.Driver.LibMongoCrypt
 {
-    internal class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor
+    internal class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor//, IBinaryExplicitFieldEncryption
     {
         // private fields
-        private readonly AutoEncryptionOptions _autoEncryptionOptions;
-        private readonly IMongoClient _client;
+        private readonly MongoClient _client;
         private readonly IMongoCollection<BsonDocument> _keyVaultCollection;
         private readonly IMongoClient _mongocryptdClient;
 
         // constructors
         public LibMongoCryptController(
-            IMongoClient client, 
+            IMongoClient client,
             AutoEncryptionOptions autoEncryptionOptions)
         {
-            _client = Ensure.IsNotNull(client, nameof(client));
-            _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
-
-            var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? client;
-            var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
-            var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
-            _keyVaultCollection = keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
-
-            _mongocryptdClient = null; // TODO: launch mongocryptd and create a client for it
+            _client = Ensure.IsNotNull(client, nameof(client)) as MongoClient;
+            Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+            _keyVaultCollection = GetKeyVaultCollection(autoEncryptionOptions, client);
+            _mongocryptdClient = client.EncryptionSource.MongoCryptDClient;
         }
 
-        public LibMongoCryptController(
-            AutoEncryptionOptions autoEncryptionOptions)
-        {
-            _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+        //todo:
+        //public LibMongoCryptController(
+        //    AutoEncryptionOptions autoEncryptionOptions)
+        //{
+        //    _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
 
-            var keyVaultClient = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultClient, $"{nameof(autoEncryptionOptions)}.{nameof(autoEncryptionOptions.KeyVaultClient)}");
-            var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
-            var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
-            _keyVaultCollection = keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
-        }
+        //    var keyVaultClient = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultClient, $"{nameof(autoEncryptionOptions)}.{nameof(autoEncryptionOptions.KeyVaultClient)}");
+        //    var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
+        //    var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
+        //    _keyVaultCollection = keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
+        //}
 
         // public methods
+        public Guid GenerateKey(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
+        {
+            byte[] keyBytes = null;
+
+            using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+            {
+                keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, CancellationToken.None);
+            }
+
+            var rawBsonDocument = new RawBsonDocument(keyBytes);
+            _keyVaultCollection.InsertOne(rawBsonDocument, cancellationToken: cancellationToken);
+            var guid = rawBsonDocument.GetValue("_id").AsGuid;
+            return guid;
+        }
+        
+        public async Task<Guid> GenerateKeyAsync(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
+        {
+            byte[] keyBytes = null;
+
+            using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+            {
+                keyBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
+            }
+
+            var rawBsonDocument = new RawBsonDocument(keyBytes);
+            await _keyVaultCollection.InsertOneAsync(rawBsonDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var guid = rawBsonDocument.GetValue("_id").AsGuid;
+            return guid;
+        }
+
+        public byte[] DecryptField(byte[] encryptedDocument, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<byte[]> DecryptFieldAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public byte[] DecryptFields(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            var cryptOptions = CreateCryptOptions(databaseName: null);
-            using (var cryptClient = CryptClientFactory.Create(cryptOptions))
-            using (var context = cryptClient.StartDecryptionContext(encryptedDocument))
+            using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
             {
                 return ProcessStates(context, databaseName: null, cancellationToken) ?? encryptedDocument;
             }
@@ -76,19 +109,25 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public async Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            var cryptOptions = CreateCryptOptions(databaseName: null);
-            using (var cryptClient = CryptClientFactory.Create(cryptOptions))
-            using (var context = cryptClient.StartDecryptionContext(encryptedDocument))
+            using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
             {
                 return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
             }
         }
 
+        public byte[] EncryptField(byte[] encryptedDocument, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<byte[]> EncryptFieldAsync(byte[] encryptedDocument, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
         public byte[] EncryptFields(string databaseName, byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            var cryptOptions = CreateCryptOptions(databaseName);
-            using (var cryptClient = CryptClientFactory.Create(cryptOptions))
-            using (var context = cryptClient.StartEncryptionContext(databaseName, encryptedDocument))
+            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, encryptedDocument))
             {
                 return ProcessStates(context, databaseName, cancellationToken);
             }
@@ -96,16 +135,14 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            var cryptOptions = CreateCryptOptions(databaseName);
-            using (var cryptClient = CryptClientFactory.Create(cryptOptions))
-            using (var context = cryptClient.StartEncryptionContext(databaseName, encryptedDocument))
+            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, encryptedDocument))
             {
                 return await ProcessStatesAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
             }
         }
 
         // private methods
-        public static bool AcceptAnyCertificate(
+        private static bool AcceptAnyCertificate(
             object sender,
             X509Certificate certificate,
             X509Chain chain,
@@ -114,38 +151,12 @@ namespace MongoDB.Driver.LibMongoCrypt
             return true;
         }
 
-        private CryptOptions CreateCryptOptions(string databaseName)
+        private static IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)
         {
-            IKmsCredentials kmsCredentials = null;
-            var kmsProviders = _autoEncryptionOptions.KmsProviders;
-            if (kmsProviders != null)
-            {
-                if (kmsProviders.TryGetValue("aws", out var awsProvider))
-                {
-                    if (awsProvider.TryGetValue("accessKeyId", out var accessKeyIdObject) && accessKeyIdObject is string accessKeyId &&
-                        awsProvider.TryGetValue("secretAccessKey", out var secretAccessKeyObject) && secretAccessKeyObject is string secretAccessKey)
-                    {
-                        kmsCredentials = new AwsKmsCredentials(secretAccessKey, accessKeyId);
-                    }
-                }
-                else if (kmsProviders.TryGetValue("local", out var localProvider))
-                {
-                    if (localProvider.TryGetValue("key", out var keyObject) && keyObject is byte[] key)
-                    {
-                        kmsCredentials = new LocalKmsCredentials(key);
-                    }
-                }
-            }
-
-            byte[] schemaBytes = null;
-            var schemaMap = _autoEncryptionOptions.SchemaMap;
-            if (databaseName != null && schemaMap != null && schemaMap.TryGetValue(databaseName, out var schemaObject) && schemaObject is BsonDocument schemaDocument)
-            {
-                var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-                schemaBytes = schemaDocument.ToBson(writerSettings: writeSettings);
-            }
-
-            return new CryptOptions(kmsCredentials, schemaBytes);
+            var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? client;
+            var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
+            var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
+            return keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
         }
 
         private void FeedResult(CryptContext context, BsonDocument document)
@@ -242,8 +253,9 @@ namespace MongoDB.Driver.LibMongoCrypt
             var commandBytes = context.GetOperation().ToArray();
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
-            var result = database.RunCommand(command, cancellationToken: cancellationToken);
-            FeedResult(context, result);
+            var response = database.RunCommand(command, cancellationToken: cancellationToken);
+            RestoreDbNodeInResponse(commandDocument, response);
+            FeedResult(context, response);
         }
 
         private async Task ProcessNeedMongoMarkingsStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
@@ -252,8 +264,9 @@ namespace MongoDB.Driver.LibMongoCrypt
             var commandBytes = context.GetOperation().ToArray();
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
-            var result = await database.RunCommandAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
-            FeedResult(context, result);
+            var response = await database.RunCommandAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
+            RestoreDbNodeInResponse(commandDocument, response);
+            FeedResult(context, response);
         }
 
         private byte[] ProcessReadyState(CryptContext context)
@@ -383,6 +396,18 @@ namespace MongoDB.Driver.LibMongoCrypt
                     var responseBytes = new byte[count];
                     Buffer.BlockCopy(buffer, 0, responseBytes, 0, count);
                     request.Feed(responseBytes);
+                }
+            }
+        }
+
+        private void RestoreDbNodeInResponse(BsonDocument request, BsonDocument response)
+        {
+            if (request.TryGetElement("$db", out var db))
+            {
+                var result = response["result"].AsBsonDocument;
+                if (!result.Contains("$db"))
+                {
+                    result.Add(db);
                 }
             }
         }

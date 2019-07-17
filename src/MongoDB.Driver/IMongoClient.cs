@@ -17,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Clusters;
-using MongoDB.Driver.Core.Operations;
+using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
@@ -37,6 +37,14 @@ namespace MongoDB.Driver
         /// The cluster.
         /// </value>
         ICluster Cluster { get; }
+
+        /// <summary>
+        /// Gets the encryption source.
+        /// </summary>
+        /// <value>
+        /// The encryption source.
+        /// </value>
+        IEncryptionSource EncryptionSource { get; }
 
         /// <summary>
         /// Gets the settings.
@@ -78,6 +86,13 @@ namespace MongoDB.Driver
         Task DropDatabaseAsync(IClientSessionHandle session, string name, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
+        /// Gets a client encryption.
+        /// </summary>
+        /// <param name="options">The client encryption options.</param>
+        /// <returns>A client encryption. </returns>
+        ClientEncryption GetClientEncryption(ClientEncryptionOptions options);
+
+        /// <summary>
         /// Gets a database.
         /// </summary>
         /// <param name="name">The name of the database.</param>
@@ -100,7 +115,7 @@ namespace MongoDB.Driver
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The database names.</returns>
         IAsyncCursor<string> ListDatabaseNames(
-            IClientSessionHandle session,                                              
+            IClientSessionHandle session,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -118,7 +133,7 @@ namespace MongoDB.Driver
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The database names.</returns>
         Task<IAsyncCursor<string>> ListDatabaseNamesAsync(
-            IClientSessionHandle session,                                              
+            IClientSessionHandle session,
             CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
@@ -127,8 +142,8 @@ namespace MongoDB.Driver
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A cursor.</returns>
         IAsyncCursor<BsonDocument> ListDatabases(
-            CancellationToken cancellationToken = default(CancellationToken));        
-        
+            CancellationToken cancellationToken = default(CancellationToken));
+
         /// <summary>
         /// Lists the databases on the server.
         /// </summary>

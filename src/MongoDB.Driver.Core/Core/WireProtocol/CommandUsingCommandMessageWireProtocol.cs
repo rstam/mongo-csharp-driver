@@ -93,7 +93,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             try
             {
                 var message = CreateCommandMessage(connection.Description);
-                message = AutoEncryptFieldsIfNecessary(message, cancellationToken);
+                message = AutoEncryptFieldsIfNecessary(message, connection, cancellationToken);
 
                 try
                 {
@@ -132,7 +132,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             try
             {
                 var message = CreateCommandMessage(connection.Description);
-                message = await AutoEncryptFieldsIfNecessaryAsync(message, cancellationToken).ConfigureAwait(false);
+                message = await AutoEncryptFieldsIfNecessaryAsync(message, connection, cancellationToken).ConfigureAwait(false);
 
                 try
                 {
@@ -193,7 +193,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             }
         }
 
-        private CommandRequestMessage AutoEncryptFieldsIfNecessary(CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
+        private CommandRequestMessage AutoEncryptFieldsIfNecessary(CommandRequestMessage unencryptedRequestMessage, IConnection connection, CancellationToken cancellationToken)
         {
             if (_documentFieldEncryptor == null)
             {
@@ -201,12 +201,17 @@ namespace MongoDB.Driver.Core.WireProtocol
             }
             else
             {
+                if (connection.Description.IsMasterResult.MaxWireVersion < 8)
+                {
+                    throw new NotSupportedException("Auto-encryption requires a minimum MongoDB version of 4.2.");
+                }
+
                 var helper = new CommandMessageFieldEncryptor(_documentFieldEncryptor, _messageEncoderSettings);
                 return helper.EncryptFields(_databaseNamespace.DatabaseName, unencryptedRequestMessage, cancellationToken);
             }
         }
 
-        private async Task<CommandRequestMessage> AutoEncryptFieldsIfNecessaryAsync(CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
+        private async Task<CommandRequestMessage> AutoEncryptFieldsIfNecessaryAsync(CommandRequestMessage unencryptedRequestMessage, IConnection connection, CancellationToken cancellationToken)
         {
             if (_documentFieldEncryptor == null)
             {
@@ -214,6 +219,11 @@ namespace MongoDB.Driver.Core.WireProtocol
             }
             else
             {
+                if (connection.Description.IsMasterResult.MaxWireVersion < 8)
+                {
+                    throw new NotSupportedException("Auto-encryption requires a minimum MongoDB version of 4.2.");
+                }
+
                 var helper = new CommandMessageFieldEncryptor(_documentFieldEncryptor, _messageEncoderSettings);
                 return await helper.EncryptFieldsAsync(_databaseNamespace.DatabaseName, unencryptedRequestMessage, cancellationToken).ConfigureAwait(false);
             }
@@ -251,8 +261,11 @@ namespace MongoDB.Driver.Core.WireProtocol
         {
             var extraElements = new List<BsonElement>();
 
-            var dbElement = new BsonElement("$db", _databaseNamespace.DatabaseName);
-            extraElements.Add(dbElement);
+            if (!_command.Contains("$db"))
+            {
+                var dbElement = new BsonElement("$db", _databaseNamespace.DatabaseName);
+                extraElements.Add(dbElement);
+            }
 
             if (_readPreference != null && _readPreference != ReadPreference.Primary)
             {
