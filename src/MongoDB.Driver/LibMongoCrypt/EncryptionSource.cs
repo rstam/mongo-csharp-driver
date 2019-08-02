@@ -14,8 +14,12 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Text;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Crypt;
@@ -37,7 +41,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         /// </value>
         CryptClient CryptClient { get; }
 #pragma warning restore
-        
+
         /// <summary>
         /// Gets the mongocryptd client.
         /// </summary>
@@ -49,6 +53,8 @@ namespace MongoDB.Driver.LibMongoCrypt
 
     internal class EncryptionSource : IEncryptionSource
     {
+        private readonly object _processSpawnLock = new object();
+
         private readonly AutoEncryptionOptions _autoEncryptionOptions;
         private readonly Lazy<CryptClient> _cryptClient;
         private readonly IMongoClient _mongoCryptDClient;
@@ -61,11 +67,11 @@ namespace MongoDB.Driver.LibMongoCrypt
             _cryptClient = new Lazy<CryptClient>(() => CreateCryptClient(CreateCryptOptions()));
         }
 
-        public IMongoClient MongoCryptDClient => _mongoCryptDClient;
-
 #pragma warning disable 3003
         public CryptClient CryptClient => _cryptClient.Value;
 #pragma warning restore
+
+        public IMongoClient MongoCryptDClient => _mongoCryptDClient;
 
         public static IEncryptionSource CreateEncryptionSourceIfNecessary(MongoClientSettings mongoClientSettings)
         {
@@ -132,11 +138,63 @@ namespace MongoDB.Driver.LibMongoCrypt
             {
                 connectionString = "mongodb://localhost:27020";
             }
-            // todo:
-            // mongocryptdBypassSpawn
-            // mongocryptdSpawnPath
-            // mongocryptdSpawnArgs
+
+            lock (_processSpawnLock)
+            {
+                SpawnMongocryptdIfNecessary(extraOptions);
+            }
             return new MongoClient(connectionString.ToString());
+        }
+
+        // todo: case insensitive?
+        private void SpawnMongocryptdIfNecessary(IReadOnlyDictionary<string, object> extraOptions)
+        {
+            if (!extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn) || (!bool.Parse(mongoCryptBypassSpawn.ToString())))
+            {
+                if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var path))
+                {
+                    //path = string.Empty; // look at the current directory
+                    // todo: where do we need to take this part in case if it's not specified (not in tests)?
+                    path = @"C:\MongoInstances\4.2.0rc3\bin";
+                }
+
+                if (!Path.HasExtension(path.ToString()))
+                {
+                    string fileName = "mongocryptd.exe";
+                    path = Path.Combine(path.ToString(), fileName);
+                }
+
+                try
+                {
+                    using (Process mongoCryptD = new Process())
+                    {
+                        mongoCryptD.StartInfo.UseShellExecute = true;
+                        mongoCryptD.StartInfo.FileName = path.ToString();
+                        mongoCryptD.StartInfo.CreateNoWindow = false;
+                        if (extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
+                        {
+                            // todo: refactor. Consider a enumerable object in `mongocryptdSpawnArgs`.
+                            var args = mongocryptdSpawnArgs.ToString();
+                            if (!args.Contains("--idleShutdownTimeoutSecs"))
+                            {
+                                args += "--idleShutdownTimeoutSecs 60;";
+                            }
+
+                            mongoCryptD.StartInfo.Arguments = args;
+                        }
+
+                        if (!mongoCryptD.Start())
+                        {
+                            //todo: handling?
+                        }
+                    }
+                }
+                catch
+                {
+                    // todo: do we need to handle it?
+                    // new MongoClientException("Exception starting mongocryptd process. Is `mongocryptd` on the system path?", t));
+                }
+            }
         }
     }
 }

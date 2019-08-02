@@ -178,7 +178,6 @@ namespace MongoDB.Driver
         /// <inheritdoc/>
         public override ClientEncryption GetClientEncryption(ClientEncryptionOptions options)
         {
-            // todo: review
             var autoEncryptionOptions = AutoEncryptionOptions.FromClientEncryptionOptions(options);
             var encryptionController = new LibMongoCryptController(this, autoEncryptionOptions);
             return new ClientEncryption(encryptionController, options);

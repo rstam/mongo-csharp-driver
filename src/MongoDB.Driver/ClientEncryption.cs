@@ -17,6 +17,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Crypt;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.LibMongoCrypt;
@@ -45,24 +46,26 @@ namespace MongoDB.Driver
         /// <summary>
         /// Creates a data key.
         /// </summary>
+        /// <param name="kmsProvider">The kms provider.</param>
         /// <param name="dataKeyOptions">The data key options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A data key.</returns>
-        public BsonValue CreateDataKey(DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
+        public BsonValue CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
-            var key = ParseKmsKeyId(dataKeyOptions.MasterKey);
+            var key = GetKmsProvider(kmsProvider);
             return _libMongoCryptController.GenerateKey(key, cancellationToken);
         }
 
         /// <summary>
         /// Creates a data key.
         /// </summary>
+        /// <param name="kmsProvider">The kms provider.</param>
         /// <param name="dataKeyOptions">The data key options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A data key.</returns>
-        public async Task<BsonValue> CreateDataKeyAsync(DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
+        public async Task<BsonValue> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
-            var key = ParseKmsKeyId(dataKeyOptions.MasterKey);
+            var key = GetKmsProvider(kmsProvider);
             return await _libMongoCryptController.GenerateKeyAsync(key, cancellationToken).ConfigureAwait(false);
         }
 
@@ -72,7 +75,7 @@ namespace MongoDB.Driver
         /// <param name="value">The value.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decrypted value.</returns>
-        public BsonValue Decrypt(BsonBinaryData value, CancellationToken cancellationToken)
+        public BsonBinaryData Decrypt(BsonBinaryData value, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.DecryptField(value.Bytes, cancellationToken);
         }
@@ -83,7 +86,7 @@ namespace MongoDB.Driver
         /// <param name="value">The value.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decrypted value.</returns>
-        public async Task<BsonValue> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
+        public async Task<BsonBinaryData> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
         {
             return await _libMongoCryptController.DecryptFieldAsync(value.Bytes, cancellationToken).ConfigureAwait(false);
         }
@@ -97,7 +100,7 @@ namespace MongoDB.Driver
         /// <returns>The encrypted value.</returns>
         public BsonBinaryData Encrypt(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            var bytes = value.ToBson(); //todo:
+            byte[] bytes = new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
             return _libMongoCryptController.EncryptField(bytes, encryptOptions, cancellationToken);
         }
 
@@ -110,23 +113,24 @@ namespace MongoDB.Driver
         /// <returns>The encrypted value.</returns>
         public async Task<BsonBinaryData> EncryptAsync(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            var bytes = value.ToBson(); //todo:
+            byte[] bytes = new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
             return await _libMongoCryptController.EncryptFieldAsync(bytes, encryptOptions, cancellationToken).ConfigureAwait(false);
         }
 
-        private IKmsKeyId ParseKmsKeyId(BsonDocument masterKey)
+        private IKmsKeyId GetKmsProvider(string kmsProvider)
         {
-            if (!masterKey.TryGetValue("key", out var customerMasterKey))
+            switch (kmsProvider)
             {
-                throw new ArgumentException("TODO");
+                case "aws":
+                    throw new NotImplementedException();
+                    //// todo: _options?
+                    //var masterKey = dataKeyOptions.MasterKey;
+                    //return new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString());
+                case "local":
+                    return new LocalKeyId();
+                default:
+                    throw new ArgumentException($"Unexpected kmsProvider {kmsProvider}.");
             }
-
-            if (!masterKey.TryGetValue("region", out var region))
-            {
-                throw new ArgumentException("TODO");
-            }
-
-            return new AwsKeyId(customerMasterKey.ToString(), region.ToString());
         }
     }
 }

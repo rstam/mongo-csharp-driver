@@ -46,26 +46,14 @@ namespace MongoDB.Driver.LibMongoCrypt
             _mongocryptdClient = client.EncryptionSource.MongoCryptDClient;
         }
 
-        //todo:
-        //public LibMongoCryptController(
-        //    AutoEncryptionOptions autoEncryptionOptions)
-        //{
-        //    _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
-
-        //    var keyVaultClient = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultClient, $"{nameof(autoEncryptionOptions)}.{nameof(autoEncryptionOptions.KeyVaultClient)}");
-        //    var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
-        //    var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
-        //    _keyVaultCollection = keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
-        //}
-
         // public methods
         public Guid GenerateKey(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
         {
-            byte[] keyBytes = null;
-
+            byte[] keyBytes;
+            
             using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
             {
-                keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, CancellationToken.None);
+                keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
             }
 
             var rawBsonDocument = new RawBsonDocument(keyBytes);
@@ -76,7 +64,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         
         public async Task<Guid> GenerateKeyAsync(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
         {
-            byte[] keyBytes = null;
+            byte[] keyBytes;
 
             using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
             {
@@ -91,19 +79,25 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public byte[] DecryptField(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+            {
+                return ProcessStates(context, databaseName: null, cancellationToken);
+            }
         }
 
-        public Task<byte[]> DecryptFieldAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public async Task<byte[]> DecryptFieldAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+            {
+                return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+            }
         }
 
         public byte[] DecryptFields(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
             using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
             {
-                return ProcessStates(context, databaseName: null, cancellationToken) ?? encryptedDocument;
+                return ProcessStates(context, databaseName: null, cancellationToken) ?? encryptedDocument; // todo: the same thing for async?
             }
         }
 
@@ -115,27 +109,67 @@ namespace MongoDB.Driver.LibMongoCrypt
             }
         }
 
-        public byte[] EncryptField(byte[] encryptedDocument, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        public byte[] EncryptField(byte[] unencryptedField, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var algorithm = (Alogrithm)Enum.Parse(typeof(Alogrithm), encryptOptions.Algorithm);
+
+            var cryptClient = _client.EncryptionSource.CryptClient;
+            CryptContext context;
+            if (encryptOptions.KeyId != null)
+            {
+                context = cryptClient.StartExplicitEncryptionContext(new Guid(encryptOptions.KeyId), algorithm, unencryptedField);
+            }
+            else if (!string.IsNullOrEmpty(encryptOptions.KeyAltName))
+            {
+                context = cryptClient.StartExplicitEncryptionContext(encryptOptions.KeyAltName.ToBson(), algorithm, unencryptedField);
+            }
+            else
+            {
+                throw new Exception("TODO: Exactly one is required.");
+            }
+
+            using (context)
+            {
+                return ProcessStates(context, databaseName: null, cancellationToken);
+            }
         }
 
-        public Task<byte[]> EncryptFieldAsync(byte[] encryptedDocument, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        public async Task<byte[]> EncryptFieldAsync(byte[] unencryptedField, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            var algorithm = (Alogrithm)Enum.Parse(typeof(Alogrithm), encryptOptions.Algorithm);
+
+            var cryptClient = _client.EncryptionSource.CryptClient;
+            CryptContext context;
+            if (encryptOptions.KeyId != null)
+            {
+                context = cryptClient.StartExplicitEncryptionContext(new Guid(encryptOptions.KeyId), algorithm, unencryptedField);
+            }
+            else if (!string.IsNullOrEmpty(encryptOptions.KeyAltName))
+            {
+                context = cryptClient.StartExplicitEncryptionContext(encryptOptions.KeyAltName.ToBson(), algorithm, unencryptedField);
+            }
+            else
+            {
+                throw new Exception("TODO: Exactly one is required.");
+            }
+
+            using (context)
+            {
+                return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+            }
         }
 
-        public byte[] EncryptFields(string databaseName, byte[] encryptedDocument, CancellationToken cancellationToken)
+        public byte[] EncryptFields(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, encryptedDocument))
+            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
             {
                 return ProcessStates(context, databaseName, cancellationToken);
             }
         }
 
-        public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] encryptedDocument, CancellationToken cancellationToken)
+        public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, encryptedDocument))
+            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
             {
                 return await ProcessStatesAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
             }

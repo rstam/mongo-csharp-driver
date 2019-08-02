@@ -14,7 +14,6 @@
 */
 
 using System.Collections.Generic;
-using System.Linq;
 using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver
