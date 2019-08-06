@@ -976,6 +976,19 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Creates a $merge stage.
+        /// </summary>
+        /// <typeparam name="TInput">The type of the input documents.</typeparam>
+        /// <param name="outputCollection">The output collection.</param>
+        /// <returns>The stage.</returns>
+        public static PipelineStageDefinition<TInput, TInput> Merge<TInput>(
+            IMongoCollection<TInput> outputCollection)
+        {
+            Ensure.IsNotNull(outputCollection, nameof(outputCollection));
+            return new BsonDocumentPipelineStageDefinition<TInput, TInput>(new BsonDocument("$merge", outputCollection.CollectionNamespace.CollectionName));
+        }
+
+        /// <summary>
         /// Creates a $project stage.
         /// </summary>
         /// <typeparam name="TInput">The type of the input documents.</typeparam>

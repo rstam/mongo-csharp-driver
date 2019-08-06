@@ -156,6 +156,14 @@ namespace MongoDB.Driver
             return WithPipeline(_pipeline.Match(filter));
         }
 
+        public override IAsyncCursor<TResult> Merge(string collectionName, CancellationToken cancellationToken)
+        {
+            Ensure.IsNotNull(collectionName, nameof(collectionName));
+            var outputCollection = Database.GetCollection<TResult>(collectionName);
+            var aggregate = WithPipeline(_pipeline.Merge(outputCollection));
+            return aggregate.ToCursor(cancellationToken);
+        }
+
         public override IAggregateFluent<TNewResult> OfType<TNewResult>(IBsonSerializer<TNewResult> newResultSerializer)
         {
             return WithPipeline(_pipeline.OfType(newResultSerializer));

@@ -27,6 +27,7 @@ namespace MongoDB.Driver
     {
         private static readonly ReadConcern __available = new ReadConcern(ReadConcernLevel.Available);
         private static readonly ReadConcern __default = new ReadConcern();
+        private static readonly ReadConcern __available = new ReadConcern(ReadConcernLevel.Available);
         private static readonly ReadConcern __linearizable = new ReadConcern(ReadConcernLevel.Linearizable);
         private static readonly ReadConcern __local = new ReadConcern(ReadConcernLevel.Local);
         private static readonly ReadConcern __majority = new ReadConcern(ReadConcernLevel.Majority);
@@ -41,6 +42,11 @@ namespace MongoDB.Driver
         /// Gets a default read concern.
         /// </summary>
         public static ReadConcern Default => __default;
+
+        /// <summary>
+        /// Gets an available read concern.
+        /// </summary>
+        public static ReadConcern Available => __available;
 
         /// <summary>
         /// Gets a linearizable read concern.

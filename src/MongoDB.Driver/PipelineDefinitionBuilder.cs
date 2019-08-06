@@ -829,6 +829,25 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Appends a $merge stage to the pipeline.
+        /// </summary>
+        /// <typeparam name="TInput">The type of the input documents.</typeparam>
+        /// <typeparam name="TOutput">The type of the output documents.</typeparam>
+        /// <param name="pipeline">The pipeline.</param>
+        /// <param name="outputCollection">The output collection.</param>
+        /// <returns>
+        /// A new pipeline with an additional stage.
+        /// </returns>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public static PipelineDefinition<TInput, TOutput> Merge<TInput, TOutput>(
+            this PipelineDefinition<TInput, TOutput> pipeline,
+            IMongoCollection<TOutput> outputCollection)
+        {
+            Ensure.IsNotNull(pipeline, nameof(pipeline));
+            return pipeline.AppendStage(PipelineStageDefinitionBuilder.Merge<TOutput>(outputCollection));
+        }
+
+        /// <summary>
         /// Appends a $out stage to the pipeline.
         /// </summary>
         /// <typeparam name="TInput">The type of the input documents.</typeparam>

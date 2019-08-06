@@ -282,7 +282,7 @@ namespace MongoDB.Driver.Core.Operations
         private void EnsureIsOutputToCollectionPipeline()
         {
             var lastStage = _pipeline.LastOrDefault();
-            if (lastStage == null || lastStage.GetElement(0).Name != "$out")
+            if (lastStage == null || (lastStage.GetElement(0).Name != "$out" && lastStage.GetElement(0).Name != "$merge"))
             {
                 throw new ArgumentException("The last stage of the pipeline for an AggregateOutputToCollectionOperation must have a $out operator.", "pipeline");
             }

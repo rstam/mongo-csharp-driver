@@ -78,6 +78,7 @@ tests:
                         - $match: {_id: {$gt: 1}}
                         - $sort: {x: 1}
                         - $out: "output-collection"
+            error: true
         expectations:
              -  command_started_event:
                     command:
