@@ -19,6 +19,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using Xunit.Abstractions;
 
 namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
@@ -51,12 +54,13 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 
         protected virtual BsonDocument ReadJsonDocument(string path)
         {
-            BsonDefaults.GuidRepresentation = GuidRepresentation.Standard;
+            var jsonReaderSettings = new JsonReaderSettings { GuidRepresentation = GuidRepresentation.Unspecified };
             using (var stream = Assembly.GetManifestResourceStream(path))
-            using (var reader = new StreamReader(stream))
+            using (var streamReader = new StreamReader(stream))
+            using (var jsonReader = new JsonReader(streamReader, jsonReaderSettings))
             {
-                var json = reader.ReadToEnd();
-                var document = BsonDocument.Parse(json);
+                var context = BsonDeserializationContext.CreateRoot(jsonReader);
+                var document = BsonDocumentSerializer.Instance.Deserialize(context);
                 document.InsertAt(0, new BsonElement("_path", path));
                 return document;
             }

@@ -157,8 +157,6 @@ namespace MongoDB.Driver.Tests
         // private methods
         private void ConfigureClients(out DisposableMongoClient client, out DisposableMongoClient clientEncrypted, out ClientEncryption clientEncryption)
         {
-            BsonDefaults.GuidRepresentation = GuidRepresentation.Standard;
-
             client = new DisposableMongoClient(GetMongoClient());
             var clientAdminDatabase = client.GetDatabase(__keyVaultCollectionNamespace.DatabaseNamespace.DatabaseName); //todo: WriteConcern.WMajority?
             clientAdminDatabase.DropCollection(__keyVaultCollectionNamespace.CollectionName);
