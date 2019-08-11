@@ -42,7 +42,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.2" PrivateAssets="All" />
-    <PackageReference Include="MongoDB.Crypt" Version="0.0.0-pre-release" />
+    <PackageReference Include="MongoDB.Crypt" Version="0.0.0-prerelease3" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.5'">
