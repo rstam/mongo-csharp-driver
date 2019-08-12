@@ -37,11 +37,6 @@ namespace MongoDB.Driver
         Local,
 
         /// <summary>
-        /// Reads data with no guarantee that the data has been written to a majority of the replica set members.
-        /// </summary>
-        Available,
-
-        /// <summary>
         /// Reads data committed to a majority of nodes.
         /// </summary>
         Majority,
