@@ -111,7 +111,7 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public byte[] EncryptField(byte[] unencryptedField, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            var algorithm = (Alogrithm)Enum.Parse(typeof(Alogrithm), encryptOptions.Algorithm);
+            var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
 
             var cryptClient = _client.EncryptionSource.CryptClient;
             CryptContext context;
@@ -136,7 +136,7 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public async Task<byte[]> EncryptFieldAsync(byte[] unencryptedField, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            var algorithm = (Alogrithm)Enum.Parse(typeof(Alogrithm), encryptOptions.Algorithm);
+            var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
 
             var cryptClient = _client.EncryptionSource.CryptClient;
             CryptContext context;

@@ -76,7 +76,7 @@ namespace MongoDB.Driver.Tests
                 keyVaultDocument["masterKey"]["provider"].Should().Be(BsonValue.Create("local"));
 
                 var encryptOptions = new EncryptOptions(
-                    Alogrithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
+                    EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
                     keyId: localDataKey.AsBsonBinaryData.Bytes);
                 var localEncrypted = clientEncryption.Encrypt(
                     "hello local",
@@ -132,7 +132,7 @@ namespace MongoDB.Driver.Tests
                 keyVaultDocument["masterKey"]["provider"].Should().Be(BsonValue.Create("aws"));
 
                 var encryptOptions = new EncryptOptions(
-                    Alogrithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
+                    EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
                     keyId: awsDataKey.AsBsonBinaryData.Bytes);
                 var awsEncrypted = clientEncryption.Encrypt(
                     "hello aws",
