@@ -51,6 +51,10 @@ namespace MongoDB.Bson
         /// </summary>
         MD5 = 0x05,
         /// <summary>
+        /// Temporally field. Should be reviewed.
+        /// </summary>
+        Encryption = 0x06,
+        /// <summary>
         /// User defined binary data.
         /// </summary>
         UserDefined = 0x80

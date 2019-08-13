@@ -93,23 +93,24 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         private CryptOptions CreateCryptOptions()
         {
-            IKmsCredentials kmsCredentials = null;
             var kmsProviders = _autoEncryptionOptions.KmsProviders;
+            Dictionary<KmsType, IKmsCredentials> kmsProvidersMap = null;
             if (kmsProviders != null)
             {
+                kmsProvidersMap = new Dictionary<KmsType, IKmsCredentials>();
                 if (kmsProviders.TryGetValue("aws", out var awsProvider))
                 {
                     if (awsProvider.TryGetValue("accessKeyId", out var accessKeyId) &&
                         awsProvider.TryGetValue("secretAccessKey", out var secretAccessKey))
                     {
-                        kmsCredentials = new AwsKmsCredentials((string)secretAccessKey, (string)accessKeyId);
+                        kmsProvidersMap.Add(KmsType.Aws, new AwsKmsCredentials((string)secretAccessKey, (string)accessKeyId));
                     }
                 }
                 if (kmsProviders.TryGetValue("local", out var localProvider))
                 {
                     if (localProvider.TryGetValue("key", out var keyObject) && keyObject is byte[] key)
                     {
-                        kmsCredentials = new LocalKmsCredentials(key);
+                        kmsProvidersMap.Add(KmsType.Local, new LocalKmsCredentials(key));
                     }
                 }
             }
@@ -124,7 +125,7 @@ namespace MongoDB.Driver.LibMongoCrypt
                 schemaBytes = schemaDocument.ToBson(writerSettings: writeSettings);
             }
 
-            return new CryptOptions(kmsCredentials, schemaBytes);
+            return new CryptOptions(kmsProvidersMap, schemaBytes);
         }
 
         private IMongoClient CreateMongoCryptDClient(IReadOnlyDictionary<string, object> extraOptions)

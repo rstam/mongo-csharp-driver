@@ -14,6 +14,8 @@
 */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -31,15 +33,11 @@ namespace MongoDB.Driver
     {
         // private fields
         private readonly LibMongoCryptController _libMongoCryptController;
-        private readonly ClientEncryptionOptions _options;
 
         // constructors
-        internal ClientEncryption(
-            LibMongoCryptController libMongoCryptController,
-            ClientEncryptionOptions options)
+        internal ClientEncryption(LibMongoCryptController libMongoCryptController)
         {
             _libMongoCryptController = Ensure.IsNotNull(libMongoCryptController, nameof(libMongoCryptController));
-            _options = Ensure.IsNotNull(options, nameof(options));
         }
 
         // public methods
@@ -52,7 +50,7 @@ namespace MongoDB.Driver
         /// <returns>A data key.</returns>
         public BsonValue CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
-            var key = GetKmsProvider(kmsProvider);
+            var key = GetKmsProvider(kmsProvider, dataKeyOptions);
             return _libMongoCryptController.GenerateKey(key, cancellationToken);
         }
 
@@ -65,7 +63,7 @@ namespace MongoDB.Driver
         /// <returns>A data key.</returns>
         public async Task<BsonValue> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
-            var key = GetKmsProvider(kmsProvider);
+            var key = GetKmsProvider(kmsProvider, dataKeyOptions);
             return await _libMongoCryptController.GenerateKeyAsync(key, cancellationToken).ConfigureAwait(false);
         }
 
@@ -100,8 +98,15 @@ namespace MongoDB.Driver
         /// <returns>The encrypted value.</returns>
         public BsonBinaryData Encrypt(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            byte[] bytes = new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
-            return _libMongoCryptController.EncryptField(bytes, encryptOptions, cancellationToken);
+            PrepareEncryptOptions(value, encryptOptions, out var keyId, out var valueBytes, out var keyAltNameBytes, out var algorithm);
+            var encryptedBytes = _libMongoCryptController.EncryptField(
+                valueBytes,
+                keyId,
+                keyAltNameBytes,
+                algorithm,
+                cancellationToken);
+            var rawDocument = new RawBsonDocument(encryptedBytes);
+            return new BsonBinaryData(rawDocument["v"].AsByteArray, BsonBinarySubType.Encryption);
         }
 
         /// <summary>
@@ -113,24 +118,71 @@ namespace MongoDB.Driver
         /// <returns>The encrypted value.</returns>
         public async Task<BsonBinaryData> EncryptAsync(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            byte[] bytes = new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
-            return await _libMongoCryptController.EncryptFieldAsync(bytes, encryptOptions, cancellationToken).ConfigureAwait(false);
+            PrepareEncryptOptions(value, encryptOptions, out var keyId, out var valueBytes, out var keyAltNameBytes, out var algorithm);
+            var encryptedBytes = await _libMongoCryptController
+                .EncryptFieldAsync(
+                    valueBytes,
+                    keyId,
+                    keyAltNameBytes,
+                    algorithm,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            var rawDocument = new RawBsonDocument(encryptedBytes);
+            return new BsonBinaryData(rawDocument["v"].AsByteArray, BsonBinarySubType.Encryption);
         }
 
-        private IKmsKeyId GetKmsProvider(string kmsProvider)
+        private IKmsKeyId GetKmsProvider(string kmsProvider, DataKeyOptions dataKeyOptions)
         {
+            IEnumerable<byte[]> keyAltNamesBytes = null;
+            if (dataKeyOptions.KeyAltNames != null)
+            {
+                keyAltNamesBytes = dataKeyOptions
+                    .KeyAltNames
+                    .Select(c => new BsonDocument("keyAltName", c))
+                    .Select(c => c.ToBson(serializer: BsonValueSerializer.Instance));
+            }
+
             switch (kmsProvider)
             {
                 case "aws":
-                    throw new NotImplementedException();
-                    //// todo: _options?
-                    //var masterKey = dataKeyOptions.MasterKey;
-                    //return new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString());
+                    var masterKey = dataKeyOptions.MasterKey;
+                    if (keyAltNamesBytes != null)
+                    {
+                        return new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString(), keyAltNamesBytes);
+                    }
+                    else
+                    {
+                        return new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString());
+                    }
                 case "local":
-                    return new LocalKeyId();
+                    if (keyAltNamesBytes != null)
+                    {
+                        return new LocalKeyId(keyAltNamesBytes);
+                    }
+                    else
+                    {
+                        return new LocalKeyId();
+                    }
                 default:
                     throw new ArgumentException($"Unexpected kmsProvider {kmsProvider}.");
             }
+        }
+
+        private void PrepareEncryptOptions(
+            BsonValue value,
+            EncryptOptions encryptOptions,
+            out Guid? keyId,
+            out byte[] valueBytes,
+            out byte[] keyAltNameBytes,
+            out EncryptionAlgorithm algorithm)
+        {
+            keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?)null;
+            valueBytes = new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
+            algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
+            keyAltNameBytes =
+                !string.IsNullOrWhiteSpace(encryptOptions.KeyAltName)
+                    ? new BsonDocument("keyAltName", encryptOptions.KeyAltName).ToBson(serializer: BsonValueSerializer.Instance)
+                    : null;
         }
     }
 }

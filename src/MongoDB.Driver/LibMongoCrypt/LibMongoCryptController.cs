@@ -50,10 +50,16 @@ namespace MongoDB.Driver.LibMongoCrypt
         public Guid GenerateKey(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
         {
             byte[] keyBytes;
-            
-            using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+            try
             {
-                keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
+                using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+                {
+                    keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
 
             var rawBsonDocument = new RawBsonDocument(keyBytes);
@@ -61,14 +67,21 @@ namespace MongoDB.Driver.LibMongoCrypt
             var guid = rawBsonDocument.GetValue("_id").AsGuid;
             return guid;
         }
-        
+
         public async Task<Guid> GenerateKeyAsync(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
         {
             byte[] keyBytes;
 
-            using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+            try
             {
-                keyBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
+                using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+                {
+                    keyBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
 
             var rawBsonDocument = new RawBsonDocument(keyBytes);
@@ -79,99 +92,151 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public byte[] DecryptField(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+            try
             {
-                return ProcessStates(context, databaseName: null, cancellationToken);
+                using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+                {
+                    return ProcessStates(context, databaseName: null, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
         public async Task<byte[]> DecryptFieldAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+            try
             {
-                return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+                {
+                    return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
         public byte[] DecryptFields(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
+            try
             {
-                return ProcessStates(context, databaseName: null, cancellationToken) ?? encryptedDocument; // todo: the same thing for async?
+                using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
+                {
+                    return ProcessStates(context, databaseName: null, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
         public async Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
+            try
             {
-                return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
+                {
+                    return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
-        public byte[] EncryptField(byte[] unencryptedField, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        public byte[] EncryptField(byte[] unencryptedField, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
-            var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
+            try
+            {
+                var cryptClient = _client.EncryptionSource.CryptClient;
+                CryptContext context;
+                if (keyId.HasValue)
+                {
+                    context = cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, unencryptedField);
+                }
+                else if (keyAltName != null)
+                {
+                    context = cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, unencryptedField);
+                }
+                else
+                {
+                    throw new Exception("TODO: Exactly one is required.");
+                }
 
-            var cryptClient = _client.EncryptionSource.CryptClient;
-            CryptContext context;
-            if (encryptOptions.KeyId != null)
-            {
-                context = cryptClient.StartExplicitEncryptionContext(new Guid(encryptOptions.KeyId), algorithm, unencryptedField);
+                using (context)
+                {
+                    return ProcessStates(context, databaseName: null, cancellationToken);
+                }
             }
-            else if (!string.IsNullOrEmpty(encryptOptions.KeyAltName))
+            catch (Exception ex)
             {
-                context = cryptClient.StartExplicitEncryptionContext(encryptOptions.KeyAltName.ToBson(), algorithm, unencryptedField);
-            }
-            else
-            {
-                throw new Exception("TODO: Exactly one is required.");
-            }
-
-            using (context)
-            {
-                return ProcessStates(context, databaseName: null, cancellationToken);
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
-        public async Task<byte[]> EncryptFieldAsync(byte[] unencryptedField, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        public async Task<byte[]> EncryptFieldAsync(byte[] unencryptedField, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
-            var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
+            try
+            {
+                var cryptClient = _client.EncryptionSource.CryptClient;
+                CryptContext context;
+                if (keyId.HasValue)
+                {
+                    context = cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, unencryptedField);
+                }
+                else if (keyAltName != null)
+                {
+                    context = cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, unencryptedField);
+                }
+                else
+                {
+                    throw new Exception("TODO: Exactly one is required.");
+                }
 
-            var cryptClient = _client.EncryptionSource.CryptClient;
-            CryptContext context;
-            if (encryptOptions.KeyId != null)
-            {
-                context = cryptClient.StartExplicitEncryptionContext(new Guid(encryptOptions.KeyId), algorithm, unencryptedField);
+                using (context)
+                {
+                    return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                }
             }
-            else if (!string.IsNullOrEmpty(encryptOptions.KeyAltName))
+            catch (Exception ex)
             {
-                context = cryptClient.StartExplicitEncryptionContext(encryptOptions.KeyAltName.ToBson(), algorithm, unencryptedField);
-            }
-            else
-            {
-                throw new Exception("TODO: Exactly one is required.");
-            }
-
-            using (context)
-            {
-                return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
         public byte[] EncryptFields(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
+            try
             {
-                return ProcessStates(context, databaseName, cancellationToken);
+                using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
+                {
+                    return ProcessStates(context, databaseName, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 
         public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
         {
-            using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
+            try
             {
-                return await ProcessStatesAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
+                using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
+                {
+                    return await ProcessStatesAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException(ex.Message, ex);
             }
         }
 

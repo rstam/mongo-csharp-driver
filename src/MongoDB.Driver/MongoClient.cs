@@ -180,7 +180,7 @@ namespace MongoDB.Driver
         {
             var autoEncryptionOptions = AutoEncryptionOptions.FromClientEncryptionOptions(options);
             var encryptionController = new LibMongoCryptController(this, autoEncryptionOptions);
-            return new ClientEncryption(encryptionController, options);
+            return new ClientEncryption(encryptionController);
         }
 
         /// <inheritdoc/>
