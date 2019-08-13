@@ -270,6 +270,12 @@ namespace MongoDB.Driver.Tests.Specifications.crud
             {
                 throw new SkipException(reason.AsString);
             }
+
+            if (definition["_path"].AsString.EndsWith("aggregate-out-readConcern.json") &&
+                test["description"].AsString == "invalid readConcern with out stage")
+            {
+                throw new SkipException("The C# driver does not support invalid read concerns.");
+            }
         }
 
         private class TestCaseFactory : JsonDrivenTestCaseFactory

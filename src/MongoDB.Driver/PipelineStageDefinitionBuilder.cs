@@ -928,6 +928,108 @@ namespace MongoDB.Driver
         }
 
         /// <summary>
+        /// Creates a $merge stage.
+        /// </summary>
+        /// <typeparam name="TInput">The type of the input documents.</typeparam>
+        /// <typeparam name="TOutput">The type of the output documents.</typeparam>
+        /// <param name="outputCollection">The output collection.</param>
+        /// <param name="mergeOptions">The merge options.</param>
+        /// <returns>The stage.</returns>
+        public static PipelineStageDefinition<TInput, TOutput> Merge<TInput, TOutput>(
+            IMongoCollection<TOutput> outputCollection,
+            MergeStageOptions<TOutput> mergeOptions)
+        {
+            Ensure.IsNotNull(outputCollection, nameof(outputCollection));
+            Ensure.IsNotNull(mergeOptions, nameof(mergeOptions));
+
+            if (mergeOptions.LetVariables != null && mergeOptions.WhenMatched != MergeStageWhenMatched.Pipeline)
+            {
+                throw new ArgumentException("LetVariables can only be set when WhenMatched == Pipeline.");
+            }
+
+            if (mergeOptions.WhenMatchedPipeline == null)
+            {
+                if (mergeOptions.WhenMatched == MergeStageWhenMatched.Pipeline)
+                {
+                    throw new ArgumentException("WhenMatchedPipeline is required when WhenMatched == Pipeline.");
+                }
+            }
+            else
+            {
+                if (mergeOptions.WhenMatched != MergeStageWhenMatched.Pipeline)
+                {
+                    throw new ArgumentException("WhenMatchedPipeline can only be set when WhenMatched == Pipeline.");
+                }
+            }
+
+            const string operatorName = "$merge";
+            var stage = new DelegatedPipelineStageDefinition<TInput, TOutput>(
+                operatorName,
+                (inputSerializer, serializerRegistry) =>
+                {
+                    var outputSerializer = mergeOptions.OutputSerializer ?? (inputSerializer as IBsonSerializer<TOutput>) ?? serializerRegistry.GetSerializer<TOutput>();
+
+                    var outputCollectionNamespace = outputCollection.CollectionNamespace;
+                    var outputDatabaseNamespace = outputCollectionNamespace.DatabaseNamespace;
+                    var renderedInto = new BsonDocument
+                    {
+                        { "db", outputDatabaseNamespace.DatabaseName },
+                        { "coll", outputCollectionNamespace.CollectionName }
+                    };
+
+                    BsonValue renderedOn = null;
+                    if (mergeOptions.OnFieldNames != null)
+                    {
+                        if (mergeOptions.OnFieldNames.Count == 1)
+                        {
+                            renderedOn = mergeOptions.OnFieldNames.Single();
+                        }
+                        else
+                        {
+                            renderedOn = new BsonArray(mergeOptions.OnFieldNames.Select(n => BsonString.Create(n)));
+                        }
+                    }
+
+                    BsonValue renderedWhenMatched = null;
+                    if (mergeOptions.WhenMatched.HasValue)
+                    {
+                        var whenMatched = mergeOptions.WhenMatched.Value;
+                        if (whenMatched == MergeStageWhenMatched.Pipeline)
+                        {
+                            var renderedPipeline = mergeOptions.WhenMatchedPipeline.Render(outputSerializer, serializerRegistry);
+                            renderedWhenMatched = new BsonArray(renderedPipeline.Documents);
+                        }
+                        else
+                        {
+                            renderedWhenMatched = MongoUtils.ToCamelCase(whenMatched.ToString());
+                        }
+                    }
+
+                    BsonString renderedWhenNotMatched = null;
+                    if (mergeOptions.WhenNotMatched.HasValue)
+                    {
+                        var whenNotMatched = mergeOptions.WhenNotMatched;
+                        renderedWhenNotMatched = MongoUtils.ToCamelCase(whenNotMatched.ToString());
+                    }
+
+                    var renderedMerge = new BsonDocument
+                    {
+                        { "into", renderedInto },
+                        { "on", renderedOn, renderedOn != null },
+                        { "let", mergeOptions.LetVariables, mergeOptions.LetVariables != null },
+                        { "whenMatched", renderedWhenMatched, renderedWhenMatched != null },
+                        { "whenNotMatched", renderedWhenNotMatched, renderedWhenNotMatched != null }
+                    };
+
+                    var renderedStage = new BsonDocument(operatorName, renderedMerge);
+
+                    return new RenderedPipelineStageDefinition<TOutput>(operatorName, renderedStage, outputSerializer);
+                });
+
+            return stage;
+        }
+
+        /// <summary>
         /// Create a $match stage that select documents of a sub type.
         /// </summary>
         /// <typeparam name="TInput">The type of the input documents.</typeparam>
@@ -973,19 +1075,6 @@ namespace MongoDB.Driver
         {
             Ensure.IsNotNull(outputCollection, nameof(outputCollection));
             return new BsonDocumentPipelineStageDefinition<TInput, TInput>(new BsonDocument("$out", outputCollection.CollectionNamespace.CollectionName));
-        }
-
-        /// <summary>
-        /// Creates a $merge stage.
-        /// </summary>
-        /// <typeparam name="TInput">The type of the input documents.</typeparam>
-        /// <param name="outputCollection">The output collection.</param>
-        /// <returns>The stage.</returns>
-        public static PipelineStageDefinition<TInput, TInput> Merge<TInput>(
-            IMongoCollection<TInput> outputCollection)
-        {
-            Ensure.IsNotNull(outputCollection, nameof(outputCollection));
-            return new BsonDocumentPipelineStageDefinition<TInput, TInput>(new BsonDocument("$merge", outputCollection.CollectionNamespace.CollectionName));
         }
 
         /// <summary>

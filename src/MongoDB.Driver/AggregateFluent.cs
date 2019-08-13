@@ -156,12 +156,20 @@ namespace MongoDB.Driver
             return WithPipeline(_pipeline.Match(filter));
         }
 
-        public override IAsyncCursor<TResult> Merge(string collectionName, CancellationToken cancellationToken)
+        public override IAsyncCursor<TOutput> Merge<TOutput>(IMongoCollection<TOutput> outputCollection, MergeStageOptions<TOutput> mergeOptions = null, CancellationToken cancellationToken = default)
         {
-            Ensure.IsNotNull(collectionName, nameof(collectionName));
-            var outputCollection = Database.GetCollection<TResult>(collectionName);
-            var aggregate = WithPipeline(_pipeline.Merge(outputCollection));
+            Ensure.IsNotNull(outputCollection, nameof(outputCollection));
+            mergeOptions = mergeOptions ?? new MergeStageOptions<TOutput>();
+            var aggregate = WithPipeline(_pipeline.Merge<TInput, TResult, TOutput>(outputCollection, mergeOptions));
             return aggregate.ToCursor(cancellationToken);
+        }
+
+        public override async Task<IAsyncCursor<TOutput>> MergeAsync<TOutput>(IMongoCollection<TOutput> outputCollection, MergeStageOptions<TOutput> mergeOptions = null, CancellationToken cancellationToken = default)
+        {
+            Ensure.IsNotNull(outputCollection, nameof(outputCollection));
+            mergeOptions = mergeOptions ?? new MergeStageOptions<TOutput>();
+            var aggregate = WithPipeline(_pipeline.Merge<TInput, TResult, TOutput>(outputCollection, mergeOptions));
+            return await aggregate.ToCursorAsync(cancellationToken).ConfigureAwait(false);
         }
 
         public override IAggregateFluent<TNewResult> OfType<TNewResult>(IBsonSerializer<TNewResult> newResultSerializer)

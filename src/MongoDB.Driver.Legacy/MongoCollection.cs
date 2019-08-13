@@ -144,8 +144,9 @@ namespace MongoDB.Driver
 
             var messageEncoderSettings = GetMessageEncoderSettings();
 
-            var last = args.Pipeline.LastOrDefault();
-            if (last != null && last.GetElement(0).Name == "$out")
+            var lastStage = args.Pipeline.LastOrDefault();
+            var lastStageName = lastStage?.GetElement(0).Name;
+            if (lastStage != null && (lastStageName == "$out" || lastStageName== "$merge"))
             {
                 var aggregateOperation = new AggregateToCollectionOperation(_collectionNamespace, args.Pipeline, messageEncoderSettings)
                 {
@@ -158,7 +159,7 @@ namespace MongoDB.Driver
                 };
                 ExecuteWriteOperation(session, aggregateOperation);
 
-                var outputCollectionName = last[0].AsString;
+                var outputCollectionName = lastStage[0].AsString;
                 var outputCollectionNamespace = new CollectionNamespace(_collectionNamespace.DatabaseNamespace, outputCollectionName);
                 var resultSerializer = BsonDocumentSerializer.Instance;
                 var findOperation = new FindOperation<BsonDocument>(outputCollectionNamespace, resultSerializer, messageEncoderSettings)

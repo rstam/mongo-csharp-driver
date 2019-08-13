@@ -147,7 +147,13 @@ namespace MongoDB.Driver
         public abstract IAggregateFluent<TResult> Match(FilterDefinition<TResult> filter);
 
         /// <inheritdoc />
-        public virtual IAsyncCursor<TResult> Merge(string collectionName, CancellationToken cancellationToken)
+        public virtual IAsyncCursor<TOutput> Merge<TOutput>(IMongoCollection<TOutput> outputCollection, MergeStageOptions<TOutput> mergeOptions = null, CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <inheritdoc />
+        public virtual Task<IAsyncCursor<TOutput>> MergeAsync<TOutput>(IMongoCollection<TOutput> outputCollection, MergeStageOptions<TOutput> mergeOptions = null, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }

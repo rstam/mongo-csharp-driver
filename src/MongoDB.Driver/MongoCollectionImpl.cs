@@ -101,15 +101,16 @@ namespace MongoDB.Driver
             var renderedPipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).Render(_documentSerializer, _settings.SerializerRegistry);
             options = options ?? new AggregateOptions();
 
-            var last = renderedPipeline.Documents.LastOrDefault();
-            if (last != null && (last.GetElement(0).Name == "$out" || last.GetElement(0).Name == "$merge"))
+            var lastStage = renderedPipeline.Documents.LastOrDefault();
+            var lastStageName = lastStage?.GetElement(0).Name;
+            if (lastStage != null && (lastStageName == "$out" || lastStageName == "$merge"))
             {
                 var aggregateOperation = CreateAggregateToCollectionOperation(renderedPipeline, options);
                 ExecuteWriteOperation(session, aggregateOperation, cancellationToken);
 
                 // we want to delay execution of the find because the user may
                 // not want to iterate the results at all...
-                var findOperation = CreateAggregateToCollectionFindOperation(last, renderedPipeline.OutputSerializer, options);
+                var findOperation = CreateAggregateToCollectionFindOperation(lastStage, renderedPipeline.OutputSerializer, options);
                 var forkedSession = session.Fork();
                 var deferredCursor = new DeferredAsyncCursor<TResult>(
                     () => forkedSession.Dispose(),
@@ -135,15 +136,16 @@ namespace MongoDB.Driver
             var renderedPipeline = Ensure.IsNotNull(pipeline, nameof(pipeline)).Render(_documentSerializer, _settings.SerializerRegistry);
             options = options ?? new AggregateOptions();
 
-            var last = renderedPipeline.Documents.LastOrDefault();
-            if (last != null && (last.GetElement(0).Name == "$out" || last.GetElement(0).Name == "$merge"))
+            var lastStage = renderedPipeline.Documents.LastOrDefault();
+            var lastStageName = lastStage?.GetElement(0).Name;
+            if (lastStage != null && (lastStageName == "$out" || lastStageName == "$merge"))
             {
                 var aggregateOperation = CreateAggregateToCollectionOperation(renderedPipeline, options);
                 await ExecuteWriteOperationAsync(session, aggregateOperation, cancellationToken).ConfigureAwait(false);
 
                 // we want to delay execution of the find because the user may
                 // not want to iterate the results at all...
-                var findOperation = CreateAggregateToCollectionFindOperation(last, renderedPipeline.OutputSerializer, options);
+                var findOperation = CreateAggregateToCollectionFindOperation(lastStage, renderedPipeline.OutputSerializer, options);
                 var forkedSession = session.Fork();
                 var deferredCursor = new DeferredAsyncCursor<TResult>(
                     () => forkedSession.Dispose(),
