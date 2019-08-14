@@ -1,4 +1,4 @@
-/* Copyright 2010-present MongoDB Inc.
+/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -21,19 +21,7 @@ namespace MongoDB.Driver.Tests.Specifications.crud
 {
     public class EstimatedDocumentCountTest : CrudOperationWithResultTestBase<long>
     {
-        private EstimatedDocumentCountOptions _options = new EstimatedDocumentCountOptions();
-
-        protected override bool TrySetArgument(string name, BsonValue value)
-        {
-            switch (name)
-            {
-                case "limit":
-                    _options.MaxTime = new TimeSpan(value.ToInt64());
-                    return true;
-            }
-
-            return false;
-        }
+        private readonly EstimatedDocumentCountOptions _options = new EstimatedDocumentCountOptions();
 
         protected override long ConvertExpectedResult(BsonValue expectedResult)
         {
@@ -54,6 +42,18 @@ namespace MongoDB.Driver.Tests.Specifications.crud
                 return collection.EstimatedDocumentCount(_options);
 #pragma warning restore
             }
+        }
+
+        protected override bool TrySetArgument(string name, BsonValue value)
+        {
+            switch (name)
+            {
+                case "limit":
+                    _options.MaxTime = new TimeSpan(value.ToInt64());
+                    return true;
+            }
+
+            return false;
         }
 
         protected override void VerifyResult(long actualResult, long expectedResult)

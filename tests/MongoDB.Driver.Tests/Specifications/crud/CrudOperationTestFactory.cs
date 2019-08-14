@@ -14,7 +14,6 @@
 */
 
 using System;
-using MongoDB.Driver.Tests.JsonDrivenTests;
 
 namespace MongoDB.Driver.Tests.Specifications.crud
 {

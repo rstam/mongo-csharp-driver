@@ -61,7 +61,6 @@ namespace MongoDB.Driver
         /// </summary>
         Insert,
 
-
         /// <summary>
         /// Discard the document; i.e. $merge does not insert the document into the output collection.
         /// </summary>
@@ -80,14 +79,23 @@ namespace MongoDB.Driver
     public class MergeStageOptions<TOutput>
     {
         // private fields
-        private IReadOnlyList<string> _onFieldNames;
         private BsonDocument _letVariables;
+        private IReadOnlyList<string> _onFieldNames;
         private IBsonSerializer<TOutput> _outputSerializer;
         private MergeStageWhenMatched? _whenMatched;
         private PipelineDefinition<TOutput, TOutput> _whenMatchedPipeline;
         private MergeStageWhenNotMatched? _whenNotMatched;
 
         // public properties
+        /// <summary>
+        /// Specifies variables accessible for use in the WhenMatchedPipeline.
+        /// </summary>
+        public BsonDocument LetVariables
+        {
+            get => _letVariables;
+            set => _letVariables = value;
+        }
+
         /// <summary>
         /// Field or fields that act as a unique identifier for a document. The identifier determines if a results
         /// document matches an already existing document in the output collection.
@@ -96,15 +104,6 @@ namespace MongoDB.Driver
         {
             get => _onFieldNames;
             set => _onFieldNames = value;
-        }
-
-        /// <summary>
-        /// Specifies variables accessible for use in the WhenMatchedPipeline.
-        /// </summary>
-        public BsonDocument LetVariables
-        {
-            get => _letVariables;
-            set => _letVariables = value;
         }
 
         /// <summary>

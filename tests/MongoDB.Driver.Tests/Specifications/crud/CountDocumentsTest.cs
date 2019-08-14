@@ -1,4 +1,4 @@
-/* Copyright 2010-present MongoDB Inc.
+/* Copyright 2019-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -21,28 +21,7 @@ namespace MongoDB.Driver.Tests.Specifications.crud
     public class CountDocumentsTest : CrudOperationWithResultTestBase<long>
     {
         private BsonDocument _filter;
-        private CountOptions _options = new CountOptions();
-
-        protected override bool TrySetArgument(string name, BsonValue value)
-        {
-            switch (name)
-            {
-                case "filter":
-                    _filter = (BsonDocument)value;
-                    return true;
-                case "skip":
-                    _options.Skip = value.ToInt64();
-                    return true;
-                case "limit":
-                    _options.Limit = value.ToInt64();
-                    return true;
-                case "collation":
-                    _options.Collation = Collation.FromBsonDocument(value.AsBsonDocument);
-                    return true;
-            }
-
-            return false;
-        }
+        private readonly CountOptions _options = new CountOptions();
 
         protected override long ConvertExpectedResult(BsonValue expectedResult)
         {
@@ -63,6 +42,27 @@ namespace MongoDB.Driver.Tests.Specifications.crud
                 return collection.CountDocuments(_filter, _options);
 #pragma warning restore
             }
+        }
+
+        protected override bool TrySetArgument(string name, BsonValue value)
+        {
+            switch (name)
+            {
+                case "collation":
+                    _options.Collation = Collation.FromBsonDocument(value.AsBsonDocument);
+                    return true;
+                case "filter":
+                    _filter = (BsonDocument)value;
+                    return true;
+                case "limit":
+                    _options.Limit = value.ToInt64();
+                    return true;
+                case "skip":
+                    _options.Skip = value.ToInt64();
+                    return true;
+            }
+
+            return false;
         }
 
         protected override void VerifyResult(long actualResult, long expectedResult)
