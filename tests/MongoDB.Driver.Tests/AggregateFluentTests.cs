@@ -80,9 +80,9 @@ namespace MongoDB.Driver.Tests
         }
 
         [Theory]
-        [InlineData(ChangeStreamFullDocumentOption.Default, null, "{ $changeStream : { fullDocument : \"default\" } }")]
+        [InlineData(ChangeStreamFullDocumentOption.Default, null, "{ $changeStream : { } }")]
         [InlineData(ChangeStreamFullDocumentOption.UpdateLookup, null, "{ $changeStream : { fullDocument : \"updateLookup\" } }")]
-        [InlineData(ChangeStreamFullDocumentOption.Default, "{ a : 1 }", "{ $changeStream : { fullDocument : \"default\", resumeAfter : { a : 1 } } }")]
+        [InlineData(ChangeStreamFullDocumentOption.Default, "{ a : 1 }", "{ $changeStream : { resumeAfter : { a : 1 } } }")]
         [InlineData(ChangeStreamFullDocumentOption.UpdateLookup, "{ a : 1 }", "{ $changeStream : { fullDocument : \"updateLookup\", resumeAfter : { a : 1 } } }")]
         public void ChangeStream_should_add_the_expected_stage(
             ChangeStreamFullDocumentOption fullDocument,
@@ -119,7 +119,7 @@ namespace MongoDB.Driver.Tests
             var inputSerializer = serializerRegistry.GetSerializer<C>();
             var stages = RenderStages(result.Stages, inputSerializer, serializerRegistry);
             stages.Count.Should().Be(1);
-            stages[0].Document.Should().Be("{ $changeStream : { fullDocument : \"default\" } }");
+            stages[0].Document.Should().Be("{ $changeStream : { } }");
         }
 
         [Theory]

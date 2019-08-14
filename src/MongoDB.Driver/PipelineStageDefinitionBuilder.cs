@@ -341,7 +341,7 @@ namespace MongoDB.Driver
                 {
                     var renderedOptions = new BsonDocument
                     {
-                        { "fullDocument", MongoUtils.ToCamelCase(options.FullDocument.ToString()) },
+                        { "fullDocument", () => MongoUtils.ToCamelCase(options.FullDocument.ToString()), options.FullDocument != ChangeStreamFullDocumentOption.Default },
                         { "allChangesForCluster", true, options.AllChangesForCluster ?? false },
                         { "resumeAfter", options.ResumeAfter, options.ResumeAfter != null },
                         { "startAfter", options.StartAfter, options.StartAfter != null }, 

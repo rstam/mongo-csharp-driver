@@ -30,9 +30,9 @@ namespace MongoDB.Driver.Tests
     {
         // public methods
         [Theory]
-        [InlineData(null, "{ $changeStream : { fullDocument : 'default' } }")]
-        [InlineData(false, "{ $changeStream : { fullDocument : 'default' } }")]
-        [InlineData(true, "{ $changeStream : { fullDocument : 'default', allChangesForCluster : true } }")]
+        [InlineData(null, "{ $changeStream : { } }")]
+        [InlineData(false, "{ $changeStream : { } }")]
+        [InlineData(true, "{ $changeStream : { allChangesForCluster : true } }")]
         public void ChangeStream_with_allChangesForCluster_should_return_the_expected_result(bool? allChangesForCluster, string expectedStage)
         {
             var options = new ChangeStreamStageOptions
@@ -47,7 +47,7 @@ namespace MongoDB.Driver.Tests
         }
 
         [Theory]
-        [InlineData(ChangeStreamFullDocumentOption.Default, "{ $changeStream : { fullDocument : 'default' } }")]
+        [InlineData(ChangeStreamFullDocumentOption.Default, "{ $changeStream : { } }")]
         [InlineData(ChangeStreamFullDocumentOption.UpdateLookup, "{ $changeStream : { fullDocument : 'updateLookup' } }")]
         public void ChangeStream_with_fullDocument_should_return_the_expected_result(ChangeStreamFullDocumentOption fullDocument, string expectedStage)
         {
@@ -63,8 +63,8 @@ namespace MongoDB.Driver.Tests
         }
 
         [Theory]
-        [InlineData(null, "{ $changeStream : { fullDocument : 'default' } }")]
-        [InlineData("{ x : 1 }", "{ $changeStream : { fullDocument : 'default', resumeAfter : { x : 1 } } }")]
+        [InlineData(null, "{ $changeStream : { } }")]
+        [InlineData("{ x : 1 }", "{ $changeStream : { resumeAfter : { x : 1 } } }")]
         public void ChangeStream_with_resumeAfter_should_return_the_expected_result(string resumeAfterJson, string expectedStage)
         {
             var resumeAfter = resumeAfterJson == null ? null : BsonDocument.Parse(resumeAfterJson);
@@ -80,8 +80,8 @@ namespace MongoDB.Driver.Tests
         }
 
         [Theory]
-        [InlineData(null, null, "{ $changeStream : { fullDocument : 'default' } }")]
-        [InlineData(1, 2, "{ $changeStream : { fullDocument : 'default', startAtOperationTime : { $timestamp: { t : 1, i : 2 } } } }")]
+        [InlineData(null, null, "{ $changeStream : { } }")]
+        [InlineData(1, 2, "{ $changeStream : { startAtOperationTime : { $timestamp: { t : 1, i : 2 } } } }")]
         public void ChangeStream_with_startAtOperationTime_should_return_the_expected_result(int? t, int? i, string expectedStage)
         {
             var startAtOperationTime = t.HasValue ? new BsonTimestamp(t.Value, i.Value) : null;
@@ -97,8 +97,8 @@ namespace MongoDB.Driver.Tests
         }
 
         [Theory]
-        [InlineData(null, "{ $changeStream : { fullDocument : 'default' } }")]
-        [InlineData("{ '_data' : 'testValue' }", "{ $changeStream : { fullDocument : 'default', startAfter : { '_data' : 'testValue' } } }")]
+        [InlineData(null, "{ $changeStream : { } }")]
+        [InlineData("{ '_data' : 'testValue' }", "{ $changeStream : { startAfter : { '_data' : 'testValue' } } }")]
         public void ChangeStream_with_startAfter_should_return_the_expected_result(string content, string expectedStage)
         {
             var startAfter = content != null ? BsonDocument.Parse(content) : null;
@@ -121,7 +121,7 @@ namespace MongoDB.Driver.Tests
             var result = PipelineStageDefinitionBuilder.ChangeStream<BsonDocument>(options);
 
             var stage = RenderStage(result);
-            stage.Document.Should().Be("{ $changeStream : { fullDocument : \"default\" } }");
+            stage.Document.Should().Be("{ $changeStream : { } }");
         }
 
         [SkippableFact]
