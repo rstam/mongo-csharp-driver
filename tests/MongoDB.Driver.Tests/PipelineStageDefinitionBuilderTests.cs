@@ -211,6 +211,100 @@ namespace MongoDB.Driver.Tests
                 }");
         }
 
+        [Theory]
+        [InlineData("database1", "collection1", "{ $merge : { into : { db : 'database1', coll : 'collection1' } } }")]
+        [InlineData("database2", "collection2", "{ $merge : { into : { db : 'database2', coll : 'collection2' } } }")]
+        public void Merge_with_default_options_should_return_the_expected_result(string outputDatabaseName, string outputCollectionName, string expectedStage)
+        {
+            var client = DriverTestConfiguration.Client;
+            var outputDatabase = client.GetDatabase(outputDatabaseName);
+            var outputCollection = outputDatabase.GetCollection<BsonDocument>(outputCollectionName);
+            var mergeOptions = new MergeStageOptions<BsonDocument>();
+
+            var result = PipelineStageDefinitionBuilder.Merge<BsonDocument, BsonDocument>(outputCollection, mergeOptions);
+
+            var stage = RenderStage(result);
+            stage.Document.Should().Be(expectedStage);
+        }
+
+        [Theory]
+        [InlineData("{ }", "{ $merge : { into : { db : 'database', coll : 'collection' }, let : { }, whenMatched : [{ $project : { _id : '$_id' } }] } }")]
+        [InlineData("{ a : 1 }", "{ $merge : { into : { db : 'database', coll : 'collection' }, let : { a : 1 }, whenMatched : [{ $project : { _id : '$_id' } }] } }")]
+        [InlineData("{ a : 1, b : 2 }", "{ $merge : { into : { db : 'database', coll : 'collection' }, let : { a : 1, b : 2 }, whenMatched : [{ $project : { _id : '$_id' } }] } }")]
+        public void Merge_with_LetVariables_should_return_the_expected_result(string letVariables, string expectedStage)
+        {
+            var client = DriverTestConfiguration.Client;
+            var outputDatabase = client.GetDatabase("database");
+            var outputCollection = outputDatabase.GetCollection<BsonDocument>("collection");
+            var mergeOptions = new MergeStageOptions<BsonDocument>
+            {
+                LetVariables = BsonDocument.Parse(letVariables),
+                WhenMatched = MergeStageWhenMatched.Pipeline,
+                WhenMatchedPipeline = new EmptyPipelineDefinition<BsonDocument>().Project("{ _id : '$_id' }")
+            };
+
+            var result = PipelineStageDefinitionBuilder.Merge<BsonDocument, BsonDocument>(outputCollection, mergeOptions);
+
+            var stage = RenderStage(result);
+            stage.Document.Should().Be(expectedStage);
+        }
+
+        [Theory]
+        [InlineData("a", "{ $merge : { into : { db : 'database', coll : 'collection' }, on : 'a' } }")]
+        [InlineData("a,b", "{ $merge : { into : { db : 'database', coll : 'collection' }, on : ['a', 'b'] } }")]
+        public void Merge_with_OnFieldNames_should_return_the_expected_result(string fieldNames, string expectedStage)
+        {
+            var client = DriverTestConfiguration.Client;
+            var outputDatabase = client.GetDatabase("database");
+            var outputCollection = outputDatabase.GetCollection<BsonDocument>("collection");
+            var mergeOptions = new MergeStageOptions<BsonDocument> { OnFieldNames = fieldNames.Split(',') };
+
+            var result = PipelineStageDefinitionBuilder.Merge<BsonDocument, BsonDocument>(outputCollection, mergeOptions);
+
+            var stage = RenderStage(result);
+            stage.Document.Should().Be(expectedStage);
+        }
+
+        [Theory]
+        [InlineData(MergeStageWhenMatched.Fail, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenMatched : 'fail' } }")]
+        [InlineData(MergeStageWhenMatched.KeepExisting, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenMatched : 'keepExisting' } }")]
+        [InlineData(MergeStageWhenMatched.Merge, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenMatched : 'merge' } }")]
+        [InlineData(MergeStageWhenMatched.Pipeline, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenMatched : [{ $project : { _id : '$_id' } }] } }")]
+        [InlineData(MergeStageWhenMatched.Replace, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenMatched : 'replace' } }")]
+        public void Merge_with_WhenMatched_should_return_the_expected_result(MergeStageWhenMatched whenMatched, string expectedStage)
+        {
+            var client = DriverTestConfiguration.Client;
+            var outputDatabase = client.GetDatabase("database");
+            var outputCollection = outputDatabase.GetCollection<BsonDocument>("collection");
+            var mergeOptions = new MergeStageOptions<BsonDocument> { WhenMatched = whenMatched };
+            if (whenMatched == MergeStageWhenMatched.Pipeline)
+            {
+                mergeOptions.WhenMatchedPipeline = new EmptyPipelineDefinition<BsonDocument>().Project("{ _id : '$_id' }");
+            }
+
+            var result = PipelineStageDefinitionBuilder.Merge<BsonDocument, BsonDocument>(outputCollection, mergeOptions);
+
+            var stage = RenderStage(result);
+            stage.Document.Should().Be(expectedStage);
+        }
+
+        [Theory]
+        [InlineData(MergeStageWhenNotMatched.Discard, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenNotMatched : 'discard' } }")]
+        [InlineData(MergeStageWhenNotMatched.Fail, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenNotMatched : 'fail' } }")]
+        [InlineData(MergeStageWhenNotMatched.Insert, "{ $merge : { into : { db : 'database', coll : 'collection' }, whenNotMatched : 'insert' } }")]
+        public void Merge_with_WhenNotMatched_should_return_the_expected_result(MergeStageWhenNotMatched whenNotMatched, string expectedStage)
+        {
+            var client = DriverTestConfiguration.Client;
+            var outputDatabase = client.GetDatabase("database");
+            var outputCollection = outputDatabase.GetCollection<BsonDocument>("collection");
+            var mergeOptions = new MergeStageOptions<BsonDocument> { WhenNotMatched = whenNotMatched };
+
+            var result = PipelineStageDefinitionBuilder.Merge<BsonDocument, BsonDocument>(outputCollection, mergeOptions);
+
+            var stage = RenderStage(result);
+            stage.Document.Should().Be(expectedStage);
+        }
+
         public class Order
         {
             [BsonElement("stockdata")]

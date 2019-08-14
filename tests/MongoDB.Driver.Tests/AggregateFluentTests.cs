@@ -494,6 +494,53 @@ namespace MongoDB.Driver.Tests
 
         [Theory]
         [ParameterAttributeData]
+        public void Merge_should_add_the_expected_stage_and_call_Aggregate(
+            [Values(false, true)] bool async)
+        {
+            var subject =
+                CreateSubject()
+                .Match(Builders<C>.Filter.Eq(c => c.X, 1));
+            var outputDatabase = subject.Database;
+            var outputCollection = outputDatabase.GetCollection<C>("collection");
+            var mergeOptions = new MergeStageOptions<C>();
+
+            Predicate<PipelineDefinition<C, C>> isExpectedPipeline = pipeline =>
+            {
+                var renderedPipeline = RenderPipeline(pipeline);
+                return
+                    renderedPipeline.Documents.Count == 2 &&
+                    renderedPipeline.Documents[0] == BsonDocument.Parse("{ $match : { X : 1 } }") &&
+                    renderedPipeline.Documents[1] == BsonDocument.Parse("{ $merge : { into : { db : 'test', coll : 'collection' } } }") &&
+                    renderedPipeline.OutputSerializer.ValueType == typeof(C);
+            };
+
+            IAsyncCursor<C> cursor;
+            if (async)
+            {
+                cursor = subject.MergeAsync(outputCollection, mergeOptions, CancellationToken.None).GetAwaiter().GetResult();
+
+                _mockCollection.Verify(
+                    c => c.AggregateAsync<C>(
+                        It.Is<PipelineDefinition<C, C>>(pipeline => isExpectedPipeline(pipeline)),
+                        It.IsAny<AggregateOptions>(),
+                        CancellationToken.None),
+                    Times.Once);
+            }
+            else
+            {
+                cursor = subject.Merge(outputCollection, mergeOptions, CancellationToken.None);
+
+                _mockCollection.Verify(
+                    c => c.Aggregate<C>(
+                        It.Is<PipelineDefinition<C, C>>(pipeline => isExpectedPipeline(pipeline)),
+                        It.IsAny<AggregateOptions>(),
+                        CancellationToken.None),
+                    Times.Once);
+            }
+        }
+
+        [Theory]
+        [ParameterAttributeData]
         public void OfType_should_add_the_expected_stage(
             [Values(false, true)] bool async)
         {
