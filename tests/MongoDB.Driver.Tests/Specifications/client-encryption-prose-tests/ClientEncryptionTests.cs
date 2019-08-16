@@ -569,8 +569,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
 
             protected override string[] PathPrefixes => new[]
             {
-                "MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests.external.",
-                "MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests.limits."
+                "MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests.testsdata.external.",
+                "MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests.testsdata.limits."
             };
 
             public IReadOnlyDictionary<string, BsonDocument> Documents { get; }
@@ -583,7 +583,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         key =>
                         {
                             var path = key["_path"].ToString();
-                            var testTitle = "client_encryption_prose_tests";
+                            var testTitle = "client_encryption_prose_tests.testsdata";
                             var startIndex = path.IndexOf(testTitle, StringComparison.Ordinal);
                             if (startIndex != -1)
                             {
