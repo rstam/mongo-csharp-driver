@@ -75,7 +75,8 @@ namespace MongoDB.Driver
         /// <returns>The decrypted value.</returns>
         public BsonBinaryData Decrypt(BsonBinaryData value, CancellationToken cancellationToken)
         {
-            return _libMongoCryptController.DecryptField(value.Bytes, cancellationToken);
+            var bytes = GetBytesForEncryption(value);
+            return _libMongoCryptController.DecryptField(bytes, cancellationToken);
         }
 
         /// <summary>
@@ -86,7 +87,8 @@ namespace MongoDB.Driver
         /// <returns>The decrypted value.</returns>
         public async Task<BsonBinaryData> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
         {
-            return await _libMongoCryptController.DecryptFieldAsync(value.Bytes, cancellationToken).ConfigureAwait(false);
+            var bytes = GetBytesForEncryption(value);
+            return await _libMongoCryptController.DecryptFieldAsync(bytes, cancellationToken).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -98,15 +100,14 @@ namespace MongoDB.Driver
         /// <returns>The encrypted value.</returns>
         public BsonBinaryData Encrypt(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            PrepareEncryptOptions(value, encryptOptions, out var keyId, out var valueBytes, out var keyAltNameBytes, out var algorithm);
+            PrepareEncryptOptions(encryptOptions, out var keyId, out var keyAltNameBytes, out var algorithm);
             var encryptedBytes = _libMongoCryptController.EncryptField(
-                valueBytes,
+                GetBytesForEncryption(value),
                 keyId,
                 keyAltNameBytes,
                 algorithm,
                 cancellationToken);
-            var rawDocument = new RawBsonDocument(encryptedBytes);
-            return new BsonBinaryData(rawDocument["v"].AsByteArray, BsonBinarySubType.Encryption);
+            return GetBsonValueFromEncryptionResult(encryptedBytes);
         }
 
         /// <summary>
@@ -118,17 +119,16 @@ namespace MongoDB.Driver
         /// <returns>The encrypted value.</returns>
         public async Task<BsonBinaryData> EncryptAsync(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            PrepareEncryptOptions(value, encryptOptions, out var keyId, out var valueBytes, out var keyAltNameBytes, out var algorithm);
+            PrepareEncryptOptions(encryptOptions, out var keyId, out var keyAltNameBytes, out var algorithm);
             var encryptedBytes = await _libMongoCryptController
                 .EncryptFieldAsync(
-                    valueBytes,
+                    GetBytesForEncryption(value),
                     keyId,
                     keyAltNameBytes,
                     algorithm,
                     cancellationToken)
                 .ConfigureAwait(false);
-            var rawDocument = new RawBsonDocument(encryptedBytes);
-            return new BsonBinaryData(rawDocument["v"].AsByteArray, BsonBinarySubType.Encryption);
+            return GetBsonValueFromEncryptionResult(encryptedBytes);
         }
 
         private IKmsKeyId GetKmsProvider(string kmsProvider, DataKeyOptions dataKeyOptions)
@@ -169,20 +169,28 @@ namespace MongoDB.Driver
         }
 
         private void PrepareEncryptOptions(
-            BsonValue value,
             EncryptOptions encryptOptions,
             out Guid? keyId,
-            out byte[] valueBytes,
             out byte[] keyAltNameBytes,
             out EncryptionAlgorithm algorithm)
         {
             keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?)null;
-            valueBytes = new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
             algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
             keyAltNameBytes =
                 !string.IsNullOrWhiteSpace(encryptOptions.KeyAltName)
                     ? new BsonDocument("keyAltName", encryptOptions.KeyAltName).ToBson(serializer: BsonValueSerializer.Instance)
                     : null;
+        }
+
+        private byte[] GetBytesForEncryption(BsonValue value)
+        {
+            return new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
+        }
+
+        private BsonBinaryData GetBsonValueFromEncryptionResult(byte[] encryptedBytes)
+        {
+            var rawDocument = new RawBsonDocument(encryptedBytes);
+            return new BsonBinaryData(rawDocument["v"].AsByteArray, BsonBinarySubType.Encryption);
         }
     }
 }

@@ -1,0 +1,32 @@
+﻿{
+  "_id": "client_side_encryption_corpus",
+  "altname_aws": "aws",
+  "altname_local": "local",
+  "aws_double_rand_auto_id": {
+    "kms": "aws",
+    "type": "double",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": { "$numberDouble": "1.234" }
+  },
+  "aws_double_rand_auto_altname": {
+    "kms": "aws",
+    "type": "double",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "altname",
+    "allowed": true,
+    "value": { "$numberDouble": "1.234" }
+  },
+  "aws_double_rand_explicit_id": {
+    "kms": "aws",
+    "type": "double",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": { "$numberDouble": "1.234" }
+  }
+}

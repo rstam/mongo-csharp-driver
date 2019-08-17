@@ -1,0 +1,47 @@
+﻿{
+  "_id": "client_side_encryption_corpus",
+  "altname_aws": "aws",
+  "altname_local": "local",
+  "aws_double_rand_auto_id": {
+    "kms": "aws",
+    "type": "double",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAABchrWPF5OPeuFpk4tUV325TmoNpGW+L5iPSXcLQIr319WJFIp3EDy5QiAHBfz2rThI7imU4eLXndIUrsjM0S/vg==",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_double_rand_auto_altname": {
+    "kms": "aws",
+    "type": "double",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAABga5hXFiFvH/wOr0wOHSHFWRZ4pEs/UCC1XJWf46Dod3GY9Ry5j1ZyzeHueJxc4Ym5M8UHKSmJuXmNo9m9ZnkiA==",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_double_rand_explicit_id": {
+    "kms": "aws",
+    "type": "double",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAABjTYZbsro/YxLWBb88qPXEIDQdzY7UZyK4UaZZ8h62OTxp43Zp9j6WvOEzKhXt4oJPMxlAxyTdqO6MllX5bsDrw==",
+        "subType": "06"
+      }
+    }
+  }
+}

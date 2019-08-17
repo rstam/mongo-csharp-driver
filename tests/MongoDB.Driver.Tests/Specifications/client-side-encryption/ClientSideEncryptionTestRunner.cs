@@ -99,7 +99,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
 
             if (shared.Contains("key_vault_data"))
             {
-                var adminDatabase = client.GetDatabase("admin").WithWriteConcern(WriteConcern.WMajority); ;
+                var adminDatabase = client.GetDatabase("admin").WithWriteConcern(WriteConcern.WMajority);
                 adminDatabase.DropCollection("datakeys");
             }
         }
@@ -203,11 +203,9 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
                 {
                     case "aws":
                         {
-                            // todo: replace `GetEnvironmentVariable` storage
-                            // todo: region?
-                            var awsRegion = Environment.GetEnvironmentVariable("AWS_REGION", EnvironmentVariableTarget.Machine) ?? "us-east-1";
-                            var awsAccessKey = Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID", EnvironmentVariableTarget.Machine) ?? throw new Exception("The AWS_ACCESS_KEY_ID system variable should be configured on the machine.");
-                            var awsSecretAccessKey = Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY", EnvironmentVariableTarget.Machine) ?? throw new Exception("The AWS_SECRET_ACCESS_KEY system variable should be configured on the machine.");
+                            var awsRegion = Environment.GetEnvironmentVariable("FLE_AWS_REGION", EnvironmentVariableTarget.Machine) ?? "us-east-1";
+                            var awsAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_ACCESS_KEY_ID", EnvironmentVariableTarget.Machine) ?? throw new Exception("The AWS_ACCESS_KEY_ID system variable should be configured on the machine.");
+                            var awsSecretAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_SECRET_ACCESS_KEY", EnvironmentVariableTarget.Machine) ?? throw new Exception("The AWS_SECRET_ACCESS_KEY system variable should be configured on the machine.");
                             kmsOptions.Add("region", awsRegion);
                             kmsOptions.Add("accessKeyId", awsAccessKey);
                             kmsOptions.Add("secretAccessKey", awsSecretAccessKey);
@@ -286,7 +284,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
     public class TestCaseFactory : JsonDrivenTestCaseFactory
     {
         // protected properties
-        protected override string PathPrefix => "MongoDB.Driver.Tests.Specifications.client_side_encryption.tests.";
+        protected override string PathPrefix => "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata.tests.";
 
         // protected methods
         protected override IEnumerable<JsonDrivenTestCase> CreateTestCases(BsonDocument document)

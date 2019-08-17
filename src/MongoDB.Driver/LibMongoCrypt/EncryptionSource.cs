@@ -19,7 +19,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Crypt;
@@ -56,7 +55,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         private readonly object _processSpawnLock = new object();
 
         private readonly AutoEncryptionOptions _autoEncryptionOptions;
-        private readonly Lazy<CryptClient> _cryptClient;
+        private readonly CryptClient _cryptClient;
         private readonly IMongoClient _mongoCryptDClient;
 
         private EncryptionSource(MongoClientSettings mongoClientSettings)
@@ -64,11 +63,11 @@ namespace MongoDB.Driver.LibMongoCrypt
             Ensure.IsNotNull(mongoClientSettings, nameof(mongoClientSettings));
             _autoEncryptionOptions = Ensure.IsNotNull(mongoClientSettings.AutoEncryptionOptions, nameof(mongoClientSettings.AutoEncryptionOptions));
             _mongoCryptDClient = CreateMongoCryptDClient(_autoEncryptionOptions.ExtraOptions);
-            _cryptClient = new Lazy<CryptClient>(() => CreateCryptClient(CreateCryptOptions()));
+            _cryptClient = CreateCryptClient(CreateCryptOptions());
         }
 
 #pragma warning disable 3003
-        public CryptClient CryptClient => _cryptClient.Value;
+        public CryptClient CryptClient => _cryptClient;
 #pragma warning restore
 
         public IMongoClient MongoCryptDClient => _mongoCryptDClient;
@@ -147,16 +146,13 @@ namespace MongoDB.Driver.LibMongoCrypt
             return new MongoClient(connectionString.ToString());
         }
 
-        // todo: case insensitive?
         private void SpawnMongocryptdIfNecessary(IReadOnlyDictionary<string, object> extraOptions)
         {
             if (!extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn) || (!bool.Parse(mongoCryptBypassSpawn.ToString())))
             {
                 if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var path))
                 {
-                    //path = string.Empty; // look at the current directory
-                    // todo: where do we need to take this part in case if it's not specified (not in tests)?
-                    path = @"C:\MongoInstances\4.2.0rc3\bin";
+                    path = string.Empty; // look at the current directory or at a system PATH
                 }
 
                 if (!Path.HasExtension(path.ToString()))
@@ -171,29 +167,51 @@ namespace MongoDB.Driver.LibMongoCrypt
                     {
                         mongoCryptD.StartInfo.UseShellExecute = true;
                         mongoCryptD.StartInfo.FileName = path.ToString();
-                        mongoCryptD.StartInfo.CreateNoWindow = false;
+                        mongoCryptD.StartInfo.CreateNoWindow = true;
                         if (extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
                         {
-                            // todo: refactor. Consider a enumerable object in `mongocryptdSpawnArgs`.
-                            var args = mongocryptdSpawnArgs.ToString();
-                            if (!args.Contains("--idleShutdownTimeoutSecs"))
+                            string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
+                            var args = string.Empty;
+                            switch (mongocryptdSpawnArgs)
                             {
-                                args += "--idleShutdownTimeoutSecs 60;";
+                                case string str:
+                                    var options = str.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                    if (!options.Any(o => o.Contains("idleShutdownTimeoutSecs")))
+                                    {
+                                        args += "--idleShutdownTimeoutSecs 60;";
+                                    }
+                                    args += str;
+                                    break;
+                                case IDictionary dictionary:
+                                    foreach (var key in dictionary.Keys)
+                                    {
+                                        args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + ";";
+                                    }
+                                    break;
+                                case IEnumerable enumerable:
+                                    foreach (var item in enumerable)
+                                    {
+                                        args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + ";";
+                                    }
+                                    break;
+                                default:
+                                    args = mongocryptdSpawnArgs.ToString();
+                                    break;
                             }
 
                             mongoCryptD.StartInfo.Arguments = args;
                         }
-
+                        //1. todo: serverSelectionTimeoutMS=1000 - is not supported?
+                        //2. If spawning is necessary, the driver MUST spawn mongocryptd whenever server selection on the MongoClient to mongocryptd fails. If the MongoClient fails to connect after spawning, the server selection error is propagated to the user.
                         if (!mongoCryptD.Start())
                         {
                             //todo: handling?
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // todo: do we need to handle it?
-                    // new MongoClientException("Exception starting mongocryptd process. Is `mongocryptd` on the system path?", t));
+                    throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
                 }
             }
         }
