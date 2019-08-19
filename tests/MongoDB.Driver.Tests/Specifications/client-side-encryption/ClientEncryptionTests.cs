@@ -60,14 +60,12 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
 
         public ClientEncryptionProseTests()
         {
-            //todo:
-            BsonDefaults.GuidRepresentation = GuidRepresentation.Standard;
             _cluster = CoreTestConfiguration.Cluster;
             _session = CoreTestConfiguration.StartSession(_cluster);
         }
 
-        //[SkippableTheory]
-        //[ParameterAttributeData]
+        [SkippableTheory(Skip = "Not finished.")]
+        [ParameterAttributeData]
         // todo: this test doesn't pass since the logic https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
         // has not fully implemented yet.Currently `Type1CommandMessageSection` doesn't consider rules from here:
         // https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
@@ -165,7 +163,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             }
         }
 
-        [SkippableTheory]
+        [SkippableTheory(Skip = "Not finished.")]
         [ParameterAttributeData]
         public void CorpusTest(
             [Values(false)] bool useLocalSchema,

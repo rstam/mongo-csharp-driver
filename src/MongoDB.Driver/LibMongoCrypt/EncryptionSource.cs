@@ -153,6 +153,7 @@ namespace MongoDB.Driver.LibMongoCrypt
                 if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var path))
                 {
                     path = string.Empty; // look at the current directory or at a system PATH
+                    path = @"C:\MongoInstances\4.2.0rc3\bin";
                 }
 
                 if (!Path.HasExtension(path.ToString()))

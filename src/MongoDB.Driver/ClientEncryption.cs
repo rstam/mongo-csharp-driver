@@ -51,7 +51,7 @@ namespace MongoDB.Driver
         public BsonValue CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
             var key = GetKmsProvider(kmsProvider, dataKeyOptions);
-            return _libMongoCryptController.GenerateKey(key, cancellationToken);
+            return new BsonBinaryData(_libMongoCryptController.GenerateKey(key, cancellationToken), GuidRepresentation.Standard);
         }
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace MongoDB.Driver
         public async Task<BsonValue> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
             var key = GetKmsProvider(kmsProvider, dataKeyOptions);
-            return await _libMongoCryptController.GenerateKeyAsync(key, cancellationToken).ConfigureAwait(false);
+            return new BsonBinaryData(await _libMongoCryptController.GenerateKeyAsync(key, cancellationToken).ConfigureAwait(false), GuidRepresentation.Standard);
         }
 
         /// <summary>
