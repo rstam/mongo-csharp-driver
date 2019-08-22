@@ -1,4 +1,4 @@
-﻿{
+{
   "_id": "client_side_encryption_corpus",
   "altname_aws": "aws",
   "altname_local": "local",
@@ -966,6 +966,104 @@
       }
     }
   },
+  "aws_dbPointer_rand_auto_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAAMfCVAnMNbRGsThnoVGb2KDsCIU2ehcPtebk/TFG4GZvEmculscLLih813lEz5NHS2sAXBn721EzUS7d0TKAPbmEYFwUBnijIQIPvUoUO8AQM=",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_dbPointer_rand_auto_altname": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAAMvYJ5BtaMLVXV+qj85q5WqKRlzlHOBIIxZfUE/BBXUwqSTpJLdQQD++DDh6F2dtorBeYa3oUv2ef3ImASk5j23joU35Pm3Zt9Ci1pMNGodWs=",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_dbPointer_rand_explicit_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAAMdsmYtPDw8kKjfB2kWfx5W1oNEkWWct1lRpesN303pUWsawDJpfBx40lg18So2X/g4yGIwpY3qfEKQZA4vCJeT+MTjhRXFjXA7eS/mxv8f3E=",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_dbPointer_rand_explicit_altname": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AgFkgAAAAAAAAAAAAAAAAAAM0hcvS5zmY3mlTp0SfME/rINlflF/sx2KvP0eJTdH+Uk0WHuTkFIJAza+bXvV/gB7iNC350qyzUX3M6NHx/9s/5yBpY8MawTZTZ7WCQIA+ZI=",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_dbPointer_det_auto_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AQFkgAAAAAAAAAAAAAAAAAAMp4QxbaEOij66L+RtaMekrDSm6QbfJBTQ8lQFhxfq9n7SVuQ9Zwdy14Ja8tyI3cGgQzQ/73rHUJ3CKA4+OYr63skYUkkkdlHxUrIMd5j5woc=",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_dbPointer_det_explicit_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AQFkgAAAAAAAAAAAAAAAAAAMp4QxbaEOij66L+RtaMekrDSm6QbfJBTQ8lQFhxfq9n7SVuQ9Zwdy14Ja8tyI3cGgQzQ/73rHUJ3CKA4+OYr63skYUkkkdlHxUrIMd5j5woc=",
+        "subType": "06"
+      }
+    }
+  },
+  "aws_dbPointer_det_explicit_altname": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AQFkgAAAAAAAAAAAAAAAAAAMp4QxbaEOij66L+RtaMekrDSm6QbfJBTQ8lQFhxfq9n7SVuQ9Zwdy14Ja8tyI3cGgQzQ/73rHUJ3CKA4+OYr63skYUkkkdlHxUrIMd5j5woc=",
+        "subType": "06"
+      }
+    }
+  },
   "aws_javascript_rand_auto_id": {
     "kms": "aws",
     "type": "javascript",
@@ -1225,10 +1323,7 @@
     "method": "explicit",
     "identifier": "id",
     "allowed": false,
-    "value": {
-      "$code": "x=1",
-      "$scope": {}
-    }
+    "value": { "$code": "x=1", "$scope": {} }
   },
   "aws_javascriptWithScope_det_explicit_altname": {
     "kms": "aws",
@@ -1237,10 +1332,7 @@
     "method": "explicit",
     "identifier": "altname",
     "allowed": false,
-    "value": {
-      "$code": "x=1",
-      "$scope": {}
-    }
+    "value": { "$code": "x=1", "$scope": {} }
   },
   "aws_int_rand_auto_id": {
     "kms": "aws",
@@ -2646,6 +2738,104 @@
       }
     }
   },
+  "local_dbPointer_rand_auto_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AizggCwAAAAAAAAAAAAAAAAMUdAA9uOSk1tXJVe/CG3Ps6avYTEF1eHj1wSlCHkFxqlMtTO+rIQpikpjH0MrcXvEEdAO8g5hFZ01I7DWyK5AAxTxDqVF+kOaQ2VfKs6hyuo=",
+        "subType": "06"
+      }
+    }
+  },
+  "local_dbPointer_rand_auto_altname": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AizggCwAAAAAAAAAAAAAAAAMiNqvqLwZrPnsF235z+Obl1K9iEXdJ5GucMGpJdRG4lRvRE0Oy1vh6ztNTpYPY/tXyUFTBWlzl/lITalSEm/dT1Bnlh0iPAFrAiNySf662og=",
+        "subType": "06"
+      }
+    }
+  },
+  "local_dbPointer_rand_explicit_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AizggCwAAAAAAAAAAAAAAAAM+Tn31YcKiowBTJWRYCYAEO7UARDE2/jTVGEKXCpiwEqqP3JSAS0b80zYt8dxo5mVhUo2a02ClKrB8vs+B6sU1kXrahSaVSEHZlRSGN9fWgo=",
+        "subType": "06"
+      }
+    }
+  },
+  "local_dbPointer_rand_explicit_altname": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "AizggCwAAAAAAAAAAAAAAAAMdOZZUvpJIqG9qiOLy5x4BdftyHipPDZn/eeLEc7ir3v4jJsY3dsv6fQERo5U9lMynNGA9PJePVzq5tWsIMX0EcCQcMfGmosfkYDzN1OX99A=",
+        "subType": "06"
+      }
+    }
+  },
+  "local_dbPointer_det_auto_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "ASzggCwAAAAAAAAAAAAAAAAMQWace2C1w3yqtmo/rgz3YtIDnx1Ia/oDsoHnnMZlEy5RoK3uosi1hvNAZCSg3Sen0H7MH3XVhGGMCL4cS69uJ0ENSvh+K6fiZzAXCKUPfvM=",
+        "subType": "06"
+      }
+    }
+  },
+  "local_dbPointer_det_explicit_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "ASzggCwAAAAAAAAAAAAAAAAMQWace2C1w3yqtmo/rgz3YtIDnx1Ia/oDsoHnnMZlEy5RoK3uosi1hvNAZCSg3Sen0H7MH3XVhGGMCL4cS69uJ0ENSvh+K6fiZzAXCKUPfvM=",
+        "subType": "06"
+      }
+    }
+  },
+  "local_dbPointer_det_explicit_altname": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$binary": {
+        "base64": "ASzggCwAAAAAAAAAAAAAAAAMQWace2C1w3yqtmo/rgz3YtIDnx1Ia/oDsoHnnMZlEy5RoK3uosi1hvNAZCSg3Sen0H7MH3XVhGGMCL4cS69uJ0ENSvh+K6fiZzAXCKUPfvM=",
+        "subType": "06"
+      }
+    }
+  },
   "local_javascript_rand_auto_id": {
     "kms": "local",
     "type": "javascript",
@@ -2905,10 +3095,7 @@
     "method": "explicit",
     "identifier": "id",
     "allowed": false,
-    "value": {
-      "$code": "x=1",
-      "$scope": {}
-    }
+    "value": { "$code": "x=1", "$scope": {} }
   },
   "local_javascriptWithScope_det_explicit_altname": {
     "kms": "local",
@@ -2917,10 +3104,7 @@
     "method": "explicit",
     "identifier": "altname",
     "allowed": false,
-    "value": {
-      "$code": "x=1",
-      "$scope": {}
-    }
+    "value": { "$code": "x=1", "$scope": {} }
   },
   "local_int_rand_auto_id": {
     "kms": "local",

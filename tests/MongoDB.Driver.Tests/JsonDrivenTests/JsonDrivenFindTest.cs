@@ -47,7 +47,14 @@ namespace MongoDB.Driver.Tests.JsonDrivenTests
         // protected methods
         protected override void AssertResult()
         {
-            _result.Should().Equal(_expectedResult.AsBsonArray.Cast<BsonDocument>());
+            if (_expectedResult is BsonDocument resultDocument && _result.Count == 1)
+            {
+                _result[0].Should().Be(resultDocument);
+            }
+            else
+            {
+                _result.Should().Equal(_expectedResult.AsBsonArray.Cast<BsonDocument>());
+            }
         }
 
         protected override void CallMethod(CancellationToken cancellationToken)

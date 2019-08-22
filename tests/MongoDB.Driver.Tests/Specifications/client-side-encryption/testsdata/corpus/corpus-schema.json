@@ -1,4 +1,4 @@
-﻿{
+{
   "bsonType": "object",
   "properties": {
     "aws_double_rand_auto_id": {

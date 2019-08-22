@@ -706,6 +706,104 @@
     "allowed": true,
     "value": { "$regularExpression": { "pattern": ".*", "options": "" } }
   },
+  "aws_dbPointer_rand_auto_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "aws_dbPointer_rand_auto_altname": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "aws_dbPointer_rand_explicit_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "aws_dbPointer_rand_explicit_altname": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "aws_dbPointer_det_auto_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "aws_dbPointer_det_explicit_id": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "aws_dbPointer_det_explicit_altname": {
+    "kms": "aws",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
   "aws_javascript_rand_auto_id": {
     "kms": "aws",
     "type": "javascript",
@@ -1904,6 +2002,104 @@
     "identifier": "altname",
     "allowed": true,
     "value": { "$regularExpression": { "pattern": ".*", "options": "" } }
+  },
+  "local_dbPointer_rand_auto_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "local_dbPointer_rand_auto_altname": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "auto",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "local_dbPointer_rand_explicit_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "local_dbPointer_rand_explicit_altname": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "rand",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "local_dbPointer_det_auto_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "auto",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "local_dbPointer_det_explicit_id": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "id",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
+  },
+  "local_dbPointer_det_explicit_altname": {
+    "kms": "local",
+    "type": "dbPointer",
+    "algo": "det",
+    "method": "explicit",
+    "identifier": "altname",
+    "allowed": true,
+    "value": {
+      "$dbPointer": {
+        "$ref": "db.example",
+        "$id": { "$oid": "01234567890abcdef0123456" }
+      }
+    }
   },
   "local_javascript_rand_auto_id": {
     "kms": "local",

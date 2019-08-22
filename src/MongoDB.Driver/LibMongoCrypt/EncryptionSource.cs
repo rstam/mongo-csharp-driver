@@ -153,7 +153,6 @@ namespace MongoDB.Driver.LibMongoCrypt
                 if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var path))
                 {
                     path = string.Empty; // look at the current directory or at a system PATH
-                    path = @"C:\MongoInstances\4.2.0rc3\bin";
                 }
 
                 if (!Path.HasExtension(path.ToString()))
@@ -169,6 +168,8 @@ namespace MongoDB.Driver.LibMongoCrypt
                         mongoCryptD.StartInfo.UseShellExecute = true;
                         mongoCryptD.StartInfo.FileName = path.ToString();
                         mongoCryptD.StartInfo.CreateNoWindow = true;
+                        // todo: should it be?
+                        mongoCryptD.StartInfo.UseShellExecute = false;
                         if (extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
                         {
                             string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
@@ -206,7 +207,8 @@ namespace MongoDB.Driver.LibMongoCrypt
                         //2. If spawning is necessary, the driver MUST spawn mongocryptd whenever server selection on the MongoClient to mongocryptd fails. If the MongoClient fails to connect after spawning, the server selection error is propagated to the user.
                         if (!mongoCryptD.Start())
                         {
-                            //todo: handling?
+                            // skip it. This case can happen if no new process resource is started
+                            // (for example, if an existing process is reused)
                         }
                     }
                 }

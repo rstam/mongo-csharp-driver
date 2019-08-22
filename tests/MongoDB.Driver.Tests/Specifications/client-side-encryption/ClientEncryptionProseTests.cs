@@ -40,6 +40,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
         private static readonly CollectionNamespace __keyVaultCollectionNamespace = CollectionNamespace.FromFullName("admin.datakeys");
         #endregion
 
+        private const string LocalMasterKey = "Mng0NCt4ZHVUYUJCa1kxNkVyNUR1QURhZ2h2UzR2d2RrZzh0cFBwM3R6NmdWMDFBMUN3YkQ5aXRRMkhGRGdQV09wOGVNYUMxT2k3NjZKelhaQmRCZGJkTXVyZG9uSjFk";
         private const string SchemaMap = @"{
             ""db.coll"": {
             ""bsonType"": ""object"",
@@ -70,6 +71,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
         // todo: this test doesn't pass since the logic https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
         // has not fully implemented yet.Currently `Type1CommandMessageSection` doesn't consider rules from here:
         // https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
+        // Also: https://jira.mongodb.org/browse/SPEC-1397
         public void BsonSizeLimitAndBatchSizeSplittingTest(
             [Values(false, true)] bool async)
         {
@@ -164,11 +166,11 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             }
         }
 
-        [SkippableTheory()]
+        [SkippableTheory]
         [ParameterAttributeData]
         public void CorpusTest(
             [Values(false, true)] bool useLocalSchema,
-            [Values(false)] bool async)
+            [Values(false, true)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
@@ -234,6 +236,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                     corpus.GetElement("altname_aws"),
                     corpus.GetElement("altname_local")
                 };
+
                 foreach (var corpusElement in corpus.Elements.Where(c => c.Value.IsBsonDocument))
                 {
                     var corpusValue = corpusElement.Value.DeepClone();
@@ -249,28 +252,28 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                             corpusCopied.Add(corpusElement);
                             continue;
                         case "explicit":
+                        {
+                            var encryptionOptions = CreateEncryptionOptions(abbreviatedAlgorithmName, identifier, kms);
+                            BsonBinaryData encrypted = null;
+                            var exception = Record.Exception(() =>
                             {
-                                var encryptionOptions = CreateEncryptionOptions(abbreviatedAlgorithmName, identifier, kms);
-                                BsonBinaryData encrypted = null;
-                                var exception = Record.Exception(() =>
-                                {
-                                    encrypted = ExplicitEncrypt(
-                                        clientEncryption,
-                                        encryptionOptions,
-                                        value, async);
-                                });
-                                if (allowed)
-                                {
-                                    exception.Should().BeNull();
-                                    encrypted.Should().NotBeNull();
-                                    corpusValue["value"] = encrypted;
-                                }
-                                else
-                                {
-                                    exception.Should().NotBeNull();
-                                }
-                                corpusCopied.Add(new BsonElement(corpusElement.Name, corpusValue));
+                                encrypted = ExplicitEncrypt(
+                                    clientEncryption,
+                                    encryptionOptions,
+                                    value, async);
+                            });
+                            if (allowed)
+                            {
+                                exception.Should().BeNull();
+                                encrypted.Should().NotBeNull();
+                                corpusValue["value"] = encrypted;
                             }
+                            else
+                            {
+                                exception.Should().NotBeNull();
+                            }
+                            corpusCopied.Add(new BsonElement(corpusElement.Name, corpusValue));
+                        }
                             break;
                         default:
                             throw new ArgumentException($"Unsupported method name {method}.", nameof(method));
@@ -644,8 +647,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             kmsProviders.Add("aws", kmsOptions);
 
             var localOptions = new Dictionary<string, object>();
-            var localMasterKey = Environment.GetEnvironmentVariable("FLE_LOCAL_MASTERKEY");
-            localOptions.Add("key", new BsonBinaryData(Convert.FromBase64String(localMasterKey), BsonBinarySubType.Binary).Bytes);
+            localOptions.Add("key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey), BsonBinarySubType.Binary).Bytes);
             kmsProviders.Add("local", localOptions);
 
             return new ReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>(kmsProviders);
@@ -683,7 +685,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                     autoEncryptionOptions = autoEncryptionOptions.With(
                         keyVaultClient: new Optional<IMongoClient>(
                             new MongoClient(
-                                new MongoClientSettings()
+                                new MongoClientSettings
                                 {
                                     Credential = MongoCredential.FromComponents(null, null, "fake-user", "fake-pwd")
                                 })));
@@ -729,6 +731,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             #region static
             private static JsonTestDataFactory __instance;
             public static JsonTestDataFactory Instance => __instance ?? (__instance = new JsonTestDataFactory());
+            private static readonly string[] __ignoreKeyNames = { "dbPointer" };
             #endregion
 
             public JsonTestDataFactory()
@@ -766,9 +769,21 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         },
                         value =>
                         {
-                            value.Remove("_path");
+                            RemoveIgnoredElements(value);
                             return value;
                         }));
+            }
+
+            private void RemoveIgnoredElements(BsonDocument document)
+            {
+                document.Remove("_path");
+                var ignoredElements = document
+                    .Where(c => __ignoreKeyNames.Any(i => c.Name.Contains(i)))
+                    .ToList();
+                foreach (var ignored in ignoredElements.Where(c => c.Value.IsBsonDocument))
+                {
+                    document.RemoveElement(ignored);
+                }
             }
         }
     }

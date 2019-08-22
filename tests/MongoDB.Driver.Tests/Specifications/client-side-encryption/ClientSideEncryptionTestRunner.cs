@@ -25,7 +25,7 @@ using Xunit;
 
 namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
 {
-    // todo: add all other test files. modify them if needed
+    // todo: SPEC-1385
     public class ClientSideEncryptionTestRunner : MongoClientJsonDrivenTestRunnerBase
     {
         [SkippableTheory]
@@ -203,9 +203,9 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
                 {
                     case "aws":
                         {
-                            var awsRegion = Environment.GetEnvironmentVariable("FLE_AWS_REGION", EnvironmentVariableTarget.Machine) ?? "us-east-1";
-                            var awsAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_ACCESS_KEY_ID", EnvironmentVariableTarget.Machine) ?? throw new Exception("The AWS_ACCESS_KEY_ID system variable should be configured on the machine.");
-                            var awsSecretAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_SECRET_ACCESS_KEY", EnvironmentVariableTarget.Machine) ?? throw new Exception("The AWS_SECRET_ACCESS_KEY system variable should be configured on the machine.");
+                            var awsRegion = Environment.GetEnvironmentVariable("FLE_AWS_REGION") ?? "us-east-1";
+                            var awsAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_ACCESS_KEY_ID") ?? throw new Exception("The FLE_AWS_ACCESS_KEY_ID system variable should be configured on the machine.");
+                            var awsSecretAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_SECRET_ACCESS_KEY") ?? throw new Exception("The FLE_AWS_SECRET_ACCESS_KEY system variable should be configured on the machine.");
                             kmsOptions.Add("region", awsRegion);
                             kmsOptions.Add("accessKeyId", awsAccessKey);
                             kmsOptions.Add("secretAccessKey", awsSecretAccessKey);
