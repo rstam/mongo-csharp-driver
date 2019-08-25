@@ -26,9 +26,9 @@ using MongoDB.Crypt;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol;
 
-namespace MongoDB.Driver.LibMongoCrypt
+namespace MongoDB.Driver
 {
-    internal class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor//, IBinaryExplicitFieldEncryption
+    internal class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor
     {
         // private fields
         private readonly MongoClient _client;
@@ -43,7 +43,7 @@ namespace MongoDB.Driver.LibMongoCrypt
             _client = Ensure.IsNotNull(client, nameof(client)) as MongoClient;
             Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
             _keyVaultCollection = GetKeyVaultCollection(autoEncryptionOptions, client);
-            _mongocryptdClient = client.EncryptionSource.MongoCryptDClient;
+            _mongocryptdClient = client.GetEncryptionClients().MongoCryptDClient;
         }
 
         // public methods
@@ -52,7 +52,7 @@ namespace MongoDB.Driver.LibMongoCrypt
             byte[] keyBytes;
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartCreateDataKeyContext(kmsKeyId))
                 {
                     keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
                 }
@@ -74,7 +74,7 @@ namespace MongoDB.Driver.LibMongoCrypt
 
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartCreateDataKeyContext(kmsKeyId))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartCreateDataKeyContext(kmsKeyId))
                 {
                     keyBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
                 }
@@ -94,7 +94,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartExplicitDecryptionContext(encryptedDocument))
                 {
                     return ProcessStates(context, databaseName: null, cancellationToken);
                 }
@@ -109,7 +109,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartExplicitDecryptionContext(encryptedDocument))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartExplicitDecryptionContext(encryptedDocument))
                 {
                     return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
                 }
@@ -124,7 +124,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartDecryptionContext(encryptedDocument))
                 {
                     return ProcessStates(context, databaseName: null, cancellationToken);
                 }
@@ -139,7 +139,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartDecryptionContext(encryptedDocument))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartDecryptionContext(encryptedDocument))
                 {
                     return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
                 }
@@ -154,7 +154,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                var cryptClient = _client.EncryptionSource.CryptClient;
+                var cryptClient = _client.GetEncryptionClients().CryptClient;
                 CryptContext context;
                 if (keyId.HasValue)
                 {
@@ -166,7 +166,7 @@ namespace MongoDB.Driver.LibMongoCrypt
                 }
                 else
                 {
-                    throw new Exception("TODO: Exactly one is required.");
+                    throw new Exception("Key Id and Alt name cannot be filled at the same time.");
                 }
 
                 using (context)
@@ -184,7 +184,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                var cryptClient = _client.EncryptionSource.CryptClient;
+                var cryptClient = _client.GetEncryptionClients().CryptClient;
                 CryptContext context;
                 if (keyId.HasValue)
                 {
@@ -196,7 +196,7 @@ namespace MongoDB.Driver.LibMongoCrypt
                 }
                 else
                 {
-                    throw new Exception("TODO: Exactly one is required.");
+                    throw new Exception("Key Id and Alt name cannot be filled at the same time.");
                 }
 
                 using (context)
@@ -214,7 +214,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
                 {
                     return ProcessStates(context, databaseName, cancellationToken);
                 }
@@ -229,7 +229,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         {
             try
             {
-                using (var context = _client.EncryptionSource.CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
+                using (var context = _client.GetEncryptionClients().CryptClient.StartEncryptionContext(databaseName, unencryptedDocument))
                 {
                     return await ProcessStatesAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
                 }

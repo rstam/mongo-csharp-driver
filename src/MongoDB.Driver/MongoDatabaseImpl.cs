@@ -475,11 +475,17 @@ namespace MongoDB.Driver
         private FindOperation<TResult> CreateAggregateToCollectionFindOperation<TResult>(BsonDocument outStage, IBsonSerializer<TResult> resultSerializer, AggregateOptions options)
         {
             var outputCollectionName = outStage.GetElement(0).Value.AsString;
-
+            
+            // An encryption configuration is not obligatory here,
+            // because auto encryption is not supported for non-collection commands.
+            // So, an error will be thrown in the previous CreateAggregateToCollectionOperation step.
+            // However, since we've added encryption configuration for CreateAggregateToCollectionOperation operation,
+            // it's not superfluous to also add it here
+            var messageEncoderSettings = GetMessageEncoderSettings();
             return new FindOperation<TResult>(
                 new CollectionNamespace(_databaseNamespace, outputCollectionName),
                 resultSerializer,
-                _messageEncoderSettings)
+                messageEncoderSettings)
             {
                 BatchSize = options.BatchSize,
                 Collation = options.Collation,

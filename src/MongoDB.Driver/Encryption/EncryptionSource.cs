@@ -24,12 +24,14 @@ using MongoDB.Bson.IO;
 using MongoDB.Crypt;
 using MongoDB.Driver.Core.Misc;
 
-namespace MongoDB.Driver.LibMongoCrypt
+namespace MongoDB.Driver
 {
-    /// <summary>
-    /// Represents a encryption source.
-    /// </summary>
-    public interface IEncryptionSource //: IDisposable
+    internal interface IEncryptionClientsSource
+    {
+        IEncryptionClients EncryptionClients { get; }
+    }
+
+    internal interface IEncryptionClients
     {
 #pragma warning disable 3003
         /// <summary>
@@ -50,7 +52,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         IMongoClient MongoCryptDClient { get; }
     }
 
-    internal class EncryptionSource : IEncryptionSource
+    internal class EncryptionClients : IEncryptionClients
     {
         private readonly object _processSpawnLock = new object();
 
@@ -58,7 +60,7 @@ namespace MongoDB.Driver.LibMongoCrypt
         private readonly CryptClient _cryptClient;
         private readonly IMongoClient _mongoCryptDClient;
 
-        private EncryptionSource(MongoClientSettings mongoClientSettings)
+        private EncryptionClients(MongoClientSettings mongoClientSettings)
         {
             Ensure.IsNotNull(mongoClientSettings, nameof(mongoClientSettings));
             _autoEncryptionOptions = Ensure.IsNotNull(mongoClientSettings.AutoEncryptionOptions, nameof(mongoClientSettings.AutoEncryptionOptions));
@@ -72,11 +74,11 @@ namespace MongoDB.Driver.LibMongoCrypt
 
         public IMongoClient MongoCryptDClient => _mongoCryptDClient;
 
-        public static IEncryptionSource CreateEncryptionSourceIfNecessary(MongoClientSettings mongoClientSettings)
+        public static IEncryptionClients CreateEncryptionClientsIfNecessary(MongoClientSettings mongoClientSettings)
         {
             if (mongoClientSettings.AutoEncryptionOptions != null)
             {
-                return new EncryptionSource(mongoClientSettings);
+                return new EncryptionClients(mongoClientSettings);
             }
             else
             {

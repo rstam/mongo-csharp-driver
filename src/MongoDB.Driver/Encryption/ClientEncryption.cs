@@ -22,7 +22,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Crypt;
 using MongoDB.Driver.Core.Misc;
-using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
@@ -146,23 +145,11 @@ namespace MongoDB.Driver
             {
                 case "aws":
                     var masterKey = dataKeyOptions.MasterKey;
-                    if (keyAltNamesBytes != null)
-                    {
-                        return new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString(), keyAltNamesBytes);
-                    }
-                    else
-                    {
-                        return new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString());
-                    }
+                    return keyAltNamesBytes != null
+                        ? new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString(), keyAltNamesBytes)
+                        : new AwsKeyId(masterKey["key"].ToString(), masterKey["region"].ToString());
                 case "local":
-                    if (keyAltNamesBytes != null)
-                    {
-                        return new LocalKeyId(keyAltNamesBytes);
-                    }
-                    else
-                    {
-                        return new LocalKeyId();
-                    }
+                    return keyAltNamesBytes != null ? new LocalKeyId(keyAltNamesBytes) : new LocalKeyId();
                 default:
                     throw new ArgumentException($"Unexpected kmsProvider {kmsProvider}.");
             }

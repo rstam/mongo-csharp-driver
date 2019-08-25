@@ -24,8 +24,8 @@ namespace MongoDB.Driver
     public class DataKeyOptions
     {
         // private fields
-        private readonly IReadOnlyList<string> _keyAltNames;
         private readonly BsonDocument _masterKey;
+        private readonly IReadOnlyList<string> _keyAltNames;
 
         // constructors
         /// <summary>
@@ -41,6 +41,14 @@ namespace MongoDB.Driver
             _masterKey = masterKey.WithDefault(null);
         }
 
+        /// <summary>
+        /// Gets  the key alt names.
+        /// </summary>
+        /// <value>
+        /// The key alt names.
+        /// </value>
+        public IReadOnlyList<string> KeyAltNames => _keyAltNames;
+
         // public properties
         /// <summary>
         /// Gets the master key.
@@ -49,13 +57,5 @@ namespace MongoDB.Driver
         /// The master key.
         /// </value>
         public BsonDocument MasterKey => _masterKey;
-
-        /// <summary>
-        /// Gets  the key alt names.
-        /// </summary>
-        /// <value>
-        /// The key alt names.
-        /// </value>
-        public IReadOnlyList<string> KeyAltNames => _keyAltNames;
     }
 }

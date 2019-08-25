@@ -18,7 +18,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Clusters;
-using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver.TestHelpers
 {
@@ -36,8 +35,6 @@ namespace MongoDB.Driver.TestHelpers
         public MongoClientSettings Settings => wrapped.Settings;
 
         public IMongoClient Wrapped => wrapped;
-
-        public IEncryptionSource EncryptionSource => wrapped.EncryptionSource;
 
         public void DropDatabase(string name, CancellationToken cancellationToken = default(CancellationToken))
         {

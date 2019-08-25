@@ -13,12 +13,12 @@
 * limitations under the License.
 */
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
-using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
@@ -115,18 +115,24 @@ namespace MongoDB.Driver
             var autoEncryptionOptions = client.Settings.AutoEncryptionOptions;
             if (autoEncryptionOptions != null)
             {
-#if false
-                // use to test the driver with a dummy cryptor
-                var cryptor = new NoopBinaryDocumentFieldCryptor();
-#else
                 var cryptor = new LibMongoCryptController(client, autoEncryptionOptions);
-#endif
-
                 if (!autoEncryptionOptions.BypassAutoEncryption)
                 {
                     messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, cryptor);
                 }
                 messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, cryptor);
+            }
+        }
+
+        internal static IEncryptionClients GetEncryptionClients(this IMongoClient client)
+        {
+            if (client is IEncryptionClientsSource encryptionClientsSourceProvider)
+            {
+                return encryptionClientsSourceProvider.EncryptionClients;
+            }
+            else
+            {
+                throw new NotSupportedException("The mongo client doesn't support encryption.");
             }
         }
     }

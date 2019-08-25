@@ -20,6 +20,7 @@ using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Crypt;
@@ -61,7 +62,6 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
 
         public ClientEncryptionProseTests()
         {
-            BsonDefaults.GuidRepresentation = GuidRepresentation.Standard;
             _cluster = CoreTestConfiguration.Cluster;
             _session = CoreTestConfiguration.StartSession(_cluster);
         }
@@ -252,28 +252,28 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                             corpusCopied.Add(corpusElement);
                             continue;
                         case "explicit":
-                        {
-                            var encryptionOptions = CreateEncryptionOptions(abbreviatedAlgorithmName, identifier, kms);
-                            BsonBinaryData encrypted = null;
-                            var exception = Record.Exception(() =>
                             {
-                                encrypted = ExplicitEncrypt(
-                                    clientEncryption,
-                                    encryptionOptions,
-                                    value, async);
-                            });
-                            if (allowed)
-                            {
-                                exception.Should().BeNull();
-                                encrypted.Should().NotBeNull();
-                                corpusValue["value"] = encrypted;
+                                var encryptionOptions = CreateEncryptionOptions(abbreviatedAlgorithmName, identifier, kms);
+                                BsonBinaryData encrypted = null;
+                                var exception = Record.Exception(() =>
+                                {
+                                    encrypted = ExplicitEncrypt(
+                                        clientEncryption,
+                                        encryptionOptions,
+                                        value, async);
+                                });
+                                if (allowed)
+                                {
+                                    exception.Should().BeNull();
+                                    encrypted.Should().NotBeNull();
+                                    corpusValue["value"] = encrypted;
+                                }
+                                else
+                                {
+                                    exception.Should().NotBeNull();
+                                }
+                                corpusCopied.Add(new BsonElement(corpusElement.Name, corpusValue));
                             }
-                            else
-                            {
-                                exception.Should().NotBeNull();
-                            }
-                            corpusCopied.Add(new BsonElement(corpusElement.Name, corpusValue));
-                        }
                             break;
                         default:
                             throw new ArgumentException($"Unsupported method name {method}.", nameof(method));
@@ -637,17 +637,21 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
         {
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>();
 
-            var kmsOptions = new Dictionary<string, object>();
             var awsRegion = Environment.GetEnvironmentVariable("FLE_AWS_REGION") ?? "us-east-1";
             var awsAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_ACCESS_KEY_ID") ?? throw new Exception("The AWS_ACCESS_KEY_ID system variable should be configured on the machine.");
             var awsSecretAccessKey = Environment.GetEnvironmentVariable("FLE_AWS_SECRET_ACCESS_KEY") ?? throw new Exception("The AWS_SECRET_ACCESS_KEY system variable should be configured on the machine.");
-            kmsOptions.Add("region", awsRegion);
-            kmsOptions.Add("accessKeyId", awsAccessKey);
-            kmsOptions.Add("secretAccessKey", awsSecretAccessKey);
+            var kmsOptions = new Dictionary<string, object>
+            {
+                { "region", awsRegion },
+                { "accessKeyId", awsAccessKey },
+                { "secretAccessKey", awsSecretAccessKey }
+            };
             kmsProviders.Add("aws", kmsOptions);
 
-            var localOptions = new Dictionary<string, object>();
-            localOptions.Add("key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey), BsonBinarySubType.Binary).Bytes);
+            var localOptions = new Dictionary<string, object>
+            {
+                { "key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey), BsonBinarySubType.Binary).Bytes }
+            };
             kmsProviders.Add("local", localOptions);
 
             return new ReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>(kmsProviders);
@@ -731,7 +735,11 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             #region static
             private static JsonTestDataFactory __instance;
             public static JsonTestDataFactory Instance => __instance ?? (__instance = new JsonTestDataFactory());
-            private static readonly string[] __ignoreKeyNames = { "dbPointer" };
+            private static readonly string[] __ignoreKeyNames =
+            {
+                "dbPointer", // not supported
+                "binData=04" // not implemented yet
+            };
             #endregion
 
             public JsonTestDataFactory()
@@ -770,7 +778,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         value =>
                         {
                             RemoveIgnoredElements(value);
-                            return value;
+                            return RestoreGuidRepresentations(value);
                         }));
             }
 
@@ -784,6 +792,13 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 {
                     document.RemoveElement(ignored);
                 }
+            }
+
+            private BsonDocument RestoreGuidRepresentations(BsonDocument document)
+            {
+                var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Standard };
+                var bson = document.ToBson(writerSettings: writeSettings);
+                return new RawBsonDocument(bson).Materialize(new BsonBinaryReaderSettings { GuidRepresentation = GuidRepresentation.Standard });
             }
         }
     }

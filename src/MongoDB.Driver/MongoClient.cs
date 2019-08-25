@@ -29,12 +29,11 @@ using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
-using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
     /// <inheritdoc/>
-    public class MongoClient : MongoClientBase
+    public class MongoClient : MongoClientBase, IEncryptionClientsSource
     {
         #region static
         // private static methods
@@ -54,7 +53,7 @@ namespace MongoDB.Driver
 
         // private fields
         private readonly ICluster _cluster;
-        private readonly IEncryptionSource _encryptionSource;
+        private readonly IEncryptionClients _encryptionClients;
         private readonly IOperationExecutor _operationExecutor;
         private readonly MongoClientSettings _settings;
 
@@ -79,7 +78,7 @@ namespace MongoDB.Driver
         {
             _settings = Ensure.IsNotNull(settings, nameof(settings)).FrozenCopy();
             _cluster = ClusterRegistry.Instance.GetOrCreateCluster(_settings.ToClusterKey());
-            _encryptionSource = MongoDB.Driver.LibMongoCrypt.EncryptionSource.CreateEncryptionSourceIfNecessary(_settings);
+            _encryptionClients = EncryptionClients.CreateEncryptionClientsIfNecessary(_settings);
             _operationExecutor = new OperationExecutor(this);
         }
 
@@ -125,9 +124,6 @@ namespace MongoDB.Driver
         }
 
         /// <inheritdoc/>
-        public override IEncryptionSource EncryptionSource => _encryptionSource;
-
-        /// <inheritdoc/>
         public sealed override MongoClientSettings Settings
         {
             get { return _settings; }
@@ -135,6 +131,9 @@ namespace MongoDB.Driver
 
         // internal properties
         internal IOperationExecutor OperationExecutor => _operationExecutor;
+
+        // internal explicit properties
+        IEncryptionClients IEncryptionClientsSource.EncryptionClients => _encryptionClients;
 
         // private static methods
 

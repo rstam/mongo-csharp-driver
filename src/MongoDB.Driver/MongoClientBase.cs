@@ -18,7 +18,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Clusters;
-using MongoDB.Driver.LibMongoCrypt;
 
 namespace MongoDB.Driver
 {
@@ -29,9 +28,6 @@ namespace MongoDB.Driver
     {
         /// <inheritdoc />
         public abstract ICluster Cluster { get; }
-
-        /// <inheritdoc />
-        public abstract IEncryptionSource EncryptionSource { get; }
 
         /// <inheritdoc />
         public abstract MongoClientSettings Settings { get; }

@@ -86,17 +86,6 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 {
                     expectedModel.Add("upsert", false);
                 }
-
-                // todo: check on evergreen
-                //if (expectedModel.Contains("multi") && expectedModel["multi"] == false && !actualModel.Contains("multi"))
-                //{
-                //    expectedModel.Remove("multi");
-                //}
-
-                //if (expectedModel.Contains("upsert") && expectedModel["upsert"] == false && !actualModel.Contains("upsert"))
-                //{
-                //    expectedModel.Remove("upsert");
-                //}
             }
         }
 
