@@ -54,25 +54,23 @@ namespace MongoDB.Driver
 
     internal class EncryptionClients : IEncryptionClients
     {
-        private readonly object _processSpawnLock = new object();
-
         private readonly AutoEncryptionOptions _autoEncryptionOptions;
-        private readonly CryptClient _cryptClient;
-        private readonly IMongoClient _mongoCryptDClient;
+        private readonly Lazy<CryptClient> _cryptClient;
+        private readonly Lazy<IMongoClient> _mongoCryptDClient;
 
         private EncryptionClients(MongoClientSettings mongoClientSettings)
         {
             Ensure.IsNotNull(mongoClientSettings, nameof(mongoClientSettings));
             _autoEncryptionOptions = Ensure.IsNotNull(mongoClientSettings.AutoEncryptionOptions, nameof(mongoClientSettings.AutoEncryptionOptions));
-            _mongoCryptDClient = CreateMongoCryptDClient(_autoEncryptionOptions.ExtraOptions);
-            _cryptClient = CreateCryptClient(CreateCryptOptions());
+            _cryptClient = new Lazy<CryptClient>(() => CreateCryptClient(CreateCryptOptions()));
+            _mongoCryptDClient = new Lazy<IMongoClient>(() => CreateMongoCryptDClient(_autoEncryptionOptions.ExtraOptions));
         }
 
 #pragma warning disable 3003
-        public CryptClient CryptClient => _cryptClient;
+        public CryptClient CryptClient => _cryptClient.Value;
 #pragma warning restore
 
-        public IMongoClient MongoCryptDClient => _mongoCryptDClient;
+        public IMongoClient MongoCryptDClient => _mongoCryptDClient.Value;
 
         public static IEncryptionClients CreateEncryptionClientsIfNecessary(MongoClientSettings mongoClientSettings)
         {
@@ -141,10 +139,8 @@ namespace MongoDB.Driver
                 connectionString = "mongodb://localhost:27020";
             }
 
-            lock (_processSpawnLock)
-            {
-                SpawnMongocryptdIfNecessary(extraOptions);
-            }
+            SpawnMongocryptdIfNecessary(extraOptions);
+
             return new MongoClient(connectionString.ToString());
         }
 
@@ -154,7 +150,7 @@ namespace MongoDB.Driver
             {
                 if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var path))
                 {
-                    path = string.Empty; // look at the current directory or at a system PATH
+                    path = Environment.GetEnvironmentVariable("MONGODB_BINARIES") ?? string.Empty;
                 }
 
                 if (!Path.HasExtension(path.ToString()))
@@ -163,61 +159,64 @@ namespace MongoDB.Driver
                     path = Path.Combine(path.ToString(), fileName);
                 }
 
-                try
+                var args = string.Empty;
+                if (extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
                 {
-                    using (Process mongoCryptD = new Process())
+                    string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
+                    switch (mongocryptdSpawnArgs)
                     {
-                        mongoCryptD.StartInfo.UseShellExecute = true;
-                        mongoCryptD.StartInfo.FileName = path.ToString();
-                        mongoCryptD.StartInfo.CreateNoWindow = true;
-                        // todo: should it be?
-                        mongoCryptD.StartInfo.UseShellExecute = false;
-                        if (extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
-                        {
-                            string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
-                            var args = string.Empty;
-                            switch (mongocryptdSpawnArgs)
+                        case string str:
+                            var options = str.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            if (!options.Any(o => o.Contains("idleShutdownTimeoutSecs")))
                             {
-                                case string str:
-                                    var options = str.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                                    if (!options.Any(o => o.Contains("idleShutdownTimeoutSecs")))
-                                    {
-                                        args += "--idleShutdownTimeoutSecs 60;";
-                                    }
-                                    args += str;
-                                    break;
-                                case IDictionary dictionary:
-                                    foreach (var key in dictionary.Keys)
-                                    {
-                                        args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + ";";
-                                    }
-                                    break;
-                                case IEnumerable enumerable:
-                                    foreach (var item in enumerable)
-                                    {
-                                        args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + ";";
-                                    }
-                                    break;
-                                default:
-                                    args = mongocryptdSpawnArgs.ToString();
-                                    break;
+                                args += "--idleShutdownTimeoutSecs 60;";
                             }
-
-                            mongoCryptD.StartInfo.Arguments = args;
-                        }
-                        //1. todo: serverSelectionTimeoutMS=1000 - is not supported?
-                        //2. If spawning is necessary, the driver MUST spawn mongocryptd whenever server selection on the MongoClient to mongocryptd fails. If the MongoClient fails to connect after spawning, the server selection error is propagated to the user.
-                        if (!mongoCryptD.Start())
-                        {
-                            // skip it. This case can happen if no new process resource is started
-                            // (for example, if an existing process is reused)
-                        }
+                            args += str;
+                            break;
+                        case IDictionary dictionary:
+                            foreach (var key in dictionary.Keys)
+                            {
+                                args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + ";";
+                            }
+                            break;
+                        case IEnumerable enumerable:
+                            foreach (var item in enumerable)
+                            {
+                                args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + ";";
+                            }
+                            break;
+                        default:
+                            args = mongocryptdSpawnArgs.ToString();
+                            break;
                     }
                 }
-                catch (Exception ex)
+                StartProcess(path.ToString(), args);
+            }
+        }
+
+        private void StartProcess(string path, string args)
+        {
+            try
+            {
+                using (Process mongoCryptD = new Process())
                 {
-                    throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
+                    mongoCryptD.StartInfo.UseShellExecute = true;
+                    mongoCryptD.StartInfo.FileName = path;
+                    mongoCryptD.StartInfo.CreateNoWindow = true;
+                    // todo: should it be?
+                    mongoCryptD.StartInfo.UseShellExecute = false;
+                    mongoCryptD.StartInfo.Arguments = args;
+
+                    if (!mongoCryptD.Start())
+                    {
+                        // skip it. This case can happen if no new process resource is started
+                        // (for example, if an existing process is reused)
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
             }
         }
     }

@@ -138,7 +138,7 @@ namespace MongoDB.Driver
                 keyAltNamesBytes = dataKeyOptions
                     .KeyAltNames
                     .Select(c => new BsonDocument("keyAltName", c))
-                    .Select(c => c.ToBson(serializer: BsonValueSerializer.Instance));
+                    .Select(c => c.ToBson());
             }
 
             switch (kmsProvider)
