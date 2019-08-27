@@ -42,7 +42,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="2.6.2" PrivateAssets="All" />
-    <PackageReference Include="MongoDB.Crypt" Version="0.0.0-prerelease6" />
     <PackageReference Include="MongoDB.Libmongocrypt" Version="0.0.0-prerelease8" />
   </ItemGroup>
 

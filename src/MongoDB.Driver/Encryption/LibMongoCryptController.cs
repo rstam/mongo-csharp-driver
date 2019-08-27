@@ -22,9 +22,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
-using MongoDB.Crypt;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol;
+using MongoDB.Libmongocrypt;
 
 namespace MongoDB.Driver
 {

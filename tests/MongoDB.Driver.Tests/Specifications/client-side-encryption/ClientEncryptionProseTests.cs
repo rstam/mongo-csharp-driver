@@ -23,13 +23,13 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
-using MongoDB.Crypt;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.TestHelpers;
+using MongoDB.Libmongocrypt;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
