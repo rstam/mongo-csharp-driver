@@ -730,7 +730,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             }
         }
 
-        public class JsonTestDataFactory : JsonDrivenTestCaseFactory
+        public class JsonTestDataFactory : JsonTestReader
         {
             #region static
             private static JsonTestDataFactory __instance;

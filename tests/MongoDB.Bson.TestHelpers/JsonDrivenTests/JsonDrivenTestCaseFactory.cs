@@ -26,32 +26,13 @@ using Xunit.Abstractions;
 
 namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 {
-    public abstract class JsonDrivenTestCaseFactory<TTestCase> : IEnumerable<object[]>
-        where TTestCase : IXunitSerializable
+    public abstract class JsonTestReader
     {
         // protected properties
         protected virtual Assembly Assembly => this.GetType().GetTypeInfo().Assembly;
 
         protected virtual string PathPrefix { get; } = null;
         protected virtual string[] PathPrefixes { get; } = null;
-
-        // public methods
-        public IEnumerator<object[]> GetEnumerator()
-        {
-            return
-                ReadJsonDocuments()
-                .SelectMany(document => CreateTestCases(document))
-                .Select(testCase => new object[] { testCase })
-                .GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        // protected methods
-        protected abstract IEnumerable<TTestCase> CreateTestCases(BsonDocument document);
 
         protected virtual BsonDocument ReadJsonDocument(string path)
         {
@@ -71,8 +52,8 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
         {
             return
                 Assembly.GetManifestResourceNames()
-                .Where(path => ShouldReadJsonDocument(path))
-                .Select(path => ReadJsonDocument(path));
+                    .Where(path => ShouldReadJsonDocument(path))
+                    .Select(path => ReadJsonDocument(path));
         }
 
         protected virtual bool ShouldReadJsonDocument(string path)
@@ -87,6 +68,28 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 
             return prefixes ?? throw new NotImplementedException("A test must have at least one test path.");
         }
+    }
+
+    public abstract class JsonDrivenTestCaseFactory<TTestCase> : JsonTestReader, IEnumerable<object[]>
+        where TTestCase : IXunitSerializable
+    {
+        // public methods
+        public IEnumerator<object[]> GetEnumerator()
+        {
+            return
+                ReadJsonDocuments()
+                .SelectMany(document => CreateTestCases(document))
+                .Select(testCase => new object[] { testCase })
+                .GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        // protected methods
+        protected abstract IEnumerable<TTestCase> CreateTestCases(BsonDocument document);
     }
 
     public abstract class JsonDrivenTestCaseFactory : JsonDrivenTestCaseFactory<JsonDrivenTestCase>
