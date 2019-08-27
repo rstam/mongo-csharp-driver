@@ -23,8 +23,11 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
+using MongoDB.Driver.Core;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
+using MongoDB.Driver.Core.Configuration;
+using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
@@ -66,19 +69,23 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             _session = CoreTestConfiguration.StartSession(_cluster);
         }
 
-        [SkippableTheory(Skip = "Not finished.")]
+        [SkippableTheory()]
         [ParameterAttributeData]
         // todo: this test doesn't pass since the logic https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
         // has not fully implemented yet.Currently `Type1CommandMessageSection` doesn't consider rules from here:
         // https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
         // Also: https://jira.mongodb.org/browse/SPEC-1397
         public void BsonSizeLimitAndBatchSizeSplittingTest(
-            [Values(false, true)] bool async)
+            [Values(false)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
+            var eventCapturer = new EventCapturer().Capture<CommandStartedEvent>(e => e.CommandName == "insert");
             using (var client = ConfigureClient())
-            using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProvider: "local"))
+            using (var clientEncrypted = ConfigureClientEncrypted(
+                out _,
+                kmsProvider: "local",
+                eventCapturer: eventCapturer))
             {
                 var collLimitSchema = JsonTestDataFactory.Instance.Documents["limits.limits-schema.json"];
                 CreateCollection(client, __collCollectionNamespace, new BsonDocument("$jsonSchema", collLimitSchema));
@@ -139,7 +146,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                             { "unencrypted", new string('a', 2097152 - 1000) }
                         }));
                 exception.Should().BeNull();
-                //todo: command monitoring.?
+                eventCapturer.Count.Should().Be(2);
+                eventCapturer.Events.Clear();
 
                 var limitsDoc1 = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
                 limitsDoc1.AddRange(
@@ -467,10 +475,11 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         new EmptyPipelineDefinition<BsonDocument>());
 
                 var view = GetCollection(clientEncrypted, viewName);
-                var exception = Record.Exception(() => Insert(
-                    view,
-                    async,
-                    documents: new BsonDocument("test", 1)));
+                var exception = Record.Exception(
+                    () => Insert(
+                        view,
+                        async,
+                        documents: new BsonDocument("test", 1)));
                 exception.Message.Should().Be("cannot auto encrypt a view");
             }
         }
@@ -481,8 +490,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             var client = new DisposableMongoClient(GetMongoClient());
             if (clearCollections)
             {
-                var clientAdminDatabase =
-                    client.GetDatabase(__keyVaultCollectionNamespace.DatabaseNamespace.DatabaseName);
+                var clientAdminDatabase = client.GetDatabase(__keyVaultCollectionNamespace.DatabaseNamespace.DatabaseName);
                 clientAdminDatabase.DropCollection(__keyVaultCollectionNamespace.CollectionName);
                 var clientDbDatabase = client.GetDatabase(__collCollectionNamespace.DatabaseNamespace.DatabaseName);
                 clientDbDatabase.DropCollection(__collCollectionNamespace.CollectionName);
@@ -490,25 +498,38 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             return client;
         }
 
-        private DisposableMongoClient ConfigureClientEncrypted(out ClientEncryption clientEncryption, BsonDocument schemaMap = null, bool withExternalKeyVault = false, string kmsProvider = null)
+        private DisposableMongoClient ConfigureClientEncrypted(
+            out ClientEncryption clientEncryption,
+            BsonDocument schemaMap = null,
+            bool withExternalKeyVault = false,
+            string kmsProvider = null,
+            EventCapturer eventCapturer = null)
         {
             var kmsProviders = GetKmsProviders();
+
             var clientEncrypted = new DisposableMongoClient(
                 GetMongoClient(
-                    __keyVaultCollectionNamespace,
-                    schemaMap != null ? schemaMap : null,
-                    kmsProvider == null
-                        ? kmsProviders
-                        : kmsProviders
-                            .Where(c => c.Key == kmsProvider)
-                            .ToDictionary(key => key.Key, value => value.Value),
-                    withExternalKeyVault: withExternalKeyVault));
+                    keyVaultNamespace: __keyVaultCollectionNamespace,
+                    schemaMapDocument: schemaMap != null ? schemaMap : null,
+                    kmsProviders:
+                        kmsProvider == null
+                            ? kmsProviders
+                            : kmsProviders
+                                .Where(c => c.Key == kmsProvider)
+                                .ToDictionary(key => key.Key, value => value.Value),
+                    withExternalKeyVault: withExternalKeyVault,
+                    clusterConfigurator:
+                        eventCapturer != null
+                            ? c => c.Subscribe(eventCapturer)
+                            : (Action<ClusterBuilder>)null));
 
             var clientEncryptionOptions = new ClientEncryptionOptions(
                 keyVaultClient: clientEncrypted.Wrapped.Settings.AutoEncryptionOptions.KeyVaultClient ?? clientEncrypted,
-                __keyVaultCollectionNamespace,
-                kmsProviders);
+                keyVaultNamespace: __keyVaultCollectionNamespace,
+                kmsProviders: kmsProviders);
+
             clientEncryption = clientEncrypted.GetClientEncryption(clientEncryptionOptions);
+
             return clientEncrypted;
         }
 
@@ -661,7 +682,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             CollectionNamespace keyVaultNamespace = null,
             BsonDocument schemaMapDocument = null,
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders = null,
-            bool withExternalKeyVault = false)
+            bool withExternalKeyVault = false,
+            Action<ClusterBuilder> clusterConfigurator = null)
         {
             if (keyVaultNamespace != null || schemaMapDocument != null)
             {
@@ -698,6 +720,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 return new MongoClient(
                     new MongoClientSettings
                     {
+                        ClusterConfigurator = clusterConfigurator,
                         AutoEncryptionOptions = autoEncryptionOptions,
                         GuidRepresentation = GuidRepresentation.Standard
                     });
