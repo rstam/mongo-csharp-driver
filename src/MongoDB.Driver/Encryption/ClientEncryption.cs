@@ -19,6 +19,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Libmongocrypt;
@@ -171,7 +172,9 @@ namespace MongoDB.Driver
 
         private byte[] GetBytesForEncryption(BsonValue value)
         {
-            return new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance);
+            var writerSettings = BsonBinaryWriterSettings.Defaults;
+            writerSettings.GuidRepresentation = GuidRepresentation.Unspecified;
+            return new BsonDocument("v", value).ToBson(serializer: BsonValueSerializer.Instance, writerSettings: writerSettings);
         }
 
         private BsonBinaryData GetBsonValueFromEncryptionResult(byte[] encryptedBytes)

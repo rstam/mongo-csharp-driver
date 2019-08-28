@@ -722,7 +722,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                     {
                         ClusterConfigurator = clusterConfigurator,
                         AutoEncryptionOptions = autoEncryptionOptions,
-                        GuidRepresentation = GuidRepresentation.Standard
+                        GuidRepresentation = GuidRepresentation.Unspecified
                     });
             }
             else
@@ -730,7 +730,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 return new MongoClient(
                     new MongoClientSettings
                     {
-                        GuidRepresentation = GuidRepresentation.Standard
+                        GuidRepresentation = GuidRepresentation.Unspecified
                     });
             }
         }
@@ -760,8 +760,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             public static JsonTestDataFactory Instance => __instance ?? (__instance = new JsonTestDataFactory());
             private static readonly string[] __ignoreKeyNames =
             {
-                "dbPointer", // not supported
-                "binData=04" // not implemented yet
+                "dbPointer" // not supported
             };
             #endregion
 
@@ -801,7 +800,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         value =>
                         {
                             RemoveIgnoredElements(value);
-                            return RestoreGuidRepresentations(value);
+                            return value;
                         }));
             }
 
@@ -815,13 +814,6 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 {
                     document.RemoveElement(ignored);
                 }
-            }
-
-            private BsonDocument RestoreGuidRepresentations(BsonDocument document)
-            {
-                var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Standard };
-                var bson = document.ToBson(writerSettings: writeSettings);
-                return new RawBsonDocument(bson).Materialize(new BsonBinaryReaderSettings { GuidRepresentation = GuidRepresentation.Standard });
             }
         }
     }

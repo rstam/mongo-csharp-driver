@@ -1219,7 +1219,9 @@ namespace MongoDB.Bson
         /// <returns>A string representation of the document.</returns>
         public override string ToString()
         {
-            return this.ToJson();
+            var writerSettings = JsonWriterSettings.Defaults;
+            writerSettings.GuidRepresentation = GuidRepresentation.Unspecified;
+            return this.ToJson(writerSettings: writerSettings);
         }
 
         /// <summary>
