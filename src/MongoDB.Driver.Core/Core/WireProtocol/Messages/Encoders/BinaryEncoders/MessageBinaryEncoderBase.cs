@@ -13,8 +13,13 @@
 * limitations under the License.
 */
 
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Driver.Core.Misc;
 
@@ -64,6 +69,20 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
         }
 
         /// <summary>
+        /// Gets a flag whether encryption has been configured.
+        /// </summary>
+        /// <value>
+        /// The flag whether encryption is configured or not.
+        /// </value>
+        protected bool IsEncryptionConfigured
+        {
+            get
+            {
+                return _encoderSettings?.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null) != null;
+            }
+        }
+
+        /// <summary>
         /// Gets the maximum size of the document.
         /// </summary>
         /// <value>
@@ -78,23 +97,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
         }
 
         /// <summary>
-        /// Gets the maximum size of the encrypted document.
-        /// </summary>
-        /// <value>
-        /// The maximum size of the encrypted document.
-        /// </value>
-        protected int? MaxDocumentSizeForEncryption
-        {
-            get
-            {
-                return
-                    _encoderSettings?.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null) != null
-                        ? 2097152   // the MaxDocument for encryption
-                        : MaxDocumentSize;
-            }
-        }
-
-        /// <summary>
         /// Gets the maximum size of the message.
         /// </summary>
         /// <value>
@@ -105,24 +107,6 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
             get
             {
                 return _encoderSettings?.GetOrDefault<int?>(MessageEncoderSettingsName.MaxMessageSize, null);
-            }
-        }
-
-        /// <summary>
-        /// Gets the maximum size of the message.
-        /// </summary>
-        /// <value>
-        /// The maximum size of the message.
-        /// </value>
-        protected int? MaxMessageSizeForEncryption
-        {
-            get
-            {
-                return
-                    _encoderSettings?.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null) != null &&
-                    MaxDocumentSizeForEncryption != null
-                        ? MaxDocumentSizeForEncryption + 16384   // the MaxMessageSize for encryption
-                        : MaxMessageSize;
             }
         }
 

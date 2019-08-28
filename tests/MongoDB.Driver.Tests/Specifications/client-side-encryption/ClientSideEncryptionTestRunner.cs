@@ -69,7 +69,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
 
         protected override MongoClient CreateClientForTestSetup()
         {
-            var clientSettings = DriverTestConfiguration.GetClientSettings();
+            var clientSettings = DriverTestConfiguration.GetClientSettings().Clone();
             clientSettings.GuidRepresentation = GuidRepresentation.Unspecified;
             return new MongoClient(clientSettings);
         }
