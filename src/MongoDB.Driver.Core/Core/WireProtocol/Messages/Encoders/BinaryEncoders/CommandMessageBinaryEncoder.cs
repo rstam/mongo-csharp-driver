@@ -289,14 +289,14 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
             var stream = writer.BsonStream;
             var serializer = section.DocumentSerializer;
             var context = BsonSerializationContext.CreateRoot(writer);
-            var maxMessageSize = MaxMessageSize;
+            var maxMessageSize = MaxMessageSizeForEncryption ?? MaxMessageSize;
 
             var payloadStartPosition = stream.Position;
             stream.WriteInt32(0); // size
             stream.WriteCString(section.Identifier);
 
             var batch = section.Documents;
-            var maxDocumentSize = section.MaxDocumentSize ?? writer.Settings.MaxDocumentSize;
+            var maxDocumentSize = MaxDocumentSizeForEncryption ?? section.MaxDocumentSize ?? writer.Settings.MaxDocumentSize;
             writer.PushSettings(s => ((BsonBinaryWriterSettings)s).MaxDocumentSize = maxDocumentSize);
             writer.PushElementNameValidator(section.ElementNameValidator);
             try

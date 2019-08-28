@@ -20,7 +20,6 @@ using System.Linq;
 using System.Threading;
 using FluentAssertions;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Bson.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core;
@@ -71,21 +70,14 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
 
         [SkippableTheory()]
         [ParameterAttributeData]
-        // todo: this test doesn't pass since the logic https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
-        // has not fully implemented yet.Currently `Type1CommandMessageSection` doesn't consider rules from here:
-        // https://github.com/mongodb/specifications/blob/master/source/client-side-encryption/client-side-encryption.rst#size-limits-and-wire-protocol-considerations
-        // Also: https://jira.mongodb.org/browse/SPEC-1397
         public void BsonSizeLimitAndBatchSizeSplittingTest(
-            [Values(false)] bool async)
+            [Values(false, true)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
             var eventCapturer = new EventCapturer().Capture<CommandStartedEvent>(e => e.CommandName == "insert");
             using (var client = ConfigureClient())
-            using (var clientEncrypted = ConfigureClientEncrypted(
-                out _,
-                kmsProvider: "local",
-                eventCapturer: eventCapturer))
+            using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProviderFilter: "local", eventCapturer: eventCapturer))
             {
                 var collLimitSchema = JsonTestDataFactory.Instance.Documents["limits.limits-schema.json"];
                 CreateCollection(client, __collCollectionNamespace, new BsonDocument("$jsonSchema", collLimitSchema));
@@ -105,6 +97,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                             { "unencrypted", new string('a', 2097152 - 1000) }
                         }));
                 exception.Should().BeNull();
+                eventCapturer.Clear();
 
                 exception = Record.Exception(
                     () => Insert(
@@ -116,6 +109,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                             { "unencrypted", new string('a', 2097152) }
                         }));
                 exception.Should().NotBeNull();
+                eventCapturer.Clear();
 
                 var limitsDoc = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
                 limitsDoc.AddRange(
@@ -130,6 +124,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         async,
                         limitsDoc));
                 exception.Should().BeNull();
+                eventCapturer.Clear();
 
                 exception = Record.Exception(
                     () => Insert(
@@ -147,7 +142,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         }));
                 exception.Should().BeNull();
                 eventCapturer.Count.Should().Be(2);
-                eventCapturer.Events.Clear();
+                eventCapturer.Clear();
 
                 var limitsDoc1 = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
                 limitsDoc1.AddRange(
@@ -157,7 +152,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         { "unencrypted", new string('a', 2097152 - 2000) }
                     });
                 var limitsDoc2 = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
-                limitsDoc1.AddRange(
+                limitsDoc2.AddRange(
                     new BsonDocument
                     {
                         { "_id", "encryption_exceeds_2mib_2" },
@@ -170,7 +165,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         limitsDoc1,
                         limitsDoc2));
                 exception.Should().BeNull();
-                //todo: command monitoring.?
+                eventCapturer.Count.Should().Be(2);
+                eventCapturer.Clear();
             }
         }
 
@@ -464,7 +460,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             CollectionNamespace viewName = CollectionNamespace.FromFullName("db.view");
 
             using (var client = ConfigureClient(false))
-            using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProvider: "local"))
+            using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProviderFilter: "local"))
             {
                 DropView(viewName);
                 client
@@ -502,7 +498,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             out ClientEncryption clientEncryption,
             BsonDocument schemaMap = null,
             bool withExternalKeyVault = false,
-            string kmsProvider = null,
+            string kmsProviderFilter = null,
             EventCapturer eventCapturer = null)
         {
             var kmsProviders = GetKmsProviders();
@@ -512,10 +508,10 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                     keyVaultNamespace: __keyVaultCollectionNamespace,
                     schemaMapDocument: schemaMap != null ? schemaMap : null,
                     kmsProviders:
-                        kmsProvider == null
+                        kmsProviderFilter == null
                             ? kmsProviders
                             : kmsProviders
-                                .Where(c => c.Key == kmsProvider)
+                                .Where(c => c.Key == kmsProviderFilter)
                                 .ToDictionary(key => key.Key, value => value.Value),
                     withExternalKeyVault: withExternalKeyVault,
                     clusterConfigurator:
@@ -764,9 +760,11 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             };
             #endregion
 
+            private readonly IReadOnlyDictionary<string, BsonDocument> _documents;
+
             public JsonTestDataFactory()
             {
-                Documents = new ReadOnlyDictionary<string, BsonDocument>(ReadDocuments());
+                _documents = new ReadOnlyDictionary<string, BsonDocument>(ReadDocuments());
             }
 
             protected override string[] PathPrefixes => new[]
@@ -776,7 +774,13 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata.limits."
             };
 
-            public IReadOnlyDictionary<string, BsonDocument> Documents { get; }
+            public IReadOnlyDictionary<string, BsonDocument> Documents
+            {
+                get
+                {
+                    return _documents.ToDictionary(k => k.Key, v => v.Value.DeepClone().AsBsonDocument);
+                }
+            }
 
             private IDictionary<string, BsonDocument> ReadDocuments()
             {

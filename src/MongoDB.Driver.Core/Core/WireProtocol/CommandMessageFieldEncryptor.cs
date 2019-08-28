@@ -173,8 +173,6 @@ namespace MongoDB.Driver.Core.WireProtocol
             CommandRequestMessage unencryptedRequestMessage)
         {
             var clonedMessageEncoderSettings = _messageEncoderSettings.Clone();
-            clonedMessageEncoderSettings.Set(MessageEncoderSettingsName.MaxDocumentSize, 2097152);
-            clonedMessageEncoderSettings.Set(MessageEncoderSettingsName.MaxMessageSize, 6000000);
             var encoderFactory = new BinaryMessageEncoderFactory(stream, clonedMessageEncoderSettings, compressorSource: null);
             var encoder = encoderFactory.GetCommandRequestMessageEncoder();
             encoder.WriteMessage(unencryptedRequestMessage);
