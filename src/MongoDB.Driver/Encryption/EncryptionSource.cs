@@ -85,6 +85,21 @@ namespace MongoDB.Driver
         }
 
         // private methods
+        private string CreateMongoCryptDConnectionString(IReadOnlyDictionary<string, object> extraOptions)
+        {
+            if (extraOptions == null)
+            {
+                extraOptions = new Dictionary<string, object>();
+            }
+
+            if (!extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
+            {
+                connectionString = "mongodb://localhost:27020";
+            }
+
+            return connectionString.ToString();
+        }
+
         private CryptClient CreateCryptClient(CryptOptions options)
         {
             return CryptClientFactory.Create(options);
@@ -129,37 +144,38 @@ namespace MongoDB.Driver
 
         private IMongoClient CreateMongoCryptDClient(IReadOnlyDictionary<string, object> extraOptions)
         {
-            if (extraOptions == null)
+            var connectionString = CreateMongoCryptDConnectionString(extraOptions);
+
+            if (ShouldMongocryptdBeSpawned(out var path, out var args, extraOptions))
             {
-                extraOptions = new Dictionary<string, object>();
+                StartProcess(path, args);
             }
 
-            if (!extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
-            {
-                connectionString = "mongodb://localhost:27020";
-            }
-
-            SpawnMongocryptdIfNecessary(extraOptions);
-
-            return new MongoClient(connectionString.ToString());
+            return new MongoClient(connectionString);
         }
 
-        private void SpawnMongocryptdIfNecessary(IReadOnlyDictionary<string, object> extraOptions)
+        private bool ShouldMongocryptdBeSpawned(out string path, out string args, IReadOnlyDictionary<string, object> extraOptions)
         {
+            path = null;
+            args = null;
             if (!extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn) || (!bool.Parse(mongoCryptBypassSpawn.ToString())))
             {
-                if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var path))
+                if (!extraOptions.TryGetValue("mongocryptdSpawnPath", out var objPath))
                 {
                     path = Environment.GetEnvironmentVariable("MONGODB_BINARIES") ?? string.Empty;
                 }
-
-                if (!Path.HasExtension(path.ToString()))
+                else
                 {
-                    string fileName = "mongocryptd.exe";
-                    path = Path.Combine(path.ToString(), fileName);
+                    path = objPath.ToString();
                 }
 
-                var args = string.Empty;
+                if (!Path.HasExtension(path))
+                {
+                    string fileName = "mongocryptd.exe";
+                    path = Path.Combine(path, fileName);
+                }
+
+                args = string.Empty;
                 if (extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
                 {
                     string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
@@ -190,8 +206,11 @@ namespace MongoDB.Driver
                             break;
                     }
                 }
-                StartProcess(path.ToString(), args);
+
+                return true;
             }
+
+            return false;
         }
 
         private void StartProcess(string path, string args)
