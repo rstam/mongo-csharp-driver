@@ -144,6 +144,10 @@ namespace MongoDB.Driver
 
         private IMongoClient CreateMongoCryptDClient(IReadOnlyDictionary<string, object> extraOptions)
         {
+            if (extraOptions == null)
+            {
+                extraOptions = new Dictionary<string, object>();
+            }
             var connectionString = CreateMongoCryptDConnectionString(extraOptions);
 
             if (ShouldMongocryptdBeSpawned(out var path, out var args, extraOptions))

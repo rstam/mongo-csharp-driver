@@ -1,5 +1,7 @@
 {
   "longRunningTestSeconds": 1800,
   "parallelizeAssembly": false,
-  "parallelizeTestCollections": false
+  "parallelizeTestCollections": false,
+
+  "shadowCopy": false
 }
