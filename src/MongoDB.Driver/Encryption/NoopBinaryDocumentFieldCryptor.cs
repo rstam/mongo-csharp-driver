@@ -31,14 +31,14 @@ namespace MongoDB.Driver
             return Task.FromResult(encryptedDocument);
         }
 
-        public byte[] EncryptFields(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
+        public byte[] EncryptFields(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)
         {
-            return unencryptedDocument;
+            return unencryptedCommandBytes;
         }
 
-        public Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
+        public Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)
         {
-            return Task.FromResult(unencryptedDocument);
+            return Task.FromResult(unencryptedCommandBytes);
         }
     }
 }

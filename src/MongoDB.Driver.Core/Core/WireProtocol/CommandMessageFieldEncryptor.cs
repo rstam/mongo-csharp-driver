@@ -43,16 +43,16 @@ namespace MongoDB.Driver.Core.WireProtocol
         // public static methods
         public CommandRequestMessage EncryptFields(string databaseName, CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
         {
-            var unencryptedDocumentBytes = GetUnencryptedDocumentBytes(unencryptedRequestMessage);
-            var encryptedDocumentBytes = _documentFieldEncryptor.EncryptFields(databaseName, unencryptedDocumentBytes, cancellationToken);
-            return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedDocumentBytes);
+            var unencryptedCommandBytes = GetUnencryptedCommandBytes(unencryptedRequestMessage);
+            var encryptedCommandBytes = _documentFieldEncryptor.EncryptFields(databaseName, unencryptedCommandBytes, cancellationToken);
+            return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedCommandBytes);
         }
 
         public async Task<CommandRequestMessage> EncryptFieldsAsync(string databaseName, CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
         {
-            var unencryptedDocumentBytes = GetUnencryptedDocumentBytes(unencryptedRequestMessage);
-            var encryptedDocumentBytes = await _documentFieldEncryptor.EncryptFieldsAsync(databaseName, unencryptedDocumentBytes, cancellationToken).ConfigureAwait(false);
-            return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedDocumentBytes);
+            var unencryptedCommandBytes = GetUnencryptedCommandBytes(unencryptedRequestMessage);
+            var encryptedCommandBytes = await _documentFieldEncryptor.EncryptFieldsAsync(databaseName, unencryptedCommandBytes, cancellationToken).ConfigureAwait(false);
+            return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedCommandBytes);
         }
 
         // private static methods
@@ -158,7 +158,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             return new CommandRequestMessage(encryptedCommandMessage, unencryptedRequestMessage.ShouldBeSent);
         }
 
-        private byte[] GetUnencryptedDocumentBytes(CommandRequestMessage unencryptedRequestMessage)
+        private byte[] GetUnencryptedCommandBytes(CommandRequestMessage unencryptedRequestMessage)
         {
             using (var stream = new MemoryStream())
             {

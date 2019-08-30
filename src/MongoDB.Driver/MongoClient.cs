@@ -33,7 +33,7 @@ using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
 namespace MongoDB.Driver
 {
     /// <inheritdoc/>
-    public class MongoClient : MongoClientBase, IEncryptionClientsSource
+    public class MongoClient : MongoClientBase, IDisposable
     {
         #region static
         // private static methods
@@ -53,7 +53,8 @@ namespace MongoDB.Driver
 
         // private fields
         private readonly ICluster _cluster;
-        private readonly IEncryptionClients _encryptionClients;
+        private bool _isDisposed = false;
+        private readonly LibMongoCryptController _libMongoCryptController;
         private readonly IOperationExecutor _operationExecutor;
         private readonly MongoClientSettings _settings;
 
@@ -78,8 +79,12 @@ namespace MongoDB.Driver
         {
             _settings = Ensure.IsNotNull(settings, nameof(settings)).FrozenCopy();
             _cluster = ClusterRegistry.Instance.GetOrCreateCluster(_settings.ToClusterKey());
-            _encryptionClients = EncryptionClients.CreateEncryptionClientsIfNecessary(_settings);
             _operationExecutor = new OperationExecutor(this);
+            if (settings.AutoEncryptionOptions != null)
+            {
+                _libMongoCryptController = new LibMongoCryptController(this, settings.AutoEncryptionOptions);
+                _libMongoCryptController.Initialize();
+            }
         }
 
         /// <summary>
@@ -130,10 +135,8 @@ namespace MongoDB.Driver
         }
 
         // internal properties
+        internal LibMongoCryptController LibMongoCryptController => _libMongoCryptController;
         internal IOperationExecutor OperationExecutor => _operationExecutor;
-
-        // internal explicit properties
-        IEncryptionClients IEncryptionClientsSource.EncryptionClients => _encryptionClients;
 
         // private static methods
 
@@ -175,11 +178,11 @@ namespace MongoDB.Driver
         }
 
         /// <inheritdoc/>
-        public override ClientEncryption GetClientEncryption(ClientEncryptionOptions options)
+        public override ClientEncryption GetClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
         {
-            var autoEncryptionOptions = AutoEncryptionOptions.FromClientEncryptionOptions(options);
-            var encryptionController = new LibMongoCryptController(this, autoEncryptionOptions);
-            return new ClientEncryption(encryptionController);
+            var explicitController = new LibMongoCryptController(this, clientEncryptionOptions);
+            explicitController.Initialize();
+            return new ClientEncryption(explicitController);
         }
 
         /// <inheritdoc/>
@@ -492,11 +495,20 @@ namespace MongoDB.Driver
             ChangeStreamOptions options)
         {
             return ChangeStreamHelper.CreateChangeStreamOperation(
-                pipeline, 
-                options, 
-                _settings.ReadConcern, 
-                GetMessageEncoderSettings(), 
+                pipeline,
+                options,
+                _settings.ReadConcern,
+                GetMessageEncoderSettings(),
                 _settings.RetryReads);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (!_isDisposed)
+            {
+                _libMongoCryptController?.Dispose();
+            }
         }
 
         private TResult ExecuteReadOperation<TResult>(IClientSessionHandle session, IReadOperation<TResult> operation, CancellationToken cancellationToken = default(CancellationToken))

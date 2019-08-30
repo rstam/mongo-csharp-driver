@@ -16,61 +16,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reflection;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
 using Xunit.Abstractions;
 
 namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
 {
-    public abstract class JsonTestReader
-    {
-        // protected properties
-        protected virtual Assembly Assembly => this.GetType().GetTypeInfo().Assembly;
-
-        protected virtual string PathPrefix { get; } = null;
-        protected virtual string[] PathPrefixes { get; } = null;
-
-        protected virtual BsonDocument ReadJsonDocument(string path)
-        {
-            var jsonReaderSettings = new JsonReaderSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-            using (var stream = Assembly.GetManifestResourceStream(path))
-            using (var streamReader = new StreamReader(stream))
-            using (var jsonReader = new JsonReader(streamReader, jsonReaderSettings))
-            {
-                var context = BsonDeserializationContext.CreateRoot(jsonReader);
-                var document = BsonDocumentSerializer.Instance.Deserialize(context);
-                document.InsertAt(0, new BsonElement("_path", path));
-                return document;
-            }
-        }
-
-        protected virtual IEnumerable<BsonDocument> ReadJsonDocuments()
-        {
-            return
-                Assembly.GetManifestResourceNames()
-                    .Where(path => ShouldReadJsonDocument(path))
-                    .Select(path => ReadJsonDocument(path));
-        }
-
-        protected virtual bool ShouldReadJsonDocument(string path)
-        {
-            var prefixes = GetPathPrefixes();
-            return prefixes.Any(path.StartsWith) && path.EndsWith(".json");
-        }
-
-        private string[] GetPathPrefixes()
-        {
-            var prefixes = !string.IsNullOrEmpty(PathPrefix) ? new[] { PathPrefix } : PathPrefixes;
-
-            return prefixes ?? throw new NotImplementedException("A test must have at least one test path.");
-        }
-    }
-
-    public abstract class JsonDrivenTestCaseFactory<TTestCase> : JsonTestReader, IEnumerable<object[]>
+    public abstract class JsonDrivenTestCaseFactory<TTestCase> : EmbeddedResourceJsonFileReader, IEnumerable<object[]>
         where TTestCase : IXunitSerializable
     {
         // public methods

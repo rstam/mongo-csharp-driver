@@ -25,6 +25,21 @@ namespace MongoDB.Driver
     /// </summary>
     public class AutoEncryptionOptions
     {
+        #region static
+        /// <summary>
+        /// Gets a new instance of the <see cref="AutoEncryptionOptions"/> initialized with values from a <see cref="ClientEncryptionOptions"/>.
+        /// </summary>
+        /// <param name="clientEncryptionOptions">The client encryption options.</param>
+        /// <returns>A new instance of <see cref="AutoEncryptionOptions"/>.</returns>
+        public static AutoEncryptionOptions FromClientEncryptionOptions(ClientEncryptionOptions clientEncryptionOptions)
+        {
+            return new AutoEncryptionOptions(
+                keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
+                kmsProviders: clientEncryptionOptions.KmsProviders,
+                keyVaultClient: Optional.Create(clientEncryptionOptions.KeyVaultClient));
+        }
+        #endregion
+
         // private fields
         private readonly bool _bypassAutoEncryption;
         private readonly IReadOnlyDictionary<string, object> _extraOptions;
@@ -49,7 +64,7 @@ namespace MongoDB.Driver
             Optional<bool> bypassAutoEncryption = default,
             Optional<IReadOnlyDictionary<string, object>> extraOptions = default,
             Optional<IMongoClient> keyVaultClient = default,
-            Optional<IReadOnlyDictionary<string, BsonDocument>> schemaMap = default)
+            Optional<IReadOnlyDictionary<string, BsonDocument>> schemaMap = default) 
         {
             _keyVaultNamespace = Ensure.IsNotNull(keyVaultNamespace, nameof(keyVaultNamespace));
             _kmsProviders = Ensure.IsNotNull(kmsProviders, nameof(kmsProviders));
@@ -130,45 +145,32 @@ namespace MongoDB.Driver
                 keyVaultNamespace.WithDefault(_keyVaultNamespace),
                 kmsProviders.WithDefault(_kmsProviders),
                 bypassAutoEncryption.WithDefault(_bypassAutoEncryption),
-                new Optional<IReadOnlyDictionary<string, object>>(extraOptions.WithDefault(_extraOptions)),
-                new Optional<IMongoClient>(keyVaultClient.WithDefault(_keyVaultClient)),
-                new Optional<IReadOnlyDictionary<string, BsonDocument>>(schemaMap.WithDefault(_schemaMap)));
-        }
-
-        /// <summary>
-        /// Gets a new instance of the <see cref="AutoEncryptionOptions"/> initialized with values from a <see cref="ClientEncryptionOptions"/>.
-        /// </summary>
-        /// <param name="clientEncryptionOptions">The client encryption options.</param>
-        /// <returns>A new instance of <see cref="AutoEncryptionOptions"/>.</returns>
-        public static AutoEncryptionOptions FromClientEncryptionOptions(ClientEncryptionOptions clientEncryptionOptions)
-        {
-            return new AutoEncryptionOptions(
-                keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
-                kmsProviders: clientEncryptionOptions.KmsProviders,
-                keyVaultClient: new Optional<IMongoClient>(clientEncryptionOptions.KeyVaultClient));
+                Optional.Create(extraOptions.WithDefault(_extraOptions)),
+                Optional.Create(keyVaultClient.WithDefault(_keyVaultClient)),
+                Optional.Create(schemaMap.WithDefault(_schemaMap)));
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
             var sb = new StringBuilder();
-            sb.AppendFormat("BypassAutoEncryption={0};", _bypassAutoEncryption);
-            sb.AppendFormat("KmsProviders={0};", _kmsProviders.ToJson());
-
+            sb.Append("{ ");
+            sb.AppendFormat("BypassAutoEncryption : {0}, ", _bypassAutoEncryption);
+            sb.AppendFormat("KmsProviders : {0}, ", _kmsProviders.ToJson());
             if (_keyVaultNamespace != null)
             {
-                sb.AppendFormat("KeyVaultNamespace={0};", _keyVaultNamespace.FullName);
+                sb.AppendFormat("KeyVaultNamespace : \"{0}\", ", _keyVaultNamespace.FullName);
             }
-
             if (_extraOptions != null)
             {
-                sb.AppendFormat("ExtraOptions={0};", _extraOptions.ToJson());
+                sb.AppendFormat("ExtraOptions : {0}, ", _extraOptions.ToJson());
             }
-
             if (_schemaMap != null)
             {
-                sb.AppendFormat("SchemaMap={0};", _schemaMap.ToJson());
+                sb.AppendFormat("SchemaMap : {0}, ", _schemaMap.ToJson());
             }
+            sb.Remove(sb.Length - 2, 2);
+            sb.Append(" }");
             return sb.ToString();
         }
     }

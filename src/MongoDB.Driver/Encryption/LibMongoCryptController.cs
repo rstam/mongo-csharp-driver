@@ -14,7 +14,11 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -28,31 +32,74 @@ using MongoDB.Libmongocrypt;
 
 namespace MongoDB.Driver
 {
-    internal class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor
+    internal sealed class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor, IDisposable
     {
+        #region static
+        private static bool AcceptAnyCertificate(
+            object sender,
+            X509Certificate certificate,
+            X509Chain chain,
+            SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
+        }
+        #endregion
+
         // private fields
+        private readonly AutoEncryptionOptions _autoEncryptionOptions;
         private readonly MongoClient _client;
-        private readonly IMongoCollection<BsonDocument> _keyVaultCollection;
+        private readonly CryptClient _cryptClient;
+        private bool _isDisposed = false;
+        private bool _isInitialized = false;
+        private IMongoCollection<BsonDocument> _keyVaultCollection;
+        private readonly MongoClient _mongocryptdClient;
 
         // constructors
         public LibMongoCryptController(
-            IMongoClient client,
-            AutoEncryptionOptions autoEncryptionOptions)
+            MongoClient client,
+            ClientEncryptionOptions clientEncryptionOptions) 
+            : this(
+                client,
+                AutoEncryptionOptions.FromClientEncryptionOptions(clientEncryptionOptions),
+                client.LibMongoCryptController?.CryptClient) // can be null
         {
-            _client = Ensure.IsNotNull(client, nameof(client)) as MongoClient;
-            Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
-            _keyVaultCollection = GetKeyVaultCollection(autoEncryptionOptions, client);
         }
+
+        public LibMongoCryptController(
+            MongoClient client,
+            AutoEncryptionOptions autoEncryptionOptions) 
+            : this(
+                client,
+                autoEncryptionOptions,
+                null) // will be created in the base constructor
+        {
+            // needs only for auto encryption
+            _mongocryptdClient = MongoCryptDHelper.CreateClient(_autoEncryptionOptions);
+        }
+
+        private LibMongoCryptController(
+            MongoClient client,
+            AutoEncryptionOptions autoEncryptionOptions,
+            CryptClient cryptClient)
+        {
+            _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+            _client = Ensure.IsNotNull(client, nameof(client));
+            _cryptClient = cryptClient ?? CryptClientHelper.CreateCryptClient(autoEncryptionOptions);
+        }
+
+        public CryptClient CryptClient => _cryptClient;
 
         // public methods
-        public Guid GenerateKey(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
+        public Guid CreateDataKey(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
         {
-            byte[] keyBytes;
+            ThrowIfNotInitializedOrDisposed();
+
+            byte[] keyDocumentBytes;
             try
             {
-                using (var context = GetCryptClient().StartCreateDataKeyContext(kmsKeyId))
+                using (var context = _cryptClient.StartCreateDataKeyContext(kmsKeyId))
                 {
-                    keyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
+                    keyDocumentBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
                 }
             }
             catch (Exception ex)
@@ -60,21 +107,23 @@ namespace MongoDB.Driver
                 throw new MongoClientException(ex.Message, ex);
             }
 
-            var rawBsonDocument = new RawBsonDocument(keyBytes);
-            _keyVaultCollection.InsertOne(rawBsonDocument, cancellationToken: cancellationToken);
-            var guid = rawBsonDocument.GetValue("_id").AsGuid;
+            var keyDocument = new RawBsonDocument(keyDocumentBytes);
+            _keyVaultCollection.InsertOne(keyDocument, cancellationToken: cancellationToken);
+            var guid = keyDocument["_id"].AsGuid;
             return guid;
         }
 
-        public async Task<Guid> GenerateKeyAsync(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
+        public async Task<Guid> CreateDataKeyAsync(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
         {
-            byte[] keyBytes;
+            ThrowIfNotInitializedOrDisposed();
+
+            byte[] keyDocumentBytes;
 
             try
             {
-                using (var context = GetCryptClient().StartCreateDataKeyContext(kmsKeyId))
+                using (var context = _cryptClient.StartCreateDataKeyContext(kmsKeyId))
                 {
-                    keyBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
+                    keyDocumentBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -82,17 +131,19 @@ namespace MongoDB.Driver
                 throw new MongoClientException(ex.Message, ex);
             }
 
-            var rawBsonDocument = new RawBsonDocument(keyBytes);
-            await _keyVaultCollection.InsertOneAsync(rawBsonDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
-            var guid = rawBsonDocument.GetValue("_id").AsGuid;
+            var keyDocument = new RawBsonDocument(keyDocumentBytes);
+            await _keyVaultCollection.InsertOneAsync(keyDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var guid = keyDocument["_id"].AsGuid;
             return guid;
         }
 
-        public byte[] DecryptField(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public byte[] DecryptField(byte[] wrappedValueBytes, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                using (var context = GetCryptClient().StartExplicitDecryptionContext(encryptedDocument))
+                using (var context = _cryptClient.StartExplicitDecryptionContext(wrappedValueBytes))
                 {
                     return ProcessStates(context, databaseName: null, cancellationToken);
                 }
@@ -103,11 +154,13 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> DecryptFieldAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public async Task<byte[]> DecryptFieldAsync(byte[] wrappedValueBytes, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                using (var context = GetCryptClient().StartExplicitDecryptionContext(encryptedDocument))
+                using (var context = _cryptClient.StartExplicitDecryptionContext(wrappedValueBytes))
                 {
                     return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
                 }
@@ -118,11 +171,13 @@ namespace MongoDB.Driver
             }
         }
 
-        public byte[] DecryptFields(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public byte[] DecryptFields(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                using (var context = GetCryptClient().StartDecryptionContext(encryptedDocument))
+                using (var context = _cryptClient.StartDecryptionContext(encryptedDocumentBytes))
                 {
                     return ProcessStates(context, databaseName: null, cancellationToken);
                 }
@@ -133,11 +188,13 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public async Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                using (var context = GetCryptClient().StartDecryptionContext(encryptedDocument))
+                using (var context = _cryptClient.StartDecryptionContext(encryptedDocumentBytes))
                 {
                     return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
                 }
@@ -148,23 +205,33 @@ namespace MongoDB.Driver
             }
         }
 
-        public byte[] EncryptField(byte[] unencryptedField, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        public void Dispose()
         {
+            if (!_isDisposed)
+            {
+                _cryptClient.Dispose();
+                _isDisposed = true;
+            }
+        }
+
+        public byte[] EncryptField(byte[] wrappedValueBytes, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                var cryptClient = GetCryptClient();
                 CryptContext context;
                 if (keyId.HasValue)
                 {
-                    context = cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, unencryptedField);
+                    context = _cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else if (keyAltName != null)
                 {
-                    context = cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, unencryptedField);
+                    context = _cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else
                 {
-                    throw new Exception("Key Id and Alt name cannot be filled at the same time.");
+                    throw new Exception("Key Id and Alt name cannot both be set.");
                 }
 
                 using (context)
@@ -178,23 +245,24 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> EncryptFieldAsync(byte[] unencryptedField, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        public async Task<byte[]> EncryptFieldAsync(byte[] wrappedValueBytes, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                var cryptClient = GetCryptClient();
                 CryptContext context;
                 if (keyId.HasValue)
                 {
-                    context = cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, unencryptedField);
+                    context = _cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else if (keyAltName != null)
                 {
-                    context = cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, unencryptedField);
+                    context = _cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else
                 {
-                    throw new Exception("Key Id and Alt name cannot be filled at the same time.");
+                    throw new Exception("Key Id and Alt name cannot both be set.");
                 }
 
                 using (context)
@@ -208,11 +276,13 @@ namespace MongoDB.Driver
             }
         }
 
-        public byte[] EncryptFields(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
+        public byte[] EncryptFields(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                using (var context = GetCryptClient().StartEncryptionContext(databaseName, unencryptedDocument))
+                using (var context = _cryptClient.StartEncryptionContext(databaseName, unencryptedCommandBytes))
                 {
                     return ProcessStates(context, databaseName, cancellationToken);
                 }
@@ -223,11 +293,13 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken)
+        public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)
         {
+            ThrowIfNotInitializedOrDisposed();
+
             try
             {
-                using (var context = GetCryptClient().StartEncryptionContext(databaseName, unencryptedDocument))
+                using (var context = _cryptClient.StartEncryptionContext(databaseName, unencryptedCommandBytes))
                 {
                     return await ProcessStatesAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
                 }
@@ -238,33 +310,22 @@ namespace MongoDB.Driver
             }
         }
 
-        // private methods
-        private static bool AcceptAnyCertificate(
-            object sender,
-            X509Certificate certificate,
-            X509Chain chain,
-            SslPolicyErrors sslPolicyErrors)
+        public void Initialize()
         {
-            return true;
+            if (!_isInitialized)
+            {
+                _keyVaultCollection = GetKeyVaultCollection(_autoEncryptionOptions, _client);
+                _isInitialized = true;
+            }
         }
 
-        private static IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)
+        // private methods
+        private IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)
         {
             var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? client;
             var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
             var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
             return keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
-        }
-
-        private CryptClient GetCryptClient()
-        {
-            return _client.GetEncryptionClients().CryptClient;
-        }
-
-        private IMongoClient GetMongoCryptD()
-        {
-            // should not be called in constructor since it's a lazy
-            return _client.GetEncryptionClients().MongoCryptDClient;
         }
 
         private void FeedResult(CryptContext context, BsonDocument document)
@@ -288,8 +349,6 @@ namespace MongoDB.Driver
 
         private void ProcessErrorState(CryptContext context)
         {
-            // todo: this stage doesn't work.
-            // Libmongocrypt throws an error together with stage.
             throw new NotImplementedException();
         }
 
@@ -359,7 +418,7 @@ namespace MongoDB.Driver
 
         private void ProcessNeedMongoMarkingsState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var database = GetMongoCryptD().GetDatabase(databaseName);
+            var database = _mongocryptdClient.GetDatabase(databaseName);
             var commandBytes = context.GetOperation().ToArray();
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
@@ -370,7 +429,7 @@ namespace MongoDB.Driver
 
         private async Task ProcessNeedMongoMarkingsStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var database = GetMongoCryptD().GetDatabase(databaseName);
+            var database = _mongocryptdClient.GetDatabase(databaseName);
             var commandBytes = context.GetOperation().ToArray();
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
@@ -518,6 +577,209 @@ namespace MongoDB.Driver
                 if (!result.Contains("$db"))
                 {
                     result.Add(db);
+                }
+            }
+        }
+
+        private void ThrowIfNotInitializedOrDisposed()
+        {
+            if (!_isInitialized)
+            {
+                throw new InvalidOperationException($"{nameof(LibMongoCryptController)} must be initialized.");
+            }
+
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+        }
+
+        // nested types
+        private class CryptClientHelper
+        {
+            #region static
+            public static CryptClient CreateCryptClient(AutoEncryptionOptions autoEncryptionOptions)
+            {
+                var helper = new CryptClientHelper(autoEncryptionOptions);
+                var cryptOptions = helper.CreateCryptOptions();
+                return helper.CreateCryptClient(cryptOptions);
+            }
+            #endregion
+
+            private readonly AutoEncryptionOptions _autoEncryptionOptions;
+
+            private CryptClientHelper(AutoEncryptionOptions autoEncryptionOptions)
+            {
+                _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+            }
+
+            private CryptClient CreateCryptClient(CryptOptions options)
+            {
+                return CryptClientFactory.Create(options);
+            }
+
+            private CryptOptions CreateCryptOptions()
+            {
+                var kmsProviders = _autoEncryptionOptions.KmsProviders;
+                Dictionary<KmsType, IKmsCredentials> kmsProvidersMap = null;
+                if (kmsProviders != null)
+                {
+                    kmsProvidersMap = new Dictionary<KmsType, IKmsCredentials>();
+                    if (kmsProviders.TryGetValue("aws", out var awsProvider))
+                    {
+                        if (awsProvider.TryGetValue("accessKeyId", out var accessKeyId) &&
+                            awsProvider.TryGetValue("secretAccessKey", out var secretAccessKey))
+                        {
+                            kmsProvidersMap.Add(KmsType.Aws, new AwsKmsCredentials((string)secretAccessKey, (string)accessKeyId));
+                        }
+                    }
+                    if (kmsProviders.TryGetValue("local", out var localProvider))
+                    {
+                        if (localProvider.TryGetValue("key", out var keyObject) && keyObject is byte[] key)
+                        {
+                            kmsProvidersMap.Add(KmsType.Local, new LocalKmsCredentials(key));
+                        }
+                    }
+                }
+
+                byte[] schemaBytes = null;
+                var schemaMap = _autoEncryptionOptions.SchemaMap;
+                if (schemaMap != null)
+                {
+                    var schemaMapElements = schemaMap.Select(c => new BsonElement(c.Key, c.Value));
+                    var schemaDocument = new BsonDocument(schemaMapElements);
+                    var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
+                    schemaBytes = schemaDocument.ToBson(writerSettings: writeSettings);
+                }
+
+                return new CryptOptions(kmsProvidersMap, schemaBytes);
+            }
+        }
+
+        private class MongoCryptDHelper
+        {
+            #region static
+            public static MongoClient CreateClient(AutoEncryptionOptions autoEncryptionOptions)
+            {
+                var helper = new MongoCryptDHelper(autoEncryptionOptions);
+                var client = helper.CreateMongoCryptDClient();
+                return client;
+            }
+            #endregion
+
+            private readonly IReadOnlyDictionary<string, object> _extraOptions;
+
+            private MongoCryptDHelper(AutoEncryptionOptions autoEncryptionOptions)
+            {
+                Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+                _extraOptions = autoEncryptionOptions.ExtraOptions ?? new Dictionary<string, object>();
+            }
+
+            // private methods
+            private string CreateMongoCryptDConnectionString()
+            {
+                if (!_extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
+                {
+                    connectionString = "mongodb://localhost:27020";
+                }
+
+                return connectionString.ToString();
+            }
+
+            private MongoClient CreateMongoCryptDClient()
+            {
+                var connectionString = CreateMongoCryptDConnectionString();
+
+                if (ShouldMongocryptdBeSpawned(out var path, out var args))
+                {
+                    StartProcess(path, args);
+                }
+
+                return new MongoClient(connectionString);
+            }
+
+            private bool ShouldMongocryptdBeSpawned(out string path, out string args)
+            {
+                path = null;
+                args = null;
+                if (!_extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn) || (!bool.Parse(mongoCryptBypassSpawn.ToString())))
+                {
+                    if (!_extraOptions.TryGetValue("mongocryptdSpawnPath", out var objPath))
+                    {
+                        path = string.Empty; // look at the PATH env variable
+                    }
+                    else
+                    {
+                        path = objPath.ToString();
+                    }
+
+                    if (!Path.HasExtension(path))
+                    {
+                        string fileName = "mongocryptd.exe";
+                        path = Path.Combine(path, fileName);
+                    }
+
+                    args = string.Empty;
+                    if (_extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
+                    {
+                        string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
+                        switch (mongocryptdSpawnArgs)
+                        {
+                            case string str:
+                                var options = str.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                                if (!options.Any(o => o.Contains("idleShutdownTimeoutSecs")))
+                                {
+                                    args += "--idleShutdownTimeoutSecs 60;";
+                                }
+                                args += str;
+                                break;
+                            case IDictionary dictionary:
+                                foreach (var key in dictionary.Keys)
+                                {
+                                    args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + ";";
+                                }
+                                break;
+                            case IEnumerable enumerable:
+                                foreach (var item in enumerable)
+                                {
+                                    args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + ";";
+                                }
+                                break;
+                            default:
+                                args = mongocryptdSpawnArgs.ToString();
+                                break;
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
+            }
+
+            private void StartProcess(string path, string args)
+            {
+                try
+                {
+                    using (Process mongoCryptD = new Process())
+                    {
+                        mongoCryptD.StartInfo.UseShellExecute = true;
+                        mongoCryptD.StartInfo.FileName = path;
+                        mongoCryptD.StartInfo.CreateNoWindow = true;
+                        // todo: should it be?
+                        mongoCryptD.StartInfo.UseShellExecute = false;
+                        mongoCryptD.StartInfo.Arguments = args;
+
+                        if (!mongoCryptD.Start())
+                        {
+                            // skip it. This case can happen if no new process resource is started
+                            // (for example, if an existing process is reused)
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
                 }
             }
         }

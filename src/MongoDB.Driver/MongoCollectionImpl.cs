@@ -35,7 +35,7 @@ namespace MongoDB.Driver
         private readonly ICluster _cluster;
         private readonly CollectionNamespace _collectionNamespace;
         private readonly IMongoDatabase _database;
-        private readonly Lazy<MessageEncoderSettings> _messageEncoderSettings;
+        private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly IOperationExecutor _operationExecutor;
         private readonly IBsonSerializer<TDocument> _documentSerializer;
         private readonly MongoCollectionSettings _settings;
@@ -55,7 +55,7 @@ namespace MongoDB.Driver
             _operationExecutor = Ensure.IsNotNull(operationExecutor, nameof(operationExecutor));
             _documentSerializer = Ensure.IsNotNull(documentSerializer, nameof(documentSerializer));
 
-            _messageEncoderSettings = new Lazy<MessageEncoderSettings>(GetMessageEncoderSettings); // lazy needs to avoid infinite looping in encryption configuration
+            _messageEncoderSettings = GetMessageEncoderSettings();
         }
 
         // properties
@@ -712,7 +712,7 @@ namespace MongoDB.Driver
                 _collectionNamespace,
                 renderedPipeline.Documents,
                 renderedPipeline.OutputSerializer,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 AllowDiskUse = options.AllowDiskUse,
                 BatchSize = options.BatchSize,
@@ -734,7 +734,7 @@ namespace MongoDB.Driver
             return new FindOperation<TResult>(
                 new CollectionNamespace(_collectionNamespace.DatabaseNamespace, outputCollectionName),
                 resultSerializer,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 BatchSize = options.BatchSize,
                 Collation = options.Collation,
@@ -749,7 +749,7 @@ namespace MongoDB.Driver
             return new AggregateToCollectionOperation(
                 _collectionNamespace,
                 renderedPipeline.Documents,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 AllowDiskUse = options.AllowDiskUse,
                 BypassDocumentValidation = options.BypassDocumentValidation,
@@ -769,7 +769,7 @@ namespace MongoDB.Driver
             return new BulkMixedWriteOperation(
                 _collectionNamespace,
                 requests.Select(ConvertWriteModelToWriteRequest),
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 BypassDocumentValidation = options.BypassDocumentValidation,
                 IsOrdered = options.IsOrdered,
@@ -787,13 +787,13 @@ namespace MongoDB.Driver
                 pipeline,
                 _documentSerializer,
                 options,
-                _settings.ReadConcern, messageEncoderSettings: _messageEncoderSettings.Value,
+                _settings.ReadConcern, messageEncoderSettings: _messageEncoderSettings,
                 _database.Client.Settings.RetryReads);
         }
 
         private CountDocumentsOperation CreateCountDocumentsOperation(FilterDefinition<TDocument> filter, CountOptions options)
         {
-            return new CountDocumentsOperation(_collectionNamespace, _messageEncoderSettings.Value)
+            return new CountDocumentsOperation(_collectionNamespace, _messageEncoderSettings)
             {
                 Collation = options.Collation,
                 Filter = filter.Render(_documentSerializer, _settings.SerializerRegistry),
@@ -808,7 +808,7 @@ namespace MongoDB.Driver
 
         private CountOperation CreateCountOperation(FilterDefinition<TDocument> filter, CountOptions options)
         {
-            return new CountOperation(_collectionNamespace, _messageEncoderSettings.Value)
+            return new CountOperation(_collectionNamespace, _messageEncoderSettings)
             {
                 Collation = options.Collation,
                 Filter = filter.Render(_documentSerializer, _settings.SerializerRegistry),
@@ -830,7 +830,7 @@ namespace MongoDB.Driver
                 _collectionNamespace,
                 valueSerializer,
                 renderedField.FieldName,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 Collation = options.Collation,
                 Filter = filter.Render(_documentSerializer, _settings.SerializerRegistry),
@@ -842,7 +842,7 @@ namespace MongoDB.Driver
 
         private CountOperation CreateEstimatedDocumentCountOperation(EstimatedDocumentCountOptions options)
         {
-            return new CountOperation(_collectionNamespace, _messageEncoderSettings.Value)
+            return new CountOperation(_collectionNamespace, _messageEncoderSettings)
             {
                 MaxTime = options?.MaxTime,
                 RetryRequested = _database.Client.Settings.RetryReads
@@ -858,7 +858,7 @@ namespace MongoDB.Driver
                 _collectionNamespace,
                 filter.Render(_documentSerializer, _settings.SerializerRegistry),
                 new FindAndModifyValueDeserializer<TProjection>(renderedProjection.ProjectionSerializer),
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 Collation = options.Collation,
                 MaxTime = options.MaxTime,
@@ -879,7 +879,7 @@ namespace MongoDB.Driver
                 filter.Render(_documentSerializer, _settings.SerializerRegistry),
                 new BsonDocumentWrapper(replacementObject, _documentSerializer),
                 new FindAndModifyValueDeserializer<TProjection>(renderedProjection.ProjectionSerializer),
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 BypassDocumentValidation = options.BypassDocumentValidation,
                 Collation = options.Collation,
@@ -903,7 +903,7 @@ namespace MongoDB.Driver
                 filter.Render(_documentSerializer, _settings.SerializerRegistry),
                 update.Render(_documentSerializer, _settings.SerializerRegistry),
                 new FindAndModifyValueDeserializer<TProjection>(renderedProjection.ProjectionSerializer),
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 ArrayFilters = RenderArrayFilters(options.ArrayFilters),
                 BypassDocumentValidation = options.BypassDocumentValidation,
@@ -926,7 +926,7 @@ namespace MongoDB.Driver
             return new FindOperation<TProjection>(
                 _collectionNamespace,
                 renderedProjection.ProjectionSerializer,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 AllowPartialResults = options.AllowPartialResults,
                 BatchSize = options.BatchSize,
@@ -955,7 +955,7 @@ namespace MongoDB.Driver
                 map,
                 reduce,
                 resultSerializer,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 Collation = options.Collation,
                 Filter = options.Filter == null ? null : options.Filter.Render(_documentSerializer, _settings.SerializerRegistry),
@@ -983,7 +983,7 @@ namespace MongoDB.Driver
                 outputCollectionNamespace,
                 map,
                 reduce,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 BypassDocumentValidation = options.BypassDocumentValidation,
                 Collation = options.Collation,
@@ -1007,7 +1007,7 @@ namespace MongoDB.Driver
             return new FindOperation<TResult>(
                 outputCollectionNamespace,
                 resultSerializer,
-                _messageEncoderSettings.Value)
+                _messageEncoderSettings)
             {
                 Collation = options.Collation,
                 MaxTime = options.MaxTime,
@@ -1042,8 +1042,10 @@ namespace MongoDB.Driver
                 { MessageEncoderSettingsName.WriteEncoding, _settings.WriteEncoding ?? Utf8Encodings.Strict }
             };
 
-            var client = _database.Client;
-            client.ConfigureAutoEncryptionMessageEncoderSettings(messageEncoderSettings);
+            if (_database.Client is MongoClient mongoClient)
+            {
+                mongoClient.ConfigureAutoEncryptionMessageEncoderSettings(messageEncoderSettings);
+            }
 
             return messageEncoderSettings;
         }
@@ -1414,7 +1416,7 @@ namespace MongoDB.Driver
             // private methods
             private CreateIndexesOperation CreateCreateIndexesOperation(IEnumerable<CreateIndexRequest> requests, CreateManyIndexesOptions options)
             {
-                return new CreateIndexesOperation(_collection._collectionNamespace, requests, _collection._messageEncoderSettings.Value)
+                return new CreateIndexesOperation(_collection._collectionNamespace, requests, _collection._messageEncoderSettings)
                 {
                     MaxTime = options?.MaxTime,
                     WriteConcern = _collection.Settings.WriteConcern
@@ -1457,7 +1459,7 @@ namespace MongoDB.Driver
 
             private DropIndexOperation CreateDropAllOperation(DropIndexOptions options)
             {
-                return new DropIndexOperation(_collection._collectionNamespace, "*", _collection._messageEncoderSettings.Value)
+                return new DropIndexOperation(_collection._collectionNamespace, "*", _collection._messageEncoderSettings)
                 {
                     MaxTime = options?.MaxTime,
                     WriteConcern = _collection.Settings.WriteConcern
@@ -1466,7 +1468,7 @@ namespace MongoDB.Driver
 
             private DropIndexOperation CreateDropOneOperation(string name, DropIndexOptions options)
             {
-                return new DropIndexOperation(_collection._collectionNamespace, name, _collection._messageEncoderSettings.Value)
+                return new DropIndexOperation(_collection._collectionNamespace, name, _collection._messageEncoderSettings)
                 {
                     MaxTime = options?.MaxTime,
                     WriteConcern = _collection.Settings.WriteConcern
@@ -1475,7 +1477,7 @@ namespace MongoDB.Driver
 
             private ListIndexesOperation CreateListIndexesOperation()
             {
-                return new ListIndexesOperation(_collection._collectionNamespace, _collection._messageEncoderSettings.Value)
+                return new ListIndexesOperation(_collection._collectionNamespace, _collection._messageEncoderSettings)
                 {
                     RetryRequested = _collection.Database.Client.Settings.RetryReads
                 };

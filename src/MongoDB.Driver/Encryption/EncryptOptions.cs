@@ -42,7 +42,7 @@ namespace MongoDB.Driver
             _algorithm = Ensure.IsNotNull(algorithm, nameof(algorithm));
             _keyAltName = keyAltName.WithDefault(null);
             _keyId = keyId.WithDefault(null);
-            EnsureThatOptionsAreValid(_keyId, _keyAltName);
+            EnsureThatOptionsAreValid();
         }
 
         // public properties
@@ -71,12 +71,10 @@ namespace MongoDB.Driver
         public byte[] KeyId => _keyId;
 
         // private methods
-        private static void EnsureThatOptionsAreValid(byte[] keyId, string keyAltName)
+        private void EnsureThatOptionsAreValid()
         {
-            Ensure.That(
-                (keyId == null || keyAltName == null) &&
-                (keyId != null || keyAltName != null),
-                "KeyId and KeyAltName must not be filled together.");
+            Ensure.That(!(_keyId == null && _keyAltName == null), "KeyId and KeyAltName may not both be null.");
+            Ensure.That(!(_keyId != null && _keyAltName != null), "KeyId and KeyAltName may not both be set.");
         }
     }
 }

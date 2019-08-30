@@ -27,18 +27,18 @@ namespace MongoDB.Driver.Core.WireProtocol
         /// Encrypts the fields.
         /// </summary>
         /// <param name="databaseName">The database name.</param>
-        /// <param name="unencryptedDocument">The unencrypted document.</param>
+        /// <param name="unencryptedCommandBytes">The unencrypted command bytes.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An encrypted document.</returns>
-        byte[] EncryptFields(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken);
+        byte[] EncryptFields(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken);
 
         /// <summary>
         /// Encrypts the fields asynchronously.
         /// </summary>
         /// <param name="databaseName">The database name.</param>
-        /// <param name="unencryptedDocument">The unencrypted document.</param>
+        /// <param name="unencryptedCommandBytes">The unencrypted command bytes.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An encrypted document.</returns>
-        Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedDocument, CancellationToken cancellationToken);
+        Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken);
     }
 }

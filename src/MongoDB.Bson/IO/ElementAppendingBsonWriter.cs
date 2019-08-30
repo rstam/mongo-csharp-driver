@@ -92,14 +92,7 @@ namespace MongoDB.Bson.IO
             }
             else
             {
-                // copy the elements themselves
-                var context = BsonSerializationContext.CreateRoot(Wrapped);
-                var rawDocument = new RawBsonDocument(slice);
-                foreach (var element in rawDocument)
-                {
-                    Wrapped.WriteName(element.Name);
-                    BsonValueSerializer.Instance.Serialize(context, element.Value);
-                }
+                throw new NotSupportedException("WriteRawBsonDocument supports only BsonBinaryWriter.");
             }
 
             WriteEndDocument();

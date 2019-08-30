@@ -53,7 +53,7 @@ namespace MongoDB.Bson
         /// <summary>
         /// An encrypted binary data.
         /// </summary>
-        Encryption = 0x06,
+        Encrypted = 0x06,
         /// <summary>
         /// User defined binary data.
         /// </summary>

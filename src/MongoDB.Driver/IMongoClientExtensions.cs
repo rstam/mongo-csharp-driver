@@ -13,7 +13,6 @@
 * limitations under the License.
 */
 
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
@@ -110,29 +109,16 @@ namespace MongoDB.Driver
         }
 
         // internal extension methods
-        internal static void ConfigureAutoEncryptionMessageEncoderSettings(this IMongoClient client, MessageEncoderSettings messageEncoderSettings)
+        internal static void ConfigureAutoEncryptionMessageEncoderSettings(this MongoClient client, MessageEncoderSettings messageEncoderSettings)
         {
             var autoEncryptionOptions = client.Settings.AutoEncryptionOptions;
             if (autoEncryptionOptions != null)
             {
-                var cryptor = new LibMongoCryptController(client, autoEncryptionOptions);
                 if (!autoEncryptionOptions.BypassAutoEncryption)
                 {
-                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, cryptor);
+                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, client.LibMongoCryptController);
                 }
-                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, cryptor);
-            }
-        }
-
-        internal static IEncryptionClients GetEncryptionClients(this IMongoClient client)
-        {
-            if (client is IEncryptionClientsSource encryptionClientsSourceProvider)
-            {
-                return encryptionClientsSourceProvider.EncryptionClients;
-            }
-            else
-            {
-                throw new NotSupportedException("The mongo client doesn't support encryption.");
+                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, client.LibMongoCryptController);
             }
         }
     }

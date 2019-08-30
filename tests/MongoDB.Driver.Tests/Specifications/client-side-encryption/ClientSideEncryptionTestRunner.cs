@@ -157,11 +157,16 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
         private AutoEncryptionOptions ConfigureAutoEncryptionOptions(BsonDocument autoEncryptOpts)
         {
             var keyVaultCollectionNamespace = new CollectionNamespace("admin", "datakeys");
+            var extraOptions = new Dictionary<string, object>()
+            {
+                { "mongocryptdSpawnPath", Environment.GetEnvironmentVariable("MONGODB_BINARIES") ?? string.Empty }
+            };
 
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders = new ReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>(new Dictionary<string, IReadOnlyDictionary<string, object>>());
             var autoEncryptionOptions = new AutoEncryptionOptions(
-                keyVaultCollectionNamespace,
-                kmsProviders);
+                keyVaultNamespace: keyVaultCollectionNamespace,
+                kmsProviders: kmsProviders,
+                extraOptions: extraOptions);
 
             foreach (var option in autoEncryptOpts.Elements)
             {
@@ -170,7 +175,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
                     case "kmsProviders":
                         kmsProviders = ParseKmsProviders(option.Value.AsBsonDocument);
                         autoEncryptionOptions = autoEncryptionOptions
-                            .With(kmsProviders: new Optional<IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>>(kmsProviders));
+                            .With(kmsProviders: Optional.Create<IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>>(kmsProviders));
                         break;
                     case "schemaMap":
                         var schemaMaps = new Dictionary<string, BsonDocument>();
@@ -288,7 +293,6 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
             return new RawBsonDocument(bson).Materialize(new BsonBinaryReaderSettings { GuidRepresentation = GuidRepresentation.Standard });
         }
     }
-
 
     // nested types
     public class TestCaseFactory : JsonDrivenTestCaseFactory
