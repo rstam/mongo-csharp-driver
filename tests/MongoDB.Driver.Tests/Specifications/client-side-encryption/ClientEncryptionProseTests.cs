@@ -392,14 +392,14 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
 
                 encryptOptions = new EncryptOptions(
                     EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
-                    keyAltName: $"{kmsProvider}_altname");
-                var encryptedValueWithKeyAltName = ExplicitEncrypt(
+                    alternateKeyName: $"{kmsProvider}_altname");
+                var encryptedValueWithAlternateKeyName = ExplicitEncrypt(
                     clientEncryption,
                     encryptOptions,
                     $"hello {kmsProvider}",
                     async);
-                encryptedValueWithKeyAltName.SubType.Should().Be(BsonBinarySubType.Encrypted);
-                encryptedValueWithKeyAltName.Should().Be(encryptedValue);
+                encryptedValueWithAlternateKeyName.SubType.Should().Be(BsonBinarySubType.Encrypted);
+                encryptedValueWithAlternateKeyName.Should().Be(encryptedValue);
 
                 if (kmsProvider == "local") // the test description expects this assert only once for a local kms provider
                 {
@@ -546,7 +546,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             switch (kmsProvider)
             {
                 case "local":
-                    return new DataKeyOptions(keyAltNames: Optional.Create<IReadOnlyList<string>>(new[] { $"{kmsProvider}_altname" }));
+                    return new DataKeyOptions(alternateKeyNames: Optional.Create<IReadOnlyList<string>>(new[] { $"{kmsProvider}_altname" }));
                 case "aws":
                     var masterKey = new BsonDocument
                     {
@@ -554,7 +554,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         { "key", "arn:aws:kms:us-east-1:579766882180:key/89fcc2c4-08b0-4bd9-9f25-e30687b580d0" }
                     };
                     return new DataKeyOptions(
-                        keyAltNames: Optional.Create<IReadOnlyList<string>>(new[] { $"{kmsProvider}_altname" }),
+                        alternateKeyNames: Optional.Create<IReadOnlyList<string>>(new[] { $"{kmsProvider}_altname" }),
                         masterKey: Optional.Create(masterKey));
                 default:
                     throw new ArgumentException($"Incorrect kms provider {kmsProvider}", nameof(kmsProvider));

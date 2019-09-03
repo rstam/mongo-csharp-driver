@@ -214,7 +214,7 @@ namespace MongoDB.Driver
             }
         }
 
-        public byte[] EncryptField(byte[] wrappedValueBytes, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        public byte[] EncryptField(byte[] wrappedValueBytes, Guid? keyId, byte[] alternateKeyNameBytes, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
 
@@ -225,9 +225,9 @@ namespace MongoDB.Driver
                 {
                     context = _cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, wrappedValueBytes);
                 }
-                else if (keyAltName != null)
+                else if (alternateKeyNameBytes != null)
                 {
-                    context = _cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, wrappedValueBytes);
+                    context = _cryptClient.StartExplicitEncryptionContext(alternateKeyNameBytes, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else
                 {
@@ -245,7 +245,7 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> EncryptFieldAsync(byte[] wrappedValueBytes, Guid? keyId, byte[] keyAltName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        public async Task<byte[]> EncryptFieldAsync(byte[] wrappedValueBytes, Guid? keyId, byte[] alternateKeyNameBytes, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
 
@@ -256,9 +256,9 @@ namespace MongoDB.Driver
                 {
                     context = _cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, wrappedValueBytes);
                 }
-                else if (keyAltName != null)
+                else if (alternateKeyNameBytes != null)
                 {
-                    context = _cryptClient.StartExplicitEncryptionContext(keyAltName, encryptionAlgorithm, wrappedValueBytes);
+                    context = _cryptClient.StartExplicitEncryptionContext(alternateKeyNameBytes, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else
                 {

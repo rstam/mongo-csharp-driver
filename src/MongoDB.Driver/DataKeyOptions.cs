@@ -25,29 +25,29 @@ namespace MongoDB.Driver
     {
         // private fields
         private readonly BsonDocument _masterKey;
-        private readonly IReadOnlyList<string> _keyAltNames;
+        private readonly IReadOnlyList<string> _alternateKeyNames;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="DataKeyOptions"/> class.
         /// </summary>
-        /// <param name="keyAltNames">The key alt names.</param>
+        /// <param name="alternateKeyNames">The alternate key names.</param>
         /// <param name="masterKey">The master key.</param>
         public DataKeyOptions(
-            Optional<IReadOnlyList<string>> keyAltNames = default,
+            Optional<IReadOnlyList<string>> alternateKeyNames = default,
             Optional<BsonDocument> masterKey = default)
         {
-            _keyAltNames = keyAltNames.WithDefault(null);
+            _alternateKeyNames = alternateKeyNames.WithDefault(null);
             _masterKey = masterKey.WithDefault(null);
         }
 
         /// <summary>
-        /// Gets  the key alt names.
+        /// Gets the alternate key names.
         /// </summary>
         /// <value>
-        /// The key alt names.
+        /// The alternate key names.
         /// </value>
-        public IReadOnlyList<string> KeyAltNames => _keyAltNames;
+        public IReadOnlyList<string> AlternateKeyNames => _alternateKeyNames;
 
         // public properties
         /// <summary>
