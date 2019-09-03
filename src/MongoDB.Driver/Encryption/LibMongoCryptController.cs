@@ -26,6 +26,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol;
 using MongoDB.Libmongocrypt;
@@ -90,9 +91,15 @@ namespace MongoDB.Driver
         public CryptClient CryptClient => _cryptClient;
 
         // public methods
-        public Guid CreateDataKey(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
+        public BsonBinaryData CreateDataKey(
+            string kmsProvider, 
+            IReadOnlyList<string> alternateKeyNames, 
+            BsonDocument masterKey, 
+            CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
+
+            var kmsKeyId = GetKmsId(kmsProvider, alternateKeyNames, masterKey);
 
             byte[] keyDocumentBytes;
             try
@@ -109,16 +116,20 @@ namespace MongoDB.Driver
 
             var keyDocument = new RawBsonDocument(keyDocumentBytes);
             _keyVaultCollection.InsertOne(keyDocument, cancellationToken: cancellationToken);
-            var guid = keyDocument["_id"].AsGuid;
-            return guid;
+            return keyDocument["_id"].AsBsonBinaryData;
         }
 
-        public async Task<Guid> CreateDataKeyAsync(IKmsKeyId kmsKeyId, CancellationToken cancellationToken)
+        public async Task<BsonBinaryData> CreateDataKeyAsync(
+            string kmsProvider,
+            IReadOnlyList<string> alternateKeyNames,
+            BsonDocument masterKey,
+            CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
 
-            byte[] keyDocumentBytes;
+            var kmsKeyId = GetKmsId(kmsProvider, alternateKeyNames, masterKey);
 
+            byte[] keyDocumentBytes;
             try
             {
                 using (var context = _cryptClient.StartCreateDataKeyContext(kmsKeyId))
@@ -133,13 +144,14 @@ namespace MongoDB.Driver
 
             var keyDocument = new RawBsonDocument(keyDocumentBytes);
             await _keyVaultCollection.InsertOneAsync(keyDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
-            var guid = keyDocument["_id"].AsGuid;
-            return guid;
+            return keyDocument["_id"].AsBsonBinaryData;
         }
 
-        public byte[] DecryptField(byte[] wrappedValueBytes, CancellationToken cancellationToken)
+        public BsonBinaryData DecryptField(BsonBinaryData wrappedBinaryValue, CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
+
+            var wrappedValueBytes = GetWrappedValueBytes(wrappedBinaryValue);
 
             try
             {
@@ -154,9 +166,11 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> DecryptFieldAsync(byte[] wrappedValueBytes, CancellationToken cancellationToken)
+        public async Task<BsonBinaryData> DecryptFieldAsync(BsonBinaryData wrappedBinaryValue, CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
+
+            var wrappedValueBytes = GetWrappedValueBytes(wrappedBinaryValue);
 
             try
             {
@@ -214,9 +228,12 @@ namespace MongoDB.Driver
             }
         }
 
-        public byte[] EncryptField(byte[] wrappedValueBytes, Guid? keyId, byte[] alternateKeyNameBytes, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        public BsonBinaryData EncryptField(BsonValue value, Guid? keyId, string alternateKeyName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
+
+            var wrappedValueBytes = GetWrappedValueBytes(value);
+            var alternateKeyNameBytes = GetWrappedAlternateKeyName(alternateKeyName);
 
             try
             {
@@ -231,12 +248,13 @@ namespace MongoDB.Driver
                 }
                 else
                 {
-                    throw new Exception("Key Id and Alt name cannot both be set.");
+                    throw new Exception("Key Id and Alternate key name cannot both be set.");
                 }
 
                 using (context)
                 {
-                    return ProcessStates(context, databaseName: null, cancellationToken);
+                    var wrappedBytes = ProcessStates(context, databaseName: null, cancellationToken);
+                    return UnwrapEncryptedValue(wrappedBytes);
                 }
             }
             catch (Exception ex)
@@ -245,9 +263,12 @@ namespace MongoDB.Driver
             }
         }
 
-        public async Task<byte[]> EncryptFieldAsync(byte[] wrappedValueBytes, Guid? keyId, byte[] alternateKeyNameBytes, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
+        public async Task<BsonBinaryData> EncryptFieldAsync(BsonValue value, Guid? keyId, string alternateKeyName, EncryptionAlgorithm encryptionAlgorithm, CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
+
+            var wrappedValueBytes = GetWrappedValueBytes(value);
+            var alternateKeyNameBytes = GetWrappedAlternateKeyName(alternateKeyName);
 
             try
             {
@@ -267,7 +288,8 @@ namespace MongoDB.Driver
 
                 using (context)
                 {
-                    return await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                    var wrappedBytes = await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                    return UnwrapEncryptedValue(wrappedBytes);
                 }
             }
             catch (Exception ex)
@@ -320,14 +342,6 @@ namespace MongoDB.Driver
         }
 
         // private methods
-        private IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)
-        {
-            var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? client;
-            var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
-            var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
-            return keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
-        }
-
         private void FeedResult(CryptContext context, BsonDocument document)
         {
             var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
@@ -345,6 +359,54 @@ namespace MongoDB.Driver
                 context.Feed(documentBytes);
             }
             context.MarkDone();
+        }
+
+        private IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)
+        {
+            var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? client;
+            var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
+            var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
+            return keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
+        }
+
+        private IKmsKeyId GetKmsId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)
+        {
+            IEnumerable<byte[]> alternateKeyNameDocuments = null;
+            if (alternateKeyNames != null)
+            {
+                alternateKeyNameDocuments = alternateKeyNames
+                    .Select(c => GetWrappedAlternateKeyName(c));
+            }
+
+            switch (kmsProvider)
+            {
+                case "aws":
+                    var customerMasterKey = masterKey["key"].ToString();
+                    var region = masterKey["region"].ToString();
+                    return alternateKeyNameDocuments != null
+                        ? new AwsKeyId(customerMasterKey, region, alternateKeyNameDocuments)
+                        : new AwsKeyId(customerMasterKey, region);
+                case "local":
+                    return alternateKeyNameDocuments != null ? new LocalKeyId(alternateKeyNameDocuments) : new LocalKeyId();
+                default:
+                    throw new ArgumentException($"Unexpected kmsProvider {kmsProvider}.");
+            }
+        }
+
+        private byte[] GetWrappedAlternateKeyName(string value)
+        {
+            return
+               !string.IsNullOrWhiteSpace(value)
+                   ? new BsonDocument("keyAltName", value).ToBson(serializer: BsonValueSerializer.Instance)
+                   : null;
+        }
+
+        private byte[] GetWrappedValueBytes(BsonValue value)
+        {
+            var writerSettings = BsonBinaryWriterSettings.Defaults.Clone();
+            writerSettings.GuidRepresentation = GuidRepresentation.Unspecified;
+            var wrappedValue = new BsonDocument("v", value);
+            return wrappedValue.ToBson(serializer: BsonValueSerializer.Instance, writerSettings: writerSettings);
         }
 
         private void ProcessErrorState(CryptContext context)
@@ -592,6 +654,13 @@ namespace MongoDB.Driver
             {
                 throw new ObjectDisposedException(GetType().Name);
             }
+        }
+
+        private BsonBinaryData UnwrapEncryptedValue(byte[] encryptedWrappedBytes)
+        {
+            var rawDocument = new RawBsonDocument(encryptedWrappedBytes);
+            var encryptedBytes = rawDocument["v"].AsByteArray;
+            return new BsonBinaryData(encryptedBytes, BsonBinarySubType.Encrypted);
         }
 
         // nested types
