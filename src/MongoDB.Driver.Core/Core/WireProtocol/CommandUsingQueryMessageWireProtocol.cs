@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Core.WireProtocol
         private readonly List<Type1CommandMessageSection> _commandPayloads;
         private readonly IElementNameValidator _commandValidator;
         private readonly DatabaseNamespace _databaseNamespace;
-        private readonly IBinaryDocumentFieldEncryptor _documentFieldEncryptor;
+        private readonly IBinaryCommandFieldEncryptor _documentFieldEncryptor;
         private readonly Action<IMessageEncoderPostProcessor> _postWriteAction;
         private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly ReadPreference _readPreference;
@@ -84,7 +84,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             if (messageEncoderSettings != null)
             {
                 // BinaryDocumentFieldDecryptor is not required here
-                _documentFieldEncryptor = messageEncoderSettings.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null);
+                _documentFieldEncryptor = messageEncoderSettings.GetOrDefault<IBinaryCommandFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null);
             }
         }
 

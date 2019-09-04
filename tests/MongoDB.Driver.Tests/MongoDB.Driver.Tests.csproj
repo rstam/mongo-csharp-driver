@@ -58,26 +58,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="Specifications\**\testsdata\**\*.json" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <EmbeddedResource Include="Specifications\**\testsdata\**\*.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="Specifications\**\tests\**\*.json" />
   </ItemGroup>
-  
-  <!--remove json tests which were possibly added in via "testsdata" -->
-  <ItemGroup>
-    <EmbeddedResource Remove="Specifications\**\tests\**\*.json" />
-  </ItemGroup>
-  
+
   <ItemGroup>
     <EmbeddedResource Include="Specifications\**\tests\**\*.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="Specifications\**\prose-tests\**\*.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Specifications\**\prose-tests\**\*.json" />
+  </ItemGroup>
 
   <ItemGroup>
     <None Update="testcert.pfx">

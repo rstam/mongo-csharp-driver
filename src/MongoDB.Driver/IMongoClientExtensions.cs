@@ -107,19 +107,5 @@ namespace MongoDB.Driver
             var emptyPipeline = new EmptyPipelineDefinition<ChangeStreamDocument<BsonDocument>>();
             return client.WatchAsync(session, emptyPipeline, options, cancellationToken);
         }
-
-        // internal extension methods
-        internal static void ConfigureAutoEncryptionMessageEncoderSettings(this MongoClient client, MessageEncoderSettings messageEncoderSettings)
-        {
-            var autoEncryptionOptions = client.Settings.AutoEncryptionOptions;
-            if (autoEncryptionOptions != null)
-            {
-                if (!autoEncryptionOptions.BypassAutoEncryption)
-                {
-                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, client.LibMongoCryptController);
-                }
-                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, client.LibMongoCryptController);
-            }
-        }
     }
 }

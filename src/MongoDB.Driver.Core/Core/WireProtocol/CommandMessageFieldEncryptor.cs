@@ -30,13 +30,13 @@ namespace MongoDB.Driver.Core.WireProtocol
     {
         // private fields
         private readonly byte[] _buffer = new byte[1024];
-        private readonly IBinaryDocumentFieldEncryptor _documentFieldEncryptor;
+        private readonly IBinaryCommandFieldEncryptor _commandFieldEncryptor;
         private readonly MessageEncoderSettings _messageEncoderSettings;
 
         // constructors
-        public CommandMessageFieldEncryptor(IBinaryDocumentFieldEncryptor documentFieldEncryptor, MessageEncoderSettings messageEncoderSettings)
+        public CommandMessageFieldEncryptor(IBinaryCommandFieldEncryptor commandFieldEncryptor, MessageEncoderSettings messageEncoderSettings)
         {
-            _documentFieldEncryptor = documentFieldEncryptor;
+            _commandFieldEncryptor = commandFieldEncryptor;
             _messageEncoderSettings = messageEncoderSettings;
         }
 
@@ -44,14 +44,14 @@ namespace MongoDB.Driver.Core.WireProtocol
         public CommandRequestMessage EncryptFields(string databaseName, CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
         {
             var unencryptedCommandBytes = GetUnencryptedCommandBytes(unencryptedRequestMessage);
-            var encryptedCommandBytes = _documentFieldEncryptor.EncryptFields(databaseName, unencryptedCommandBytes, cancellationToken);
+            var encryptedCommandBytes = _commandFieldEncryptor.EncryptFields(databaseName, unencryptedCommandBytes, cancellationToken);
             return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedCommandBytes);
         }
 
         public async Task<CommandRequestMessage> EncryptFieldsAsync(string databaseName, CommandRequestMessage unencryptedRequestMessage, CancellationToken cancellationToken)
         {
             var unencryptedCommandBytes = GetUnencryptedCommandBytes(unencryptedRequestMessage);
-            var encryptedCommandBytes = await _documentFieldEncryptor.EncryptFieldsAsync(databaseName, unencryptedCommandBytes, cancellationToken).ConfigureAwait(false);
+            var encryptedCommandBytes = await _commandFieldEncryptor.EncryptFieldsAsync(databaseName, unencryptedCommandBytes, cancellationToken).ConfigureAwait(false);
             return CreateEncryptedRequestMessage(unencryptedRequestMessage, encryptedCommandBytes);
         }
 

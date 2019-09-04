@@ -31,9 +31,9 @@ using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol;
 using MongoDB.Libmongocrypt;
 
-namespace MongoDB.Driver
+namespace MongoDB.Driver.Encryption
 {
-    internal sealed class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor, IDisposable
+    internal sealed class LibMongoCryptController : IBinaryDocumentFieldDecryptor, IBinaryCommandFieldEncryptor, IDisposable
     {
         #region static
         private static bool AcceptAnyCertificate(
@@ -352,13 +352,21 @@ namespace MongoDB.Driver
 
         private void FeedResults(CryptContext context, IEnumerable<BsonDocument> documents)
         {
-            var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-            foreach (var document in documents)
+            try
             {
-                var documentBytes = document.ToBson(writerSettings: writerSettings);
-                context.Feed(documentBytes);
+                var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
+                foreach (var document in documents)
+                {
+                    var documentBytes = document.ToBson(writerSettings: writerSettings);
+                    context.Feed(documentBytes);
+                }
+                context.MarkDone();
             }
-            context.MarkDone();
+            catch (Exception)
+            {
+
+                throw;
+            }
         }
 
         private IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)

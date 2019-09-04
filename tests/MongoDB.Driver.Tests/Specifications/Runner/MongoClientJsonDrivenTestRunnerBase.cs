@@ -111,7 +111,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
             var eventAsserter = EventAsserterFactory.CreateAsserter(eventType);
             if (templates != null)
             {
-                eventAsserter.ConfigureTemplateNames(templates());
+                eventAsserter.ConfigurePlaceholders(templates());
             }
 
             eventAsserter.AssertAspects(actualEvent, expectedEvent[0].AsBsonDocument);

@@ -27,7 +27,7 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
 {
     public class CommandStartedEventAsserter : AspectAsserter<CommandStartedEvent>
     {
-        private string[] _templates =
+        private string[] _placeholders =
         {
             "getMore",
             "afterClusterTime",
@@ -91,9 +91,9 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
 
         private void AssertCommandAspects(BsonDocument actualCommand, BsonDocument aspects)
         {
-            foreach (var template in _templates)
+            foreach (var placeholder in _placeholders)
             {
-                RecursiveFieldSetter.SetAll(actualCommand, template, 42L);
+                RecursiveFieldSetter.SetAll(actualCommand, placeholder, 42L);
             }
 
             foreach (var aspect in aspects)
@@ -176,9 +176,9 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
             }
         }
 
-        public override void ConfigureTemplateNames(string[] templates)
+        public override void ConfigurePlaceholders(string[] placeholders)
         {
-            _templates = templates;
+            _placeholders = placeholders;
         }
     }
 }

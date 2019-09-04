@@ -16,7 +16,7 @@
 using System.Collections.Generic;
 using MongoDB.Bson;
 
-namespace MongoDB.Driver
+namespace MongoDB.Driver.Encryption
 {
     /// <summary>
     /// Options for creating a data key.
@@ -57,5 +57,20 @@ namespace MongoDB.Driver
         /// The master key.
         /// </value>
         public BsonDocument MasterKey => _masterKey;
+
+        /// <summary>
+        /// Returns a new DataKeyOptions instance with some settings changed.
+        /// </summary>
+        /// <param name="alternateKeyNames">The alternate key names.</param>
+        /// <param name="masterKey">The master key.</param>
+        /// <returns>A new DataKeyOptions instance.</returns>
+        public DataKeyOptions With(
+            Optional<IReadOnlyList<string>> alternateKeyNames = default,
+            Optional<BsonDocument> masterKey = default)
+        {
+            return new DataKeyOptions(
+                alternateKeyNames: Optional.Create(alternateKeyNames.WithDefault(_alternateKeyNames)),
+                masterKey: Optional.Create(masterKey.WithDefault(_masterKey)));
+        }
     }
 }

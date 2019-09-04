@@ -20,7 +20,7 @@ using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Libmongocrypt;
 
-namespace MongoDB.Driver
+namespace MongoDB.Driver.Encryption
 {
     /// <summary>
     /// Explicit client encryption.
@@ -44,7 +44,7 @@ namespace MongoDB.Driver
         /// <param name="dataKeyOptions">The data key options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A data key.</returns>
-        public BsonValue CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
+        public BsonBinaryData CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.CreateDataKey(
                 kmsProvider, 
@@ -60,15 +60,14 @@ namespace MongoDB.Driver
         /// <param name="dataKeyOptions">The data key options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A data key.</returns>
-        public async Task<BsonValue> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
+        public Task<BsonBinaryData> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
-            return await _libMongoCryptController
+            return _libMongoCryptController
                 .CreateDataKeyAsync(
                     kmsProvider,
                     dataKeyOptions.AlternateKeyNames,
                     dataKeyOptions.MasterKey, 
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    cancellationToken);
         }
 
         /// <summary>
@@ -88,9 +87,9 @@ namespace MongoDB.Driver
         /// <param name="value">The value.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decrypted value.</returns>
-        public async Task<BsonBinaryData> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
+        public Task<BsonBinaryData> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
         {
-            return await _libMongoCryptController.DecryptFieldAsync(value, cancellationToken).ConfigureAwait(false);
+            return _libMongoCryptController.DecryptFieldAsync(value, cancellationToken);
         }
 
         /// <summary>
@@ -136,7 +135,7 @@ namespace MongoDB.Driver
             out Guid? keyId,
             out EncryptionAlgorithm algorithm)
         {
-            keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?)null;
+            keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?) null;
             algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
         }
     }

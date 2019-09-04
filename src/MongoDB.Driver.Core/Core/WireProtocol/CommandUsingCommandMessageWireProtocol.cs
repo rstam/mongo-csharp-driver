@@ -41,7 +41,7 @@ namespace MongoDB.Driver.Core.WireProtocol
         private readonly IElementNameValidator _commandValidator; // TODO: how can this be supported when using CommandMessage?
         private readonly DatabaseNamespace _databaseNamespace;
         private readonly IBinaryDocumentFieldDecryptor _documentFieldDecryptor;
-        private readonly IBinaryDocumentFieldEncryptor _documentFieldEncryptor;
+        private readonly IBinaryCommandFieldEncryptor _documentFieldEncryptor;
         private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly Action<IMessageEncoderPostProcessor> _postWriteAction;
         private readonly ReadPreference _readPreference;
@@ -83,7 +83,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             if (messageEncoderSettings != null)
             {
                 _documentFieldDecryptor = messageEncoderSettings.GetOrDefault<IBinaryDocumentFieldDecryptor>(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, null);
-                _documentFieldEncryptor = messageEncoderSettings.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null);
+                _documentFieldEncryptor = messageEncoderSettings.GetOrDefault<IBinaryCommandFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null);
             }
         }
 

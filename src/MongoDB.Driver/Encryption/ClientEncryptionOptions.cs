@@ -16,7 +16,7 @@
 using System.Collections.Generic;
 using MongoDB.Driver.Core.Misc;
 
-namespace MongoDB.Driver
+namespace MongoDB.Driver.Encryption
 {
     /// <summary>
     /// Client encryption options.
@@ -69,5 +69,22 @@ namespace MongoDB.Driver
         /// The KMS providers.
         /// </value>
         public IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> KmsProviders => _kmsProviders;
+
+        /// <summary>
+        /// Returns a new ClientEncryptionOptions instance with some settings changed.
+        /// </summary>
+        /// <param name="keyVaultClient">The key vault client.</param>
+        /// <param name="keyVaultNamespace">The key vault namespace.</param>
+        /// <param name="kmsProviders">The KMS providers.</param>
+        public ClientEncryptionOptions With(
+            Optional<IMongoClient> keyVaultClient,
+            Optional<CollectionNamespace> keyVaultNamespace,
+            Optional<IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>>> kmsProviders)
+        {
+            return new ClientEncryptionOptions(
+                keyVaultClient: keyVaultClient.WithDefault(_keyVaultClient),
+                keyVaultNamespace: keyVaultNamespace.WithDefault(_keyVaultNamespace),
+                kmsProviders: kmsProviders.WithDefault(_kmsProviders));
+        }
     }
 }

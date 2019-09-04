@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,11 +30,13 @@ using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Driver.Core.WireProtocol.Messages.Encoders;
+using MongoDB.Driver.Encryption;
 
 namespace MongoDB.Driver
 {
     /// <inheritdoc/>
-    public class MongoClient : MongoClientBase, IDisposable
+    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")] // ignore that LibMongoCryptControler is IDisposable
+    public class MongoClient : MongoClientBase
     {
         #region static
         // private static methods
@@ -53,7 +56,6 @@ namespace MongoDB.Driver
 
         // private fields
         private readonly ICluster _cluster;
-        private bool _isDisposed = false;
         private readonly LibMongoCryptController _libMongoCryptController;
         private readonly IOperationExecutor _operationExecutor;
         private readonly MongoClientSettings _settings;
@@ -195,6 +197,20 @@ namespace MongoDB.Driver
             settings.ApplyDefaultValues(_settings);
 
             return new MongoDatabaseImpl(this, new DatabaseNamespace(name), settings, _cluster, _operationExecutor);
+        }
+
+        // internal extension methods
+        internal void ConfigureAutoEncryptionMessageEncoderSettings(MessageEncoderSettings messageEncoderSettings)
+        {
+            var autoEncryptionOptions = _settings.AutoEncryptionOptions;
+            if (autoEncryptionOptions != null)
+            {
+                if (!autoEncryptionOptions.BypassAutoEncryption)
+                {
+                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, _libMongoCryptController);
+                }
+                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, _libMongoCryptController);
+            }
         }
 
         /// <inheritdoc />
@@ -500,15 +516,6 @@ namespace MongoDB.Driver
                 _settings.ReadConcern,
                 GetMessageEncoderSettings(),
                 _settings.RetryReads);
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            if (!_isDisposed)
-            {
-                _libMongoCryptController?.Dispose();
-            }
         }
 
         private TResult ExecuteReadOperation<TResult>(IClientSessionHandle session, IReadOperation<TResult> operation, CancellationToken cancellationToken = default(CancellationToken))

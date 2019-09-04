@@ -21,6 +21,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Driver.Core.Events;
+using MongoDB.Driver.Encryption;
 using MongoDB.Driver.Tests.Specifications.Runner;
 using Xunit;
 
@@ -298,7 +299,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
     public class TestCaseFactory : JsonDrivenTestCaseFactory
     {
         // protected properties
-        protected override string PathPrefix => "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata.tests.";
+        protected override string PathPrefix => "MongoDB.Driver.Tests.Specifications.client_side_encryption.tests.";
 
         // protected methods
         protected override IEnumerable<JsonDrivenTestCase> CreateTestCases(BsonDocument document)

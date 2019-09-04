@@ -17,18 +17,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver.Core.WireProtocol;
 
-namespace MongoDB.Driver
+namespace MongoDB.Driver.Encryption
 {
-    internal class NoopBinaryDocumentFieldCryptor : IBinaryDocumentFieldDecryptor, IBinaryDocumentFieldEncryptor
+    internal class NoopBinaryDocumentFieldCryptor : IBinaryDocumentFieldDecryptor, IBinaryCommandFieldEncryptor
     {
-        public byte[] DecryptFields(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public byte[] DecryptFields(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
         {
-            return encryptedDocument;
+            return encryptedDocumentBytes;
         }
 
-        public Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocument, CancellationToken cancellationToken)
+        public Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
         {
-            return Task.FromResult(encryptedDocument);
+            return Task.FromResult(encryptedDocumentBytes);
         }
 
         public byte[] EncryptFields(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)

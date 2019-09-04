@@ -78,7 +78,7 @@ namespace MongoDB.Driver.Core.WireProtocol.Messages.Encoders.BinaryEncoders
         {
             get
             {
-                return _encoderSettings?.GetOrDefault<IBinaryDocumentFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null) != null;
+                return _encoderSettings?.GetOrDefault<IBinaryCommandFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null) != null;
             }
         }
 

@@ -15,7 +15,7 @@
 
 using MongoDB.Driver.Core.Misc;
 
-namespace MongoDB.Driver
+namespace MongoDB.Driver.Encryption
 {
     /// <summary>
     /// Encryption options for explicit encryption.
@@ -69,6 +69,24 @@ namespace MongoDB.Driver
         /// The key identifier.
         /// </value>
         public byte[] KeyId => _keyId;
+
+        /// <summary>
+        /// Returns a new EncryptOptions instance with some settings changed.
+        /// </summary>
+        /// <param name="algorithm">The encryption algorithm.</param>
+        /// <param name="alternateKeyName">The alternate key name.</param>
+        /// <param name="keyId">The keyId.</param>
+        /// <returns>A new EncryptOptions instance.</returns>
+        public EncryptOptions With(
+            Optional<string> algorithm,
+            Optional<string> alternateKeyName = default,
+            Optional<byte[]> keyId = default)
+        {
+            return new EncryptOptions(
+                algorithm: algorithm.WithDefault(_algorithm),
+                alternateKeyName: alternateKeyName.WithDefault(_alternateKeyName),
+                keyId: keyId.WithDefault(_keyId));
+        }
 
         // private methods
         private void EnsureThatOptionsAreValid()

@@ -26,17 +26,17 @@ namespace MongoDB.Driver.Core.WireProtocol
         /// <summary>
         /// Decrypts the fields.
         /// </summary>
-        /// <param name="encryptedDocument">The encrypted document.</param>
+        /// <param name="encryptedDocumentBytes">The encrypted document bytes.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An unencrypted document.</returns>
-        byte[] DecryptFields(byte[] encryptedDocument, CancellationToken cancellationToken);
+        byte[] DecryptFields(byte[] encryptedDocumentBytes, CancellationToken cancellationToken);
 
         /// <summary>
         /// Decrypts the fields asynchronously.
         /// </summary>
-        /// <param name="encryptedDocument">The encrypted document.</param>
+        /// <param name="encryptedDocumentBytes">The encrypted document bytes.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>An unencrypted document.</returns>
-        Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocument, CancellationToken cancellationToken);
+        Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocumentBytes, CancellationToken cancellationToken);
     }
 }

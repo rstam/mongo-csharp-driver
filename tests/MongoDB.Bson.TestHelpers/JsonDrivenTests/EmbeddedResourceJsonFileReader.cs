@@ -64,7 +64,12 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
         {
             var prefixes = !string.IsNullOrEmpty(PathPrefix) ? new[] { PathPrefix } : PathPrefixes;
 
-            return prefixes ?? throw new NotImplementedException("A test must have at least one test path.");
+            if (prefixes == null || prefixes.Length == 0)
+            {
+                throw new NotImplementedException("At least one path prefix must be specified.");
+            }
+
+            return prefixes;
         }
     }
 }

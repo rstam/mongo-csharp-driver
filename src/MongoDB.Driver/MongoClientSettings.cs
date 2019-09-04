@@ -21,6 +21,7 @@ using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Encryption;
 using MongoDB.Shared;
 
 namespace MongoDB.Driver

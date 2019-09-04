@@ -22,7 +22,7 @@ namespace MongoDB.Bson.TestHelpers.JsonDrivenTests
         // public methods
         public abstract void AssertAspects(object actualValue, BsonDocument aspects);
 
-        public virtual void ConfigureTemplateNames(string[] templates)
+        public virtual void ConfigurePlaceholders(string[] placeholders)
         {
             // do nothing by default
         }

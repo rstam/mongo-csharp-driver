@@ -21,7 +21,7 @@ namespace MongoDB.Driver.Core.WireProtocol
     /// <summary>
     /// Interface for decrypting fields in a binary document.
     /// </summary>
-    public interface IBinaryDocumentFieldEncryptor
+    public interface IBinaryCommandFieldEncryptor
     {
         /// <summary>
         /// Encrypts the fields.

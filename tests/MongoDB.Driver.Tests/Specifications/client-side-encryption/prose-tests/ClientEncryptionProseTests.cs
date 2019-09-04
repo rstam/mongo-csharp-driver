@@ -30,11 +30,12 @@ using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
+using MongoDB.Driver.Encryption;
 using MongoDB.Driver.TestHelpers;
 using MongoDB.Libmongocrypt;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
+namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
 {
     public class ClientEncryptionProseTests
     {
@@ -79,9 +80,9 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             using (var client = ConfigureClient())
             using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProviderFilter: "local", eventCapturer: eventCapturer))
             {
-                var collLimitSchema = JsonTestDataFactory.Instance.Documents["limits.limits-schema.json"];
+                var collLimitSchema = JsonFileReader.Instance.Documents["limits.limits-schema.json"];
                 CreateCollection(client, __collCollectionNamespace, new BsonDocument("$jsonSchema", collLimitSchema));
-                var datakeysLimitsKey = JsonTestDataFactory.Instance.Documents["limits.limits-key.json"];
+                var datakeysLimitsKey = JsonFileReader.Instance.Documents["limits.limits-key.json"];
                 var keyVaultCollection = GetCollection(client, __keyVaultCollectionNamespace);
                 Insert(keyVaultCollection, async, datakeysLimitsKey);
 
@@ -111,7 +112,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 exception.Should().NotBeNull();
                 eventCapturer.Clear();
 
-                var limitsDoc = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
+                var limitsDoc = JsonFileReader.Instance.Documents["limits.limits-doc.json"];
                 limitsDoc.AddRange(
                     new BsonDocument
                     {
@@ -144,14 +145,14 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 eventCapturer.Count.Should().Be(2);
                 eventCapturer.Clear();
 
-                var limitsDoc1 = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
+                var limitsDoc1 = JsonFileReader.Instance.Documents["limits.limits-doc.json"];
                 limitsDoc1.AddRange(
                     new BsonDocument
                     {
                         { "_id", "encryption_exceeds_2mib_1" },
                         { "unencrypted", new string('a', 2097152 - 2000) }
                     });
-                var limitsDoc2 = JsonTestDataFactory.Instance.Documents["limits.limits-doc.json"];
+                var limitsDoc2 = JsonFileReader.Instance.Documents["limits.limits-doc.json"];
                 limitsDoc2.AddRange(
                     new BsonDocument
                     {
@@ -221,19 +222,19 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 return new EncryptOptions(ParseAlgorithm(algorithm).ToString(), altName, keyId);
             }
 
-            var corpusSchema = JsonTestDataFactory.Instance.Documents["corpus.corpus-schema.json"];
+            var corpusSchema = JsonFileReader.Instance.Documents["corpus.corpus-schema.json"];
             var schemaMap = useLocalSchema ? new BsonDocument("db.coll", corpusSchema) : null;
             using (var client = ConfigureClient())
             using (var clientEncrypted = ConfigureClientEncrypted(out var clientEncryption, schemaMap))
             {
                 CreateCollection(client, __collCollectionNamespace, new BsonDocument("$jsonSchema", corpusSchema));
 
-                var corpusKeyLocal = JsonTestDataFactory.Instance.Documents["corpus.corpus-key-local.json"];
-                var corpusKeyAws = JsonTestDataFactory.Instance.Documents["corpus.corpus-key-aws.json"];
+                var corpusKeyLocal = JsonFileReader.Instance.Documents["corpus.corpus-key-local.json"];
+                var corpusKeyAws = JsonFileReader.Instance.Documents["corpus.corpus-key-aws.json"];
                 var keyVaultCollection = GetCollection(client, __keyVaultCollectionNamespace);
                 Insert(keyVaultCollection, async, corpusKeyLocal, corpusKeyAws);
 
-                var corpus = JsonTestDataFactory.Instance.Documents["corpus.corpus.json"];
+                var corpus = JsonFileReader.Instance.Documents["corpus.corpus.json"];
                 var corpusCopied = new BsonDocument
                 {
                     corpus.GetElement("_id"),
@@ -290,7 +291,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                 var corpusDecrypted = Find(coll, new BsonDocument(), async).Single();
                 corpusDecrypted.Should().Be(corpus);
 
-                var corpusEncryptedExpected = JsonTestDataFactory.Instance.Documents["corpus.corpus-encrypted.json"];
+                var corpusEncryptedExpected = JsonFileReader.Instance.Documents["corpus.corpus-encrypted.json"];
                 coll = GetCollection(client, __collCollectionNamespace);
                 var corpusEncryptedActual = Find(coll, new BsonDocument(), async).Single();
                 foreach (var expectedElement in corpusEncryptedExpected.Elements.Where(c => c.Value.IsBsonDocument))
@@ -418,12 +419,12 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
-            var clientEncryptedSchema = new BsonDocument("db.coll", JsonTestDataFactory.Instance.Documents["external.external-schema.json"]);
+            var clientEncryptedSchema = new BsonDocument("db.coll", JsonFileReader.Instance.Documents["external.external-schema.json"]);
             using (var client = ConfigureClient())
             using (var clientEncrypted = ConfigureClientEncrypted(out var clientEncryption, clientEncryptedSchema, withExternalKeyVault))
             {
                 var datakeys = GetCollection(client, __keyVaultCollectionNamespace);
-                var externalKey = JsonTestDataFactory.Instance.Documents["external.external-key.json"];
+                var externalKey = JsonFileReader.Instance.Documents["external.external-key.json"];
                 Insert(datakeys, async, externalKey);
 
                 var coll = GetCollection(clientEncrypted, __collCollectionNamespace);
@@ -752,11 +753,11 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
             }
         }
 
-        public class JsonTestDataFactory : EmbeddedResourceJsonFileReader
+        public class JsonFileReader : EmbeddedResourceJsonFileReader
         {
             #region static
-            private static JsonTestDataFactory __instance;
-            public static JsonTestDataFactory Instance => __instance ?? (__instance = new JsonTestDataFactory());
+            private static JsonFileReader __instance;
+            public static JsonFileReader Instance => __instance ?? (__instance = new JsonFileReader());
             private static readonly string[] __ignoreKeyNames =
             {
                 "dbPointer" // not supported
@@ -765,16 +766,16 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
 
             private readonly IReadOnlyDictionary<string, BsonDocument> _documents;
 
-            public JsonTestDataFactory()
+            public JsonFileReader()
             {
                 _documents = new ReadOnlyDictionary<string, BsonDocument>(ReadDocuments());
             }
 
             protected override string[] PathPrefixes => new[]
             {
-                "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata.corpus.",
-                "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata.external.",
-                "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata.limits."
+                "MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests.corpus.",
+                "MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests.external.",
+                "MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests.limits."
             };
 
             public IReadOnlyDictionary<string, BsonDocument> Documents
@@ -793,7 +794,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption_prose_tests
                         key =>
                         {
                             var path = key["_path"].ToString();
-                            var testTitle = "MongoDB.Driver.Tests.Specifications.client_side_encryption.testsdata";
+                            var testTitle = "MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests";
                             var startIndex = path.IndexOf(testTitle, StringComparison.Ordinal);
                             if (startIndex != -1)
                             {
