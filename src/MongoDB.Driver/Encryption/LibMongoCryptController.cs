@@ -409,11 +409,6 @@ namespace MongoDB.Driver
             return wrappedValue.ToBson(serializer: BsonValueSerializer.Instance, writerSettings: writerSettings);
         }
 
-        private void ProcessErrorState(CryptContext context)
-        {
-            throw new NotImplementedException();
-        }
-
         private void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             var database = _client.GetDatabase(databaseName);
@@ -514,9 +509,6 @@ namespace MongoDB.Driver
                 {
                     case CryptContext.StateCode.MONGOCRYPT_CTX_DONE:
                         return result;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_ERROR:
-                        ProcessErrorState(context);
-                        break;
                     case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_KMS:
                         ProcessNeedKmsState(context, cancellationToken);
                         break;
@@ -547,9 +539,6 @@ namespace MongoDB.Driver
                 {
                     case CryptContext.StateCode.MONGOCRYPT_CTX_DONE:
                         return result;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_ERROR:
-                        ProcessErrorState(context); // no async version needed
-                        break;
                     case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_KMS:
                         await ProcessNeedKmsStateAsync(context, cancellationToken).ConfigureAwait(false);
                         break;
