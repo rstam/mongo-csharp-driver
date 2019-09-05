@@ -68,7 +68,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
                         ReplaceTypeAssertionWithActual(commandStartedEvent.Command, expectedCommand);
                     }
                 },
-                templates: () => new string[0]); // do not modify values from the default templates list
+                getPlaceholders: () => new KeyValuePair<string, BsonValue>[0]); // do not modify values from the default templates list
         }
 
         protected override MongoClient CreateClientForTestSetup()
@@ -298,13 +298,21 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
     // nested types
     public class TestCaseFactory : JsonDrivenTestCaseFactory
     {
+        #region static
+        private static readonly string[] __ignoredTestNames =
+        {
+            "maxWireVersion.json:operation fails with maxWireVersion < 8"
+        };
+        #endregion
+
         // protected properties
         protected override string PathPrefix => "MongoDB.Driver.Tests.Specifications.client_side_encryption.tests.";
 
         // protected methods
         protected override IEnumerable<JsonDrivenTestCase> CreateTestCases(BsonDocument document)
         {
-            foreach (var testCase in base.CreateTestCases(document))
+            var testCases = base.CreateTestCases(document).Where(test => !__ignoredTestNames.Any(ignoredName => test.Name.EndsWith(ignoredName)));
+            foreach (var testCase in testCases)
             {
                 foreach (var async in new[] { false, true })
                 {

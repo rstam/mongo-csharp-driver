@@ -98,7 +98,7 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
             AssertEvent(actualEvent, expectedEvent, null);
         }
 
-        protected virtual void AssertEvent(object actualEvent, BsonDocument expectedEvent, Action<object, BsonDocument> prepareEventResult, Func<string[]> templates = null)
+        protected virtual void AssertEvent(object actualEvent, BsonDocument expectedEvent, Action<object, BsonDocument> prepareEventResult, Func<KeyValuePair<string, BsonValue>[]> getPlaceholders = null)
         {
             if (expectedEvent.ElementCount != 1)
             {
@@ -109,9 +109,9 @@ namespace MongoDB.Driver.Tests.Specifications.Runner
 
             var eventType = expectedEvent.GetElement(0).Name;
             var eventAsserter = EventAsserterFactory.CreateAsserter(eventType);
-            if (templates != null)
+            if (getPlaceholders != null)
             {
-                eventAsserter.ConfigurePlaceholders(templates());
+                eventAsserter.ConfigurePlaceholders(getPlaceholders());
             }
 
             eventAsserter.AssertAspects(actualEvent, expectedEvent[0].AsBsonDocument);

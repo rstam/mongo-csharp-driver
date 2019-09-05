@@ -27,11 +27,11 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
 {
     public class CommandStartedEventAsserter : AspectAsserter<CommandStartedEvent>
     {
-        private string[] _placeholders =
+        private KeyValuePair<string, BsonValue>[] _placeholders =
         {
-            "getMore",
-            "afterClusterTime",
-            "recoveryToken"
+            new KeyValuePair<string, BsonValue>("getMore", 42L),
+            new KeyValuePair<string, BsonValue>("afterClusterTime", 42),
+            new KeyValuePair<string, BsonValue>("recoveryToken", 42)
         };
 
         // protected methods
@@ -93,7 +93,7 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
         {
             foreach (var placeholder in _placeholders)
             {
-                RecursiveFieldSetter.SetAll(actualCommand, placeholder, 42L);
+                RecursiveFieldSetter.SetAll(actualCommand, placeholder.Key, placeholder.Value);
             }
 
             foreach (var aspect in aspects)
@@ -148,7 +148,7 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
                 AdaptExpectedUpdateModels(actualValue.AsBsonArray.Cast<BsonDocument>().ToList(), expectedValue.AsBsonArray.Cast<BsonDocument>().ToList());
             }
 
-            var namesToUseOrderInsensitiveComparisonWith = new[] { "writeConcern" };
+            var namesToUseOrderInsensitiveComparisonWith = new[] { "writeConcern", "updates" };
             var useOrderInsensitiveComparison = namesToUseOrderInsensitiveComparisonWith.Contains(name);
 
             if (!(useOrderInsensitiveComparison ? BsonValueEquivalencyComparer.Compare(actualValue, expectedValue) : actualValue.Equals(expectedValue)))
@@ -176,7 +176,7 @@ namespace MongoDB.Driver.Core.TestHelpers.JsonDrivenTests
             }
         }
 
-        public override void ConfigurePlaceholders(string[] placeholders)
+        public override void ConfigurePlaceholders(KeyValuePair<string, BsonValue>[] placeholders)
         {
             _placeholders = placeholders;
         }

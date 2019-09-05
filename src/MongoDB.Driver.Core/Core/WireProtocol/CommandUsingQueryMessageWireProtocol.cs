@@ -42,7 +42,6 @@ namespace MongoDB.Driver.Core.WireProtocol
         private readonly List<Type1CommandMessageSection> _commandPayloads;
         private readonly IElementNameValidator _commandValidator;
         private readonly DatabaseNamespace _databaseNamespace;
-        private readonly IBinaryCommandFieldEncryptor _documentFieldEncryptor;
         private readonly Action<IMessageEncoderPostProcessor> _postWriteAction;
         private readonly MessageEncoderSettings _messageEncoderSettings;
         private readonly ReadPreference _readPreference;
@@ -80,12 +79,6 @@ namespace MongoDB.Driver.Core.WireProtocol
             _resultSerializer = Ensure.IsNotNull(resultSerializer, nameof(resultSerializer));
             _messageEncoderSettings = messageEncoderSettings;
             _postWriteAction = postWriteAction; // can be null
-
-            if (messageEncoderSettings != null)
-            {
-                // BinaryDocumentFieldDecryptor is not required here
-                _documentFieldEncryptor = messageEncoderSettings.GetOrDefault<IBinaryCommandFieldEncryptor>(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, null);
-            }
         }
 
         // methods
@@ -117,7 +110,6 @@ namespace MongoDB.Driver.Core.WireProtocol
 
         public TCommandResult Execute(IConnection connection, CancellationToken cancellationToken)
         {
-            ValidateEncryptionThrowIfNotSupported(connection);
             bool messageContainsSessionId;
             var message = CreateMessage(connection.Description, out messageContainsSessionId);
             connection.SendMessage(message, _messageEncoderSettings, cancellationToken);
@@ -140,7 +132,6 @@ namespace MongoDB.Driver.Core.WireProtocol
 
         public async Task<TCommandResult> ExecuteAsync(IConnection connection, CancellationToken cancellationToken)
         {
-            ValidateEncryptionThrowIfNotSupported(connection);
             bool messageContainsSessionId;
             var message = CreateMessage(connection.Description, out messageContainsSessionId);
             await connection.SendMessageAsync(message, _messageEncoderSettings, cancellationToken).ConfigureAwait(false);
@@ -385,17 +376,6 @@ namespace MongoDB.Driver.Core.WireProtocol
             else
             {
                 return wrappedCommand;
-            }
-        }
-
-        private void ValidateEncryptionThrowIfNotSupported(IConnection connection)
-        {
-            if (_documentFieldEncryptor != null)
-            {
-                if (connection?.Description?.IsMasterResult?.MaxWireVersion < 8)
-                {
-                    throw new NotSupportedException("Auto-encryption requires a minimum MongoDB version of 4.2.");
-                }
             }
         }
 

@@ -795,26 +795,30 @@ namespace MongoDB.Driver.Encryption
                                 var options = str.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
                                 if (!options.Any(o => o.Contains("idleShutdownTimeoutSecs")))
                                 {
-                                    args += "--idleShutdownTimeoutSecs 60;";
+                                    args += "--idleShutdownTimeoutSecs 60 ";
                                 }
                                 args += str;
                                 break;
                             case IDictionary dictionary:
                                 foreach (var key in dictionary.Keys)
                                 {
-                                    args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + ";";
+                                    args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + " ";
                                 }
                                 break;
                             case IEnumerable enumerable:
                                 foreach (var item in enumerable)
                                 {
-                                    args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + ";";
+                                    args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + " ";
                                 }
                                 break;
                             default:
                                 args = mongocryptdSpawnArgs.ToString();
                                 break;
                         }
+                    }
+                    else
+                    {
+                        args += "--idleShutdownTimeoutSecs 60";
                     }
 
                     return true;
@@ -829,12 +833,10 @@ namespace MongoDB.Driver.Encryption
                 {
                     using (Process mongoCryptD = new Process())
                     {
-                        mongoCryptD.StartInfo.UseShellExecute = true;
+                        mongoCryptD.StartInfo.Arguments = args;
                         mongoCryptD.StartInfo.FileName = path;
                         mongoCryptD.StartInfo.CreateNoWindow = true;
-                        // todo: should it be?
                         mongoCryptD.StartInfo.UseShellExecute = false;
-                        mongoCryptD.StartInfo.Arguments = args;
 
                         if (!mongoCryptD.Start())
                         {
