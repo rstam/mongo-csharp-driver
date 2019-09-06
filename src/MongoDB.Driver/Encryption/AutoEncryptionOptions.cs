@@ -25,21 +25,6 @@ namespace MongoDB.Driver.Encryption
     /// </summary>
     public class AutoEncryptionOptions
     {
-        #region static
-        /// <summary>
-        /// Gets a new instance of the <see cref="AutoEncryptionOptions"/> initialized with values from a <see cref="ClientEncryptionOptions"/>.
-        /// </summary>
-        /// <param name="clientEncryptionOptions">The client encryption options.</param>
-        /// <returns>A new instance of <see cref="AutoEncryptionOptions"/>.</returns>
-        public static AutoEncryptionOptions FromClientEncryptionOptions(ClientEncryptionOptions clientEncryptionOptions)
-        {
-            return new AutoEncryptionOptions(
-                keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
-                kmsProviders: clientEncryptionOptions.KmsProviders,
-                keyVaultClient: Optional.Create(clientEncryptionOptions.KeyVaultClient));
-        }
-        #endregion
-
         // private fields
         private readonly bool _bypassAutoEncryption;
         private readonly IReadOnlyDictionary<string, object> _extraOptions;

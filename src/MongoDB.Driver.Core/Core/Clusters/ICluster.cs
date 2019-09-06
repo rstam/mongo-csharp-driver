@@ -14,12 +14,15 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Servers;
+using MongoDB.Libmongocrypt;
 
 namespace MongoDB.Driver.Core.Clusters
 {
@@ -65,6 +68,19 @@ namespace MongoDB.Driver.Core.Clusters
         /// </summary>
         /// <returns>A core server session.</returns>
         ICoreServerSession AcquireServerSession();
+
+        /// <summary>
+        /// Gets the crypt client.
+        /// </summary>
+        /// <param name="kmsProviders">The kms providers list.</param>
+        /// <param name="schemaMap">The schema map.</param>
+        /// <param name="useClusterCache">The flag shows whether a cache should be used or not.</param>
+#pragma warning disable CS3002
+        CryptClient GetCryptClient(
+            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
+            IReadOnlyDictionary<string, BsonDocument> schemaMap = null,
+            bool useClusterCache = true);
+#pragma warning restore
 
         /// <summary>
         /// Initializes the cluster.

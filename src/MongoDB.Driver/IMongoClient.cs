@@ -78,13 +78,6 @@ namespace MongoDB.Driver
         Task DropDatabaseAsync(IClientSessionHandle session, string name, CancellationToken cancellationToken = default(CancellationToken));
 
         /// <summary>
-        /// Gets a client encryption.
-        /// </summary>
-        /// <param name="options">The client encryption options.</param>
-        /// <returns>A client encryption. </returns>
-        ClientEncryption GetClientEncryption(ClientEncryptionOptions options);
-
-        /// <summary>
         /// Gets a database.
         /// </summary>
         /// <param name="name">The name of the database.</param>

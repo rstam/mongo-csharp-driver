@@ -139,8 +139,23 @@ namespace MongoDB.Driver
         // internal properties
         internal LibMongoCryptController LibMongoCryptController => _libMongoCryptController;
         internal IOperationExecutor OperationExecutor => _operationExecutor;
+        
+        // internal methods
+        internal void ConfigureAutoEncryptionMessageEncoderSettings(MessageEncoderSettings messageEncoderSettings)
+        {
+            var autoEncryptionOptions = _settings.AutoEncryptionOptions;
+            if (autoEncryptionOptions != null)
+            {
+                if (!autoEncryptionOptions.BypassAutoEncryption)
+                {
+                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, _libMongoCryptController);
+                }
+                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, _libMongoCryptController);
+            }
+        }
 
         // private static methods
+
 
         // public methods
         /// <inheritdoc/>
@@ -179,8 +194,12 @@ namespace MongoDB.Driver
             return ExecuteWriteOperationAsync(session, operation, cancellationToken);
         }
 
-        /// <inheritdoc/>
-        public override ClientEncryption GetClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
+        /// <summary>
+        /// Gets a client encryption.
+        /// </summary>
+        /// <param name="clientEncryptionOptions">The client encryption options.</param>
+        /// <returns>A client encryption.</returns>
+        public ClientEncryption GetClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
         {
             var explicitController = new LibMongoCryptController(this, clientEncryptionOptions);
             explicitController.Initialize();
@@ -197,20 +216,6 @@ namespace MongoDB.Driver
             settings.ApplyDefaultValues(_settings);
 
             return new MongoDatabaseImpl(this, new DatabaseNamespace(name), settings, _cluster, _operationExecutor);
-        }
-
-        // internal extension methods
-        internal void ConfigureAutoEncryptionMessageEncoderSettings(MessageEncoderSettings messageEncoderSettings)
-        {
-            var autoEncryptionOptions = _settings.AutoEncryptionOptions;
-            if (autoEncryptionOptions != null)
-            {
-                if (!autoEncryptionOptions.BypassAutoEncryption)
-                {
-                    messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldEncryptor, _libMongoCryptController);
-                }
-                messageEncoderSettings.Add(MessageEncoderSettingsName.BinaryDocumentFieldDecryptor, _libMongoCryptController);
-            }
         }
 
         /// <inheritdoc />

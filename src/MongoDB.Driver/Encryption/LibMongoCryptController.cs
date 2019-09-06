@@ -14,10 +14,7 @@
 */
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Net.Security;
 using System.Net.Sockets;
@@ -47,12 +44,14 @@ namespace MongoDB.Driver.Encryption
         #endregion
 
         // private fields
-        private readonly AutoEncryptionOptions _autoEncryptionOptions;
         private readonly MongoClient _client;
         private readonly CryptClient _cryptClient;
-        private bool _isDisposed = false;
-        private bool _isInitialized = false;
+        private bool _disposed = false;
+        private readonly EncryptionMode _encryptionMode;
+        private bool _initialized = false;
+        private readonly IMongoClient _keyVaultClient;
         private IMongoCollection<BsonDocument> _keyVaultCollection;
+        private readonly CollectionNamespace _keyVaultNamespace;
         private readonly MongoClient _mongocryptdClient;
 
         // constructors
@@ -60,9 +59,13 @@ namespace MongoDB.Driver.Encryption
             MongoClient client,
             ClientEncryptionOptions clientEncryptionOptions) 
             : this(
-                client,
-                AutoEncryptionOptions.FromClientEncryptionOptions(clientEncryptionOptions),
-                client.LibMongoCryptController?.CryptClient) // can be null
+                client: client,
+                cryptClient: client.Cluster.GetCryptClient(
+                    kmsProviders: clientEncryptionOptions.KmsProviders,
+                    useClusterCache: false),
+                keyVaultClient: clientEncryptionOptions.KeyVaultClient,
+                keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
+                encryptionMode: EncryptionMode.ClientEncryption)
         {
         }
 
@@ -70,25 +73,33 @@ namespace MongoDB.Driver.Encryption
             MongoClient client,
             AutoEncryptionOptions autoEncryptionOptions) 
             : this(
-                client,
-                autoEncryptionOptions,
-                null) // will be created in the base constructor
+                client: client,
+                cryptClient: client.Cluster.GetCryptClient(
+                    kmsProviders: autoEncryptionOptions.KmsProviders,
+                    schemaMap: autoEncryptionOptions.SchemaMap,
+                    useClusterCache: true),
+                keyVaultClient: autoEncryptionOptions.KeyVaultClient,
+                keyVaultNamespace: autoEncryptionOptions.KeyVaultNamespace,
+                encryptionMode: EncryptionMode.Auto)
         {
             // needs only for auto encryption
-            _mongocryptdClient = MongoCryptDHelper.CreateClient(_autoEncryptionOptions);
+            _mongocryptdClient = MongocryptdHelper.CreateClientIfRequired(autoEncryptionOptions.ExtraOptions);
         }
 
         private LibMongoCryptController(
             MongoClient client,
-            AutoEncryptionOptions autoEncryptionOptions,
-            CryptClient cryptClient)
+            CryptClient cryptClient,
+            IMongoClient keyVaultClient,
+            CollectionNamespace keyVaultNamespace,
+            EncryptionMode encryptionMode)
         {
-            _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
             _client = Ensure.IsNotNull(client, nameof(client));
-            _cryptClient = cryptClient ?? CryptClientHelper.CreateCryptClient(autoEncryptionOptions);
+            Ensure.IsNotNull(client.Cluster, "cluster");
+            _cryptClient = Ensure.IsNotNull(cryptClient, nameof(cryptClient));
+            _encryptionMode = encryptionMode;
+            _keyVaultClient = keyVaultClient;
+            _keyVaultNamespace = Ensure.IsNotNull(keyVaultNamespace, nameof(keyVaultNamespace));
         }
-
-        public CryptClient CryptClient => _cryptClient;
 
         // public methods
         public BsonBinaryData CreateDataKey(
@@ -221,10 +232,10 @@ namespace MongoDB.Driver.Encryption
 
         public void Dispose()
         {
-            if (!_isDisposed)
+            if (!_disposed)
             {
                 _cryptClient.Dispose();
-                _isDisposed = true;
+                _disposed = true;
             }
         }
 
@@ -233,7 +244,7 @@ namespace MongoDB.Driver.Encryption
             ThrowIfNotInitializedOrDisposed();
 
             var wrappedValueBytes = GetWrappedValueBytes(value);
-            var alternateKeyNameBytes = GetWrappedAlternateKeyName(alternateKeyName);
+            var wrappedAlternateKeyNameBytes = GetWrappedAlternateKeyName(alternateKeyName);
 
             try
             {
@@ -242,9 +253,9 @@ namespace MongoDB.Driver.Encryption
                 {
                     context = _cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, wrappedValueBytes);
                 }
-                else if (alternateKeyNameBytes != null)
+                else if (wrappedAlternateKeyNameBytes != null)
                 {
-                    context = _cryptClient.StartExplicitEncryptionContext(alternateKeyNameBytes, encryptionAlgorithm, wrappedValueBytes);
+                    context = _cryptClient.StartExplicitEncryptionContext(wrappedAlternateKeyNameBytes, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else
                 {
@@ -268,7 +279,7 @@ namespace MongoDB.Driver.Encryption
             ThrowIfNotInitializedOrDisposed();
 
             var wrappedValueBytes = GetWrappedValueBytes(value);
-            var alternateKeyNameBytes = GetWrappedAlternateKeyName(alternateKeyName);
+            var wrappedAlternateKeyNameBytes = GetWrappedAlternateKeyName(alternateKeyName);
 
             try
             {
@@ -277,9 +288,9 @@ namespace MongoDB.Driver.Encryption
                 {
                     context = _cryptClient.StartExplicitEncryptionContext(keyId.Value, encryptionAlgorithm, wrappedValueBytes);
                 }
-                else if (alternateKeyNameBytes != null)
+                else if (wrappedAlternateKeyNameBytes != null)
                 {
-                    context = _cryptClient.StartExplicitEncryptionContext(alternateKeyNameBytes, encryptionAlgorithm, wrappedValueBytes);
+                    context = _cryptClient.StartExplicitEncryptionContext(wrappedAlternateKeyNameBytes, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else
                 {
@@ -334,10 +345,10 @@ namespace MongoDB.Driver.Encryption
 
         public void Initialize()
         {
-            if (!_isInitialized)
+            if (!_initialized)
             {
-                _keyVaultCollection = GetKeyVaultCollection(_autoEncryptionOptions, _client);
-                _isInitialized = true;
+                _keyVaultCollection = GetKeyVaultCollection();
+                _initialized = true;
             }
         }
 
@@ -352,38 +363,28 @@ namespace MongoDB.Driver.Encryption
 
         private void FeedResults(CryptContext context, IEnumerable<BsonDocument> documents)
         {
-            try
+            var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
+            foreach (var document in documents)
             {
-                var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-                foreach (var document in documents)
-                {
-                    var documentBytes = document.ToBson(writerSettings: writerSettings);
-                    context.Feed(documentBytes);
-                }
-                context.MarkDone();
+                var documentBytes = document.ToBson(writerSettings: writerSettings);
+                context.Feed(documentBytes);
             }
-            catch (Exception)
-            {
-
-                throw;
-            }
+            context.MarkDone();
         }
 
-        private IMongoCollection<BsonDocument> GetKeyVaultCollection(AutoEncryptionOptions autoEncryptionOptions, IMongoClient client)
+        private IMongoCollection<BsonDocument> GetKeyVaultCollection()
         {
-            var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? client;
-            var keyVaultNamespace = autoEncryptionOptions.KeyVaultNamespace;
-            var keyVaultDatabase = keyVaultClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
-            return keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
+            var keyVaultClient = _keyVaultClient ?? _client;
+            var keyVaultDatabase = keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
+            return keyVaultDatabase.GetCollection<BsonDocument>(_keyVaultNamespace.CollectionName);
         }
 
         private IKmsKeyId GetKmsId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)
         {
-            IEnumerable<byte[]> alternateKeyNameDocuments = null;
+            IEnumerable<byte[]> wrappedAlternateKeyNamesBytes = null;
             if (alternateKeyNames != null)
             {
-                alternateKeyNameDocuments = alternateKeyNames
-                    .Select(c => GetWrappedAlternateKeyName(c));
+                wrappedAlternateKeyNamesBytes = alternateKeyNames.Select(GetWrappedAlternateKeyName);
             }
 
             switch (kmsProvider)
@@ -391,11 +392,11 @@ namespace MongoDB.Driver.Encryption
                 case "aws":
                     var customerMasterKey = masterKey["key"].ToString();
                     var region = masterKey["region"].ToString();
-                    return alternateKeyNameDocuments != null
-                        ? new AwsKeyId(customerMasterKey, region, alternateKeyNameDocuments)
+                    return wrappedAlternateKeyNamesBytes != null
+                        ? new AwsKeyId(customerMasterKey, region, wrappedAlternateKeyNamesBytes)
                         : new AwsKeyId(customerMasterKey, region);
                 case "local":
-                    return alternateKeyNameDocuments != null ? new LocalKeyId(alternateKeyNameDocuments) : new LocalKeyId();
+                    return wrappedAlternateKeyNamesBytes != null ? new LocalKeyId(wrappedAlternateKeyNamesBytes) : new LocalKeyId();
                 default:
                     throw new ArgumentException($"Unexpected kmsProvider {kmsProvider}.");
             }
@@ -405,7 +406,7 @@ namespace MongoDB.Driver.Encryption
         {
             return
                !string.IsNullOrWhiteSpace(value)
-                   ? new BsonDocument("keyAltName", value).ToBson(serializer: BsonValueSerializer.Instance)
+                   ? new BsonDocument("keyAltName", value).ToBson()
                    : null;
         }
 
@@ -527,6 +528,7 @@ namespace MongoDB.Driver.Encryption
                         ProcessNeedMongoKeysState(context, cancellationToken);
                         break;
                     case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_MARKINGS:
+                        ThrowIfNotAutoEncryption(context.State);
                         ProcessNeedMongoMarkingsState(context, databaseName, cancellationToken);
                         break;
                     case CryptContext.StateCode.MONGOCRYPT_CTX_READY:
@@ -557,6 +559,7 @@ namespace MongoDB.Driver.Encryption
                         await ProcessNeedMongoKeysStateAsync(context, cancellationToken).ConfigureAwait(false);
                         break;
                     case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_MARKINGS:
+                        ThrowIfNotAutoEncryption(context.State);
                         await ProcessNeedMongoMarkingsStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
                         break;
                     case CryptContext.StateCode.MONGOCRYPT_CTX_READY:
@@ -640,14 +643,22 @@ namespace MongoDB.Driver.Encryption
             }
         }
 
+        private void ThrowIfNotAutoEncryption(CryptContext.StateCode state)
+        {
+            if (_encryptionMode != EncryptionMode.Auto)
+            {
+                throw new InvalidOperationException($"{state} is available only for auto encryption.");
+            }
+        }
+
         private void ThrowIfNotInitializedOrDisposed()
         {
-            if (!_isInitialized)
+            if (!_initialized)
             {
                 throw new InvalidOperationException($"{nameof(LibMongoCryptController)} must be initialized.");
             }
 
-            if (_isDisposed)
+            if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().Name);
             }
@@ -661,195 +672,10 @@ namespace MongoDB.Driver.Encryption
         }
 
         // nested types
-        private class CryptClientHelper
+        private enum EncryptionMode
         {
-            #region static
-            public static CryptClient CreateCryptClient(AutoEncryptionOptions autoEncryptionOptions)
-            {
-                var helper = new CryptClientHelper(autoEncryptionOptions);
-                var cryptOptions = helper.CreateCryptOptions();
-                return helper.CreateCryptClient(cryptOptions);
-            }
-            #endregion
-
-            private readonly AutoEncryptionOptions _autoEncryptionOptions;
-
-            private CryptClientHelper(AutoEncryptionOptions autoEncryptionOptions)
-            {
-                _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
-            }
-
-            private CryptClient CreateCryptClient(CryptOptions options)
-            {
-                return CryptClientFactory.Create(options);
-            }
-
-            private CryptOptions CreateCryptOptions()
-            {
-                var kmsProviders = _autoEncryptionOptions.KmsProviders;
-                Dictionary<KmsType, IKmsCredentials> kmsProvidersMap = null;
-                if (kmsProviders != null)
-                {
-                    kmsProvidersMap = new Dictionary<KmsType, IKmsCredentials>();
-                    if (kmsProviders.TryGetValue("aws", out var awsProvider))
-                    {
-                        if (awsProvider.TryGetValue("accessKeyId", out var accessKeyId) &&
-                            awsProvider.TryGetValue("secretAccessKey", out var secretAccessKey))
-                        {
-                            kmsProvidersMap.Add(KmsType.Aws, new AwsKmsCredentials((string)secretAccessKey, (string)accessKeyId));
-                        }
-                    }
-                    if (kmsProviders.TryGetValue("local", out var localProvider))
-                    {
-                        if (localProvider.TryGetValue("key", out var keyObject) && keyObject is byte[] key)
-                        {
-                            kmsProvidersMap.Add(KmsType.Local, new LocalKmsCredentials(key));
-                        }
-                    }
-                }
-
-                byte[] schemaBytes = null;
-                var schemaMap = _autoEncryptionOptions.SchemaMap;
-                if (schemaMap != null)
-                {
-                    var schemaMapElements = schemaMap.Select(c => new BsonElement(c.Key, c.Value));
-                    var schemaDocument = new BsonDocument(schemaMapElements);
-                    var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-                    schemaBytes = schemaDocument.ToBson(writerSettings: writeSettings);
-                }
-
-                return new CryptOptions(kmsProvidersMap, schemaBytes);
-            }
-        }
-
-        private class MongoCryptDHelper
-        {
-            #region static
-            public static MongoClient CreateClient(AutoEncryptionOptions autoEncryptionOptions)
-            {
-                var helper = new MongoCryptDHelper(autoEncryptionOptions);
-                var client = helper.CreateMongoCryptDClient();
-                return client;
-            }
-            #endregion
-
-            private readonly IReadOnlyDictionary<string, object> _extraOptions;
-
-            private MongoCryptDHelper(AutoEncryptionOptions autoEncryptionOptions)
-            {
-                Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
-                _extraOptions = autoEncryptionOptions.ExtraOptions ?? new Dictionary<string, object>();
-            }
-
-            // private methods
-            private string CreateMongoCryptDConnectionString()
-            {
-                if (!_extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
-                {
-                    connectionString = "mongodb://localhost:27020";
-                }
-
-                return connectionString.ToString();
-            }
-
-            private MongoClient CreateMongoCryptDClient()
-            {
-                var connectionString = CreateMongoCryptDConnectionString();
-
-                if (ShouldMongocryptdBeSpawned(out var path, out var args))
-                {
-                    StartProcess(path, args);
-                }
-
-                return new MongoClient(connectionString);
-            }
-
-            private bool ShouldMongocryptdBeSpawned(out string path, out string args)
-            {
-                path = null;
-                args = null;
-                if (!_extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn) || (!bool.Parse(mongoCryptBypassSpawn.ToString())))
-                {
-                    if (!_extraOptions.TryGetValue("mongocryptdSpawnPath", out var objPath))
-                    {
-                        path = string.Empty; // look at the PATH env variable
-                    }
-                    else
-                    {
-                        path = objPath.ToString();
-                    }
-
-                    if (!Path.HasExtension(path))
-                    {
-                        string fileName = "mongocryptd.exe";
-                        path = Path.Combine(path, fileName);
-                    }
-
-                    args = string.Empty;
-                    if (_extraOptions.TryGetValue("mongocryptdSpawnArgs", out var mongocryptdSpawnArgs))
-                    {
-                        string trimStartHyphens(string str) => str.TrimStart('-').TrimStart('-');
-                        switch (mongocryptdSpawnArgs)
-                        {
-                            case string str:
-                                var options = str.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                                if (!options.Any(o => o.Contains("idleShutdownTimeoutSecs")))
-                                {
-                                    args += "--idleShutdownTimeoutSecs 60 ";
-                                }
-                                args += str;
-                                break;
-                            case IDictionary dictionary:
-                                foreach (var key in dictionary.Keys)
-                                {
-                                    args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]}".TrimEnd(';') + " ";
-                                }
-                                break;
-                            case IEnumerable enumerable:
-                                foreach (var item in enumerable)
-                                {
-                                    args += $"--{trimStartHyphens(item.ToString())}".TrimEnd(';') + " ";
-                                }
-                                break;
-                            default:
-                                args = mongocryptdSpawnArgs.ToString();
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        args += "--idleShutdownTimeoutSecs 60";
-                    }
-
-                    return true;
-                }
-
-                return false;
-            }
-
-            private void StartProcess(string path, string args)
-            {
-                try
-                {
-                    using (Process mongoCryptD = new Process())
-                    {
-                        mongoCryptD.StartInfo.Arguments = args;
-                        mongoCryptD.StartInfo.FileName = path;
-                        mongoCryptD.StartInfo.CreateNoWindow = true;
-                        mongoCryptD.StartInfo.UseShellExecute = false;
-
-                        if (!mongoCryptD.Start())
-                        {
-                            // skip it. This case can happen if no new process resource is started
-                            // (for example, if an existing process is reused)
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
-                }
-            }
+            Auto,
+            ClientEncryption
         }
     }
 }

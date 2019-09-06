@@ -25,9 +25,10 @@ namespace MongoDB.Driver.Encryption
     /// <summary>
     /// Explicit client encryption.
     /// </summary>
-    public class ClientEncryption
+    public class ClientEncryption : IDisposable
     {
         // private fields
+        private bool _disposed;
         private readonly LibMongoCryptController _libMongoCryptController;
 
         // constructors
@@ -90,6 +91,16 @@ namespace MongoDB.Driver.Encryption
         public Task<BsonBinaryData> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.DecryptFieldAsync(value, cancellationToken);
+        }
+
+        /// <inheritdoc />
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                _libMongoCryptController.Dispose();
+                _disposed = true;
+            }
         }
 
         /// <summary>

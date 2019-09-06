@@ -55,12 +55,6 @@ namespace MongoDB.Driver
         }
 
         /// <inheritdoc />
-        public virtual ClientEncryption GetClientEncryption(ClientEncryptionOptions options)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc />
         public abstract IMongoDatabase GetDatabase(string name, MongoDatabaseSettings settings = null);
 
         /// <inheritdoc />

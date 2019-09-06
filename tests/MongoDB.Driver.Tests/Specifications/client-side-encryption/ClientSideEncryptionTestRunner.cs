@@ -301,6 +301,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
         #region static
         private static readonly string[] __ignoredTestNames =
         {
+            // https://jira.mongodb.org/browse/SPEC-1403
             "maxWireVersion.json:operation fails with maxWireVersion < 8"
         };
         #endregion

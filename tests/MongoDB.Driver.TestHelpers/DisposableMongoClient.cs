@@ -62,11 +62,6 @@ namespace MongoDB.Driver.TestHelpers
             return wrapped.GetDatabase(name, settings);
         }
 
-        public ClientEncryption GetClientEncryption(ClientEncryptionOptions options)
-        {
-            return wrapped.GetClientEncryption(options);
-        }
-
         public IAsyncCursor<string> ListDatabaseNames(
             CancellationToken cancellationToken = default(CancellationToken))
         {

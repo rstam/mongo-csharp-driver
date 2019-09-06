@@ -35,7 +35,7 @@ using MongoDB.Driver.TestHelpers;
 using MongoDB.Libmongocrypt;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
+namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 {
     public class ClientEncryptionProseTests
     {
@@ -69,7 +69,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
             _session = CoreTestConfiguration.StartSession(_cluster);
         }
 
-        [SkippableTheory()]
+        [SkippableTheory]
         [ParameterAttributeData]
         public void BsonSizeLimitAndBatchSizeSplittingTest(
             [Values(false, true)] bool async)
@@ -334,8 +334,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
         [SkippableTheory]
         [ParameterAttributeData]
         public void CreateDataKeyAndDoubleEncryptionTest(
-            [Values("local", "aws")] string kmsProvider,
-            [Values(false, true)] bool async)
+            [Values("local")] string kmsProvider,
+            [Values(false)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
@@ -411,7 +411,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
             }
         }
 
-        [SkippableTheory(Skip = "temporally skipped")]
+        [SkippableTheory]
         [ParameterAttributeData]
         public void ExternalKeyVaultTest(
             [Values(false, true)] bool withExternalKeyVault,
@@ -525,7 +525,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
                 keyVaultNamespace: __keyVaultCollectionNamespace,
                 kmsProviders: kmsProviders);
 
-            clientEncryption = clientEncrypted.GetClientEncryption(clientEncryptionOptions);
+            clientEncryption = (clientEncrypted.Wrapped as MongoClient).GetClientEncryption(clientEncryptionOptions);
 
             return clientEncrypted;
         }
@@ -693,15 +693,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
                     { "mongocryptdSpawnPath", Environment.GetEnvironmentVariable("MONGODB_BINARIES") ?? string.Empty }
                 };
 
-                Dictionary<string, BsonDocument> schemaMap = null;
-                if (schemaMapDocument != null)
-                {
-                    var element = schemaMapDocument.Single();
-                    schemaMap = new Dictionary<string, BsonDocument>
-                    {
-                        { element.Name, element.Value.AsBsonDocument }
-                    };
-                }
+                var schemaMap = GetSchemaMapIfNotNull(schemaMapDocument);
 
                 if (kmsProviders == null)
                 {
@@ -709,8 +701,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
                 }
 
                 var autoEncryptionOptions = new AutoEncryptionOptions(
-                    keyVaultNamespace,
-                    kmsProviders,
+                    keyVaultNamespace: keyVaultNamespace,
+                    kmsProviders: kmsProviders,
                     schemaMap: Optional.Create<IReadOnlyDictionary<string, BsonDocument>>(schemaMap),
                     extraOptions: extraOptions);
 
@@ -723,13 +715,26 @@ namespace MongoDB.Driver.Tests.Specifications.client_encryption.prose_tests
                                 Credential = MongoCredential.FromComponents(null, null, "fake-user", "fake-pwd")
                             });
                     autoEncryptionOptions = autoEncryptionOptions
-                        .With(
-                            keyVaultClient: Optional.Create<IMongoClient>(externalKeyVaultClient));
+                        .With(keyVaultClient: Optional.Create<IMongoClient>(externalKeyVaultClient));
                 }
                 mongoClientSettings.AutoEncryptionOptions = autoEncryptionOptions;
             }
 
             return new DisposableMongoClient(new MongoClient(mongoClientSettings));
+        }
+
+        private Dictionary<string, BsonDocument> GetSchemaMapIfNotNull(BsonDocument schemaMapDocument)
+        {
+            Dictionary<string, BsonDocument> schemaMap = null;
+            if (schemaMapDocument != null)
+            {
+                var element = schemaMapDocument.Single();
+                schemaMap = new Dictionary<string, BsonDocument>
+                    {
+                        { element.Name, element.Value.AsBsonDocument }
+                    };
+            }
+            return schemaMap;
         }
 
         private void Insert(
