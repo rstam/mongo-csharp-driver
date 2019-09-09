@@ -45,14 +45,17 @@ namespace MongoDB.Driver.Encryption
 
         // private fields
         private readonly MongoClient _client;
-        private readonly CryptClient _cryptClient;
+        private CryptClient _cryptClient;
         private bool _disposed = false;
         private readonly EncryptionMode _encryptionMode;
+        private readonly IReadOnlyDictionary<string, object> _extraOptions;
         private bool _initialized = false;
         private readonly IMongoClient _keyVaultClient;
         private IMongoCollection<BsonDocument> _keyVaultCollection;
         private readonly CollectionNamespace _keyVaultNamespace;
-        private readonly MongoClient _mongocryptdClient;
+        private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
+        private MongoClient _mongocryptdClient;
+        private readonly IReadOnlyDictionary<string, BsonDocument> _schemaMap;
 
         // constructors
         public LibMongoCryptController(
@@ -60,12 +63,12 @@ namespace MongoDB.Driver.Encryption
             ClientEncryptionOptions clientEncryptionOptions) 
             : this(
                 client: client,
-                cryptClient: client.Cluster.GetCryptClient(
-                    kmsProviders: clientEncryptionOptions.KmsProviders,
-                    useClusterCache: false),
+                encryptionMode: EncryptionMode.ClientEncryption,
+                extraOptions: null,
                 keyVaultClient: clientEncryptionOptions.KeyVaultClient,
                 keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
-                encryptionMode: EncryptionMode.ClientEncryption)
+                kmsProviders: clientEncryptionOptions.KmsProviders,
+                schemaMap: null)
         {
         }
 
@@ -74,31 +77,32 @@ namespace MongoDB.Driver.Encryption
             AutoEncryptionOptions autoEncryptionOptions) 
             : this(
                 client: client,
-                cryptClient: client.Cluster.GetCryptClient(
-                    kmsProviders: autoEncryptionOptions.KmsProviders,
-                    schemaMap: autoEncryptionOptions.SchemaMap,
-                    useClusterCache: true),
+                encryptionMode: EncryptionMode.Auto,
+                extraOptions: autoEncryptionOptions.ExtraOptions,
                 keyVaultClient: autoEncryptionOptions.KeyVaultClient,
                 keyVaultNamespace: autoEncryptionOptions.KeyVaultNamespace,
-                encryptionMode: EncryptionMode.Auto)
+                kmsProviders: autoEncryptionOptions.KmsProviders,
+                schemaMap: autoEncryptionOptions.SchemaMap)
         {
-            // needs only for auto encryption
-            _mongocryptdClient = MongocryptdHelper.CreateClientIfRequired(autoEncryptionOptions.ExtraOptions);
         }
 
         private LibMongoCryptController(
             MongoClient client,
-            CryptClient cryptClient,
+            EncryptionMode encryptionMode,
+            IReadOnlyDictionary<string, object> extraOptions,
             IMongoClient keyVaultClient,
             CollectionNamespace keyVaultNamespace,
-            EncryptionMode encryptionMode)
+            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
+            IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
             _client = Ensure.IsNotNull(client, nameof(client));
             Ensure.IsNotNull(client.Cluster, "cluster");
-            _cryptClient = Ensure.IsNotNull(cryptClient, nameof(cryptClient));
             _encryptionMode = encryptionMode;
+            _extraOptions = extraOptions;
             _keyVaultClient = keyVaultClient;
             _keyVaultNamespace = Ensure.IsNotNull(keyVaultNamespace, nameof(keyVaultNamespace));
+            _kmsProviders = Ensure.IsNotNull(kmsProviders, nameof(kmsProviders));
+            _schemaMap = schemaMap;
         }
 
         // public methods
@@ -294,7 +298,7 @@ namespace MongoDB.Driver.Encryption
                 }
                 else
                 {
-                    throw new Exception("Key Id and Alt name cannot both be set.");
+                    throw new Exception("Key Id and Alternate key name cannot both be set.");
                 }
 
                 using (context)
@@ -349,6 +353,17 @@ namespace MongoDB.Driver.Encryption
             {
                 _keyVaultCollection = GetKeyVaultCollection();
                 _initialized = true;
+
+                var isAutoEncryption = _encryptionMode == EncryptionMode.Auto;
+                _cryptClient = _client.Cluster.GetCryptClient(
+                    kmsProviders: _kmsProviders, 
+                    schemaMap: _schemaMap,
+                    useClusterCache: isAutoEncryption);
+
+                if (isAutoEncryption)
+                {
+                    _mongocryptdClient = MongocryptdHelper.CreateClientIfRequired(_extraOptions);
+                }
             }
         }
 
