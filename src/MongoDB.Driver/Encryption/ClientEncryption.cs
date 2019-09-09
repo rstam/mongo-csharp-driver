@@ -17,7 +17,6 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
-using MongoDB.Driver.Core.Misc;
 using MongoDB.Libmongocrypt;
 
 namespace MongoDB.Driver.Encryption
@@ -32,9 +31,15 @@ namespace MongoDB.Driver.Encryption
         private readonly LibMongoCryptController _libMongoCryptController;
 
         // constructors
-        internal ClientEncryption(LibMongoCryptController libMongoCryptController)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ClientEncryption"/> class.
+        /// </summary>
+        /// <param name="client">The client.</param>
+        /// <param name="clientEncryptionOptions">The client encryption options.</param>
+        public ClientEncryption(MongoClient client, ClientEncryptionOptions clientEncryptionOptions)
         {
-            _libMongoCryptController = Ensure.IsNotNull(libMongoCryptController, nameof(libMongoCryptController));
+            _libMongoCryptController = new LibMongoCryptController(client, clientEncryptionOptions);
+            _libMongoCryptController.Initialize();
         }
 
         // public methods
@@ -48,9 +53,9 @@ namespace MongoDB.Driver.Encryption
         public BsonBinaryData CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.CreateDataKey(
-                kmsProvider, 
-                dataKeyOptions.AlternateKeyNames, 
-                dataKeyOptions.MasterKey, 
+                kmsProvider,
+                dataKeyOptions.AlternateKeyNames,
+                dataKeyOptions.MasterKey,
                 cancellationToken);
         }
 
@@ -67,7 +72,7 @@ namespace MongoDB.Driver.Encryption
                 .CreateDataKeyAsync(
                     kmsProvider,
                     dataKeyOptions.AlternateKeyNames,
-                    dataKeyOptions.MasterKey, 
+                    dataKeyOptions.MasterKey,
                     cancellationToken);
         }
 
@@ -141,12 +146,13 @@ namespace MongoDB.Driver.Encryption
                 .ConfigureAwait(false);
         }
 
+        // private methods
         private void GetEncryptFieldArgs(
             EncryptOptions encryptOptions,
             out Guid? keyId,
             out EncryptionAlgorithm algorithm)
         {
-            keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?) null;
+            keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?)null;
             algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
         }
     }

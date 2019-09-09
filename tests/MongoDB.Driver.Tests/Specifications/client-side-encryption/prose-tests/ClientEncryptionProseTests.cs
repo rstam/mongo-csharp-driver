@@ -78,7 +78,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
             var eventCapturer = new EventCapturer().Capture<CommandStartedEvent>(e => e.CommandName == "insert");
             using (var client = ConfigureClient())
-            using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProviderFilter: "local", eventCapturer: eventCapturer))
+            using (var clientEncrypted = ConfigureClientEncrypted(kmsProviderFilter: "local", eventCapturer: eventCapturer))
+            using (var clientEncryption = ConfigureClientEncryption(clientEncrypted.Wrapped as MongoClient))
             {
                 var collLimitSchema = JsonFileReader.Instance.Documents["limits.limits-schema.json"];
                 CreateCollection(client, __collCollectionNamespace, new BsonDocument("$jsonSchema", collLimitSchema));
@@ -174,8 +175,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
         [SkippableTheory]
         [ParameterAttributeData]
         public void CorpusTest(
-            [Values(false, true)] bool useLocalSchema,
-            [Values(false, true)] bool async)
+            [Values(false)] bool useLocalSchema,
+            [Values(false)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
@@ -225,7 +226,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
             var corpusSchema = JsonFileReader.Instance.Documents["corpus.corpus-schema.json"];
             var schemaMap = useLocalSchema ? new BsonDocument("db.coll", corpusSchema) : null;
             using (var client = ConfigureClient())
-            using (var clientEncrypted = ConfigureClientEncrypted(out var clientEncryption, schemaMap))
+            using (var clientEncrypted = ConfigureClientEncrypted(schemaMap))
+            using (var clientEncryption = ConfigureClientEncryption(clientEncrypted.Wrapped as MongoClient))
             {
                 CreateCollection(client, __collCollectionNamespace, new BsonDocument("$jsonSchema", corpusSchema));
 
@@ -340,7 +342,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
             using (var client = ConfigureClient())
-            using (var clientEncrypted = ConfigureClientEncrypted(out var clientEncryption, BsonDocument.Parse(SchemaMap)))
+            using (var clientEncrypted = ConfigureClientEncrypted(BsonDocument.Parse(SchemaMap)))
+            using (var clientEncryption = ConfigureClientEncryption(clientEncrypted.Wrapped as MongoClient))
             {
                 var dataKeyOptions = CreateDataKeyOptions(kmsProvider);
 
@@ -421,7 +424,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
             var clientEncryptedSchema = new BsonDocument("db.coll", JsonFileReader.Instance.Documents["external.external-schema.json"]);
             using (var client = ConfigureClient())
-            using (var clientEncrypted = ConfigureClientEncrypted(out var clientEncryption, clientEncryptedSchema, withExternalKeyVault))
+            using (var clientEncrypted = ConfigureClientEncrypted(clientEncryptedSchema, withExternalKeyVault))
+            using (var clientEncryption = ConfigureClientEncryption(clientEncrypted.Wrapped as MongoClient))
             {
                 var datakeys = GetCollection(client, __keyVaultCollectionNamespace);
                 var externalKey = JsonFileReader.Instance.Documents["external.external-key.json"];
@@ -461,7 +465,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
             CollectionNamespace viewName = CollectionNamespace.FromFullName("db.view");
 
             using (var client = ConfigureClient(false))
-            using (var clientEncrypted = ConfigureClientEncrypted(out _, kmsProviderFilter: "local"))
+            using (var clientEncrypted = ConfigureClientEncrypted(kmsProviderFilter: "local"))
             {
                 DropView(viewName);
                 client
@@ -496,7 +500,6 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
         }
 
         private DisposableMongoClient ConfigureClientEncrypted(
-            out ClientEncryption clientEncryption,
             BsonDocument schemaMap = null,
             bool withExternalKeyVault = false,
             string kmsProviderFilter = null,
@@ -504,7 +507,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
         {
             var kmsProviders = GetKmsProviders();
 
-            var clientEncrypted = 
+            var clientEncrypted =
                 GetMongoClient(
                     keyVaultNamespace: __keyVaultCollectionNamespace,
                     schemaMapDocument: schemaMap != null ? schemaMap : null,
@@ -519,15 +522,17 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                         eventCapturer != null
                             ? c => c.Subscribe(eventCapturer)
                             : (Action<ClusterBuilder>)null);
-
-            var clientEncryptionOptions = new ClientEncryptionOptions(
-                keyVaultClient: clientEncrypted.Wrapped.Settings.AutoEncryptionOptions.KeyVaultClient ?? clientEncrypted,
-                keyVaultNamespace: __keyVaultCollectionNamespace,
-                kmsProviders: kmsProviders);
-
-            clientEncryption = (clientEncrypted.Wrapped as MongoClient).GetClientEncryption(clientEncryptionOptions);
-
             return clientEncrypted;
+        }
+
+        private ClientEncryption ConfigureClientEncryption(MongoClient client)
+        {
+            var clientEncryptionOptions = new ClientEncryptionOptions(
+                keyVaultClient: client.Settings.AutoEncryptionOptions.KeyVaultClient ?? client,
+                keyVaultNamespace: __keyVaultCollectionNamespace,
+                kmsProviders: GetKmsProviders());
+
+            return new ClientEncryption(client, clientEncryptionOptions);
         }
 
         private void CreateCollection(IMongoClient client, CollectionNamespace collectionNamespace, BsonDocument validatorSchema)

@@ -194,18 +194,6 @@ namespace MongoDB.Driver
             return ExecuteWriteOperationAsync(session, operation, cancellationToken);
         }
 
-        /// <summary>
-        /// Gets a client encryption.
-        /// </summary>
-        /// <param name="clientEncryptionOptions">The client encryption options.</param>
-        /// <returns>A client encryption.</returns>
-        public ClientEncryption GetClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
-        {
-            var explicitController = new LibMongoCryptController(this, clientEncryptionOptions);
-            explicitController.Initialize();
-            return new ClientEncryption(explicitController);
-        }
-
         /// <inheritdoc/>
         public sealed override IMongoDatabase GetDatabase(string name, MongoDatabaseSettings settings = null)
         {

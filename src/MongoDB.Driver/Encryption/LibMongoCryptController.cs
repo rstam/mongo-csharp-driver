@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Encryption
         // private fields
         private readonly MongoClient _client;
         private CryptClient _cryptClient;
-        private bool _disposed = false;
+        private bool _disposed;
         private readonly EncryptionMode _encryptionMode;
         private readonly IReadOnlyDictionary<string, object> _extraOptions;
         private bool _initialized = false;
@@ -60,7 +60,7 @@ namespace MongoDB.Driver.Encryption
         // constructors
         public LibMongoCryptController(
             MongoClient client,
-            ClientEncryptionOptions clientEncryptionOptions) 
+            ClientEncryptionOptions clientEncryptionOptions)
             : this(
                 client: client,
                 encryptionMode: EncryptionMode.ClientEncryption,
@@ -74,7 +74,7 @@ namespace MongoDB.Driver.Encryption
 
         public LibMongoCryptController(
             MongoClient client,
-            AutoEncryptionOptions autoEncryptionOptions) 
+            AutoEncryptionOptions autoEncryptionOptions)
             : this(
                 client: client,
                 encryptionMode: EncryptionMode.Auto,
@@ -107,9 +107,9 @@ namespace MongoDB.Driver.Encryption
 
         // public methods
         public BsonBinaryData CreateDataKey(
-            string kmsProvider, 
-            IReadOnlyList<string> alternateKeyNames, 
-            BsonDocument masterKey, 
+            string kmsProvider,
+            IReadOnlyList<string> alternateKeyNames,
+            BsonDocument masterKey,
             CancellationToken cancellationToken)
         {
             ThrowIfNotInitializedOrDisposed();
@@ -356,7 +356,7 @@ namespace MongoDB.Driver.Encryption
 
                 var isAutoEncryption = _encryptionMode == EncryptionMode.Auto;
                 _cryptClient = _client.Cluster.GetCryptClient(
-                    kmsProviders: _kmsProviders, 
+                    kmsProviders: _kmsProviders,
                     schemaMap: _schemaMap,
                     useClusterCache: isAutoEncryption);
 

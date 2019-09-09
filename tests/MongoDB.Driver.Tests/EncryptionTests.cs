@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Tests
     public class EncryptionTests
     {
         #region static
-        private readonly CollectionNamespace __keyVaultCollectionNamespace = CollectionNamespace.FromFullName("db.coll");
+        private static readonly CollectionNamespace __keyVaultCollectionNamespace = CollectionNamespace.FromFullName("db.coll");
         #endregion
 
         private const string LocalMasterKey = "Mng0NCt4ZHVUYUJCa1kxNkVyNUR1QURhZ2h2UzR2d2RrZzh0cFBwM3R6NmdWMDFBMUN3YkQ5aXRRMkhGRGdQV09wOGVNYUMxT2k3NjZKelhaQmRCZGJkTXVyZG9uSjFk";
@@ -134,7 +134,7 @@ namespace MongoDB.Driver.Tests
                 __keyVaultCollectionNamespace,
                 kmsProviders: kmsProviders);
 
-            return mongoClient.GetClientEncryption(clientEncryptionOptions);
+            return new ClientEncryption(mongoClient, clientEncryptionOptions);
         }
 
         private Dictionary<string, IReadOnlyDictionary<string, object>> GetKmsProviders()
