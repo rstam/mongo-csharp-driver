@@ -62,6 +62,7 @@ namespace MongoDB.Driver.Tests
                 heartbeatInterval: TimeSpan.FromSeconds(2),
                 heartbeatTimeout: TimeSpan.FromSeconds(3),
                 ipv6: true,
+                null, //todo
                 localThreshold: TimeSpan.FromSeconds(4),
                 maxConnectionIdleTime: TimeSpan.FromSeconds(5),
                 maxConnectionLifeTime: TimeSpan.FromSeconds(6),
@@ -69,6 +70,7 @@ namespace MongoDB.Driver.Tests
                 minConnectionPoolSize: 8,
                 receiveBufferSize: 9,
                 replicaSetName: "rs",
+                null, //todo
                 scheme: ConnectionStringScheme.MongoDB,
                 sdamLogFilename: "sdam.log",
                 sendBufferSize: 10,

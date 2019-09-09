@@ -112,6 +112,11 @@ namespace MongoDB.Driver.Core.Clusters
             get { return _clusterId; }
         }
 
+        public CryptClient CryptClient
+        {
+            get { return _cryptClient; }
+        }
+
         public ClusterDescription Description
         {
             get
@@ -188,28 +193,13 @@ namespace MongoDB.Driver.Core.Clusters
             }
         }
 
-        public CryptClient GetCryptClient(
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
-            IReadOnlyDictionary<string, BsonDocument> schemaMap = null,
-            bool useClusterCache = true)
-        {
-            if (useClusterCache && _cryptClient != null)
-            {
-                return _cryptClient;
-            }
-            else
-            {
-                var cryptClient = CryptClientHelper.CreateCryptClientIfRequired(kmsProviders, schemaMap);
-                return useClusterCache
-                    ? _cryptClient = cryptClient
-                    : cryptClient;
-            }
-        }
-
         public virtual void Initialize()
         {
             ThrowIfDisposed();
-            _state.TryChange(State.Initial, State.Open);
+            if (_state.TryChange(State.Initial, State.Open))
+            {
+                _cryptClient = CryptClientHelper.CreateCryptClientIfRequired(_settings.KmsProviders, _settings.SchemaMap);
+            }
         }
 
         private void RapidHeartbeatTimerCallback(object args)

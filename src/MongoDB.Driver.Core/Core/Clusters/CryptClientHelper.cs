@@ -18,13 +18,24 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
+using MongoDB.Driver.Core.Misc;
 using MongoDB.Libmongocrypt;
 
 namespace MongoDB.Driver.Core.Clusters
 {
-    internal class CryptClientHelper
+    /// <summary>
+    /// Represents a factory for CryptClient.
+    /// </summary>
+    public sealed class CryptClientHelper
     {
         #region static
+#pragma warning disable 3002
+        /// <summary>
+        /// Create a CryptClient instance.
+        /// </summary>
+        /// <param name="kmsProviders">The kms providers.</param>
+        /// <param name="schemaMap">The schema map.</param>
+        /// <returns>The CryptClient instance.</returns>
         public static CryptClient CreateCryptClientIfRequired(
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
             IReadOnlyDictionary<string, BsonDocument> schemaMap)
@@ -38,6 +49,7 @@ namespace MongoDB.Driver.Core.Clusters
             var cryptOptions = helper.CreateCryptOptions();
             return helper.CreateCryptClient(cryptOptions);
         }
+#pragma warning restore
         #endregion
 
         private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
@@ -47,7 +59,7 @@ namespace MongoDB.Driver.Core.Clusters
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
             IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
-            _kmsProviders = kmsProviders;
+            _kmsProviders = Ensure.IsNotNull(kmsProviders, nameof(kmsProviders));
             _schemaMap = schemaMap;
         }
 

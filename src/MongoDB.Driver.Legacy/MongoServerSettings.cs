@@ -1033,6 +1033,7 @@ namespace MongoDB.Driver
                 _heartbeatInterval,
                 _heartbeatTimeout,
                 _ipv6,
+                null, // not supported for legacy
                 _localThreshold,
                 _maxConnectionIdleTime,
                 _maxConnectionLifeTime,
@@ -1040,6 +1041,7 @@ namespace MongoDB.Driver
                 _minConnectionPoolSize,
                 MongoDefaults.TcpReceiveBufferSize,
                 _replicaSetName,
+                null, // not supported for legacy
                 _scheme,
                 _sdamLogFilename,
                 MongoDefaults.TcpSendBufferSize,

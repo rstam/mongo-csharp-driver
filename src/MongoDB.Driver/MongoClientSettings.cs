@@ -997,6 +997,7 @@ namespace MongoDB.Driver
                 _heartbeatInterval,
                 _heartbeatTimeout,
                 _ipv6,
+                _autoEncryptionOptions?.KmsProviders,
                 _localThreshold,
                 _maxConnectionIdleTime,
                 _maxConnectionLifeTime,
@@ -1004,6 +1005,7 @@ namespace MongoDB.Driver
                 _minConnectionPoolSize,
                 MongoDefaults.TcpReceiveBufferSize, // TODO: add ReceiveBufferSize to MongoClientSettings?
                 _replicaSetName,
+                _autoEncryptionOptions?.SchemaMap,
                 _scheme,
                 _sdamLogFilename,
                 MongoDefaults.TcpSendBufferSize, // TODO: add SendBufferSize to MongoClientSettings?

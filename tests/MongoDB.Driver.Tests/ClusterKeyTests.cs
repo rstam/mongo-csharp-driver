@@ -156,6 +156,7 @@ namespace MongoDB.Driver.Tests
                 heartbeatInterval,
                 heartbeatTimeout,
                 ipv6,
+                null, //todo
                 localThreshold,
                 maxConnectionIdleTime,
                 maxConnectionLifeTime,
@@ -163,6 +164,7 @@ namespace MongoDB.Driver.Tests
                 minConnectionPoolSize,
                 receiveBufferSize,
                 replicaSetName,
+                null, //todo
                 scheme,
                 sdamLogFileName,
                 sendBufferSize,

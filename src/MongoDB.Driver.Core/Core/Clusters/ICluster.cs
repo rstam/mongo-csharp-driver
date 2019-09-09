@@ -72,14 +72,9 @@ namespace MongoDB.Driver.Core.Clusters
         /// <summary>
         /// Gets the crypt client.
         /// </summary>
-        /// <param name="kmsProviders">The kms providers list.</param>
-        /// <param name="schemaMap">The schema map.</param>
-        /// <param name="useClusterCache">The flag shows whether a cache should be used or not.</param>
-#pragma warning disable CS3002
-        CryptClient GetCryptClient(
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
-            IReadOnlyDictionary<string, BsonDocument> schemaMap = null,
-            bool useClusterCache = true);
+        /// <returns>A crypt client.</returns>
+#pragma warning disable CS3003
+        CryptClient CryptClient { get; }
 #pragma warning restore
 
         /// <summary>

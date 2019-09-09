@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.WireProtocol;
 using MongoDB.Libmongocrypt;
@@ -75,6 +76,7 @@ namespace MongoDB.Driver.Encryption
         {
             _client = Ensure.IsNotNull(client, nameof(client));
             Ensure.IsNotNull(client.Cluster, "cluster");
+            _cryptClient = Ensure.IsNotNull(client.Cluster.CryptClient, "cryptClient");
             _encryptionMode = EncryptionMode.Auto;
             _extraOptions = autoEncryptionOptions.ExtraOptions;
             _keyVaultClient = autoEncryptionOptions.KeyVaultClient;
@@ -332,15 +334,15 @@ namespace MongoDB.Driver.Encryption
                 _keyVaultCollection = GetKeyVaultCollection();
                 _initialized = true;
 
-                var isAutoEncryption = _encryptionMode == EncryptionMode.Auto;
-                _cryptClient = _client.Cluster.GetCryptClient(
-                    kmsProviders: _kmsProviders,
-                    schemaMap: _schemaMap,
-                    useClusterCache: isAutoEncryption);
-
-                if (isAutoEncryption)
+                if (_encryptionMode == EncryptionMode.Auto)
                 {
+                    // cryptClient has been provided via constructor from the cluster
                     _mongocryptdClient = MongocryptdHelper.CreateClientIfRequired(_extraOptions);
+                }
+                else
+                {
+                    _cryptClient = CryptClientHelper.CreateCryptClientIfRequired(_kmsProviders, _schemaMap);
+                    // mongocryptd is not required for ClientEncryption
                 }
             }
         }
