@@ -61,48 +61,26 @@ namespace MongoDB.Driver.Encryption
         public LibMongoCryptController(
             MongoClient client,
             ClientEncryptionOptions clientEncryptionOptions)
-            : this(
-                client: client,
-                encryptionMode: EncryptionMode.ClientEncryption,
-                extraOptions: null,
-                keyVaultClient: clientEncryptionOptions.KeyVaultClient,
-                keyVaultNamespace: clientEncryptionOptions.KeyVaultNamespace,
-                kmsProviders: clientEncryptionOptions.KmsProviders,
-                schemaMap: null)
         {
+            _client = Ensure.IsNotNull(client, nameof(client));
+            _encryptionMode = EncryptionMode.ClientEncryption;
+            _keyVaultClient = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultClient, "keyVaultClient");
+            _keyVaultNamespace = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultNamespace, "keyVaultNamespace");
+            _kmsProviders = Ensure.IsNotNull(clientEncryptionOptions.KmsProviders, "kmsProviders");
         }
 
         public LibMongoCryptController(
             MongoClient client,
             AutoEncryptionOptions autoEncryptionOptions)
-            : this(
-                client: client,
-                encryptionMode: EncryptionMode.Auto,
-                extraOptions: autoEncryptionOptions.ExtraOptions,
-                keyVaultClient: autoEncryptionOptions.KeyVaultClient,
-                keyVaultNamespace: autoEncryptionOptions.KeyVaultNamespace,
-                kmsProviders: autoEncryptionOptions.KmsProviders,
-                schemaMap: autoEncryptionOptions.SchemaMap)
-        {
-        }
-
-        private LibMongoCryptController(
-            MongoClient client,
-            EncryptionMode encryptionMode,
-            IReadOnlyDictionary<string, object> extraOptions,
-            IMongoClient keyVaultClient,
-            CollectionNamespace keyVaultNamespace,
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
-            IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
             _client = Ensure.IsNotNull(client, nameof(client));
             Ensure.IsNotNull(client.Cluster, "cluster");
-            _encryptionMode = encryptionMode;
-            _extraOptions = extraOptions;
-            _keyVaultClient = keyVaultClient;
-            _keyVaultNamespace = Ensure.IsNotNull(keyVaultNamespace, nameof(keyVaultNamespace));
-            _kmsProviders = Ensure.IsNotNull(kmsProviders, nameof(kmsProviders));
-            _schemaMap = schemaMap;
+            _encryptionMode = EncryptionMode.Auto;
+            _extraOptions = autoEncryptionOptions.ExtraOptions;
+            _keyVaultClient = autoEncryptionOptions.KeyVaultClient;
+            _keyVaultNamespace = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultNamespace, "keyVaultNamespace");
+            _kmsProviders = Ensure.IsNotNull(autoEncryptionOptions.KmsProviders, "kmsProviders");
+            _schemaMap = autoEncryptionOptions.SchemaMap;
         }
 
         // public methods
