@@ -94,7 +94,7 @@ namespace MongoDB.Driver.Encryption
         {
             ThrowIfNotInitializedOrDisposed();
 
-            var kmsKeyId = GetKmsId(kmsProvider, alternateKeyNames, masterKey);
+            var kmsKeyId = GetKmsKeyId(kmsProvider, alternateKeyNames, masterKey);
 
             byte[] keyDocumentBytes;
             try
@@ -122,7 +122,7 @@ namespace MongoDB.Driver.Encryption
         {
             ThrowIfNotInitializedOrDisposed();
 
-            var kmsKeyId = GetKmsId(kmsProvider, alternateKeyNames, masterKey);
+            var kmsKeyId = GetKmsKeyId(kmsProvider, alternateKeyNames, masterKey);
 
             byte[] keyDocumentBytes;
             try
@@ -374,7 +374,7 @@ namespace MongoDB.Driver.Encryption
             return keyVaultDatabase.GetCollection<BsonDocument>(_keyVaultNamespace.CollectionName);
         }
 
-        private IKmsKeyId GetKmsId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)
+        private IKmsKeyId GetKmsKeyId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)
         {
             IEnumerable<byte[]> wrappedAlternateKeyNamesBytes = null;
             if (alternateKeyNames != null)

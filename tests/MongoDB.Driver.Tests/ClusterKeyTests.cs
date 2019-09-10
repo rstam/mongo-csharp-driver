@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Authentication;
 using FluentAssertions;
+using MongoDB.Bson;
 using MongoDB.Driver.Core.Compression;
 using MongoDB.Driver.Core.Configuration;
 using Xunit;
@@ -46,6 +47,7 @@ namespace MongoDB.Driver.Tests
         [InlineData("HeartbeatInterval", true)]
         [InlineData("HeartbeatTimeout", true)]
         [InlineData("IPv6", true)]
+        [InlineData("KmsProviders", true)]
         [InlineData("MaxConnectionIdleTime", true)]
         [InlineData("MaxConnectionLifeTime", true)]
         [InlineData("MaxConnectionPoolSize", true)]
@@ -53,6 +55,7 @@ namespace MongoDB.Driver.Tests
         [InlineData("ReceiveBufferSize", true)]
         [InlineData("ReplicaSetName", true)]
         [InlineData("LocalThreshold", true)]
+        [InlineData("SchemaMap", true)]
         [InlineData("Scheme", true)]
         [InlineData("SdamLogFileName", true)]
         [InlineData("SendBufferSize", true)]
@@ -86,6 +89,7 @@ namespace MongoDB.Driver.Tests
             var heartbeatInterval = TimeSpan.FromSeconds(7);
             var heartbeatTimeout = TimeSpan.FromSeconds(8);
             var ipv6 = false;
+            var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>();
             var localThreshold = TimeSpan.FromMilliseconds(20);
             var maxConnectionIdleTime = TimeSpan.FromSeconds(2);
             var maxConnectionLifeTime = TimeSpan.FromSeconds(3);
@@ -93,6 +97,7 @@ namespace MongoDB.Driver.Tests
             var minConnectionPoolSize = 5;
             var receiveBufferSize = 1;
             var replicaSetName = "abc";
+            var schemaMap = new Dictionary<string, BsonDocument>();
             var scheme = ConnectionStringScheme.MongoDB;
             var sdamLogFileName = "stdout";
             var sendBufferSize = 1;
@@ -124,6 +129,7 @@ namespace MongoDB.Driver.Tests
                     case "HeartbeatInterval": heartbeatInterval = TimeSpan.FromSeconds(99); break;
                     case "HeartbeatTimeout": heartbeatTimeout = TimeSpan.FromSeconds(99); break;
                     case "IPv6": ipv6 = !ipv6; break;
+                    case "KmsProviders": kmsProviders.Add("local", new Dictionary<string, object>() { { "key", "test" } }); break;
                     case "LocalThreshold": localThreshold = TimeSpan.FromMilliseconds(99); break;
                     case "MaxConnectionIdleTime": maxConnectionIdleTime = TimeSpan.FromSeconds(99); break;
                     case "MaxConnectionLifeTime": maxConnectionLifeTime = TimeSpan.FromSeconds(99); break;
@@ -131,6 +137,7 @@ namespace MongoDB.Driver.Tests
                     case "MinConnectionPoolSize": minConnectionPoolSize = 99; break;
                     case "ReceiveBufferSize": receiveBufferSize = 2; break;
                     case "ReplicaSetName": replicaSetName = "different"; break;
+                    case "SchemaMap": schemaMap.Add("db.coll", new BsonDocument()); break;
                     case "Scheme": scheme = ConnectionStringScheme.MongoDBPlusSrv; break;
                     case "SdamLogFileName": sdamLogFileName = "different"; break;
                     case "SendBufferSize": sendBufferSize = 2; break;
@@ -156,7 +163,7 @@ namespace MongoDB.Driver.Tests
                 heartbeatInterval,
                 heartbeatTimeout,
                 ipv6,
-                null, //todo
+                kmsProviders,
                 localThreshold,
                 maxConnectionIdleTime,
                 maxConnectionLifeTime,
@@ -164,7 +171,7 @@ namespace MongoDB.Driver.Tests
                 minConnectionPoolSize,
                 receiveBufferSize,
                 replicaSetName,
-                null, //todo
+                schemaMap,
                 scheme,
                 sdamLogFileName,
                 sendBufferSize,

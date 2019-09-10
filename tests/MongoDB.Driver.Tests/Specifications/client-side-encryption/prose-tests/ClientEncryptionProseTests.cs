@@ -65,18 +65,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
         public ClientEncryptionProseTests()
         {
-            _cluster = CoreTestConfiguration.CreateCluster(configurator =>
-            {
-                configurator
-                    .ConfigureCluster(settings =>
-                    {
-                        settings = settings.With(
-                            kmsProviders: Optional.Create(GetKmsProviders()),
-                            schemaMap: GetSchemaMapIfNotNull(BsonDocument.Parse(SchemaMap)));
-                        return settings;
-                    });
-                return configurator;
-            });
+            _cluster = CoreTestConfiguration.Cluster;
             _session = CoreTestConfiguration.StartSession(_cluster);
         }
 

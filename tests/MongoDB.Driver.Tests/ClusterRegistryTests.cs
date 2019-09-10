@@ -19,6 +19,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Authentication;
 using FluentAssertions;
+using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Compression;
@@ -51,6 +52,20 @@ namespace MongoDB.Driver.Tests
                 CheckCertificateRevocation = true,
                 EnabledSslProtocols = SslProtocols.Tls
             };
+            var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>()
+            {
+                {
+                    "local",
+                    new Dictionary<string, object>()
+                    {
+                        { "key" , "test" }
+                    }
+                }
+            };
+            var schemaMap = new Dictionary<string, BsonDocument>()
+            {
+                { "db.coll", new BsonDocument() }
+            };
 
             var clusterKey = new ClusterKey(
                 applicationName: "app1",
@@ -62,7 +77,7 @@ namespace MongoDB.Driver.Tests
                 heartbeatInterval: TimeSpan.FromSeconds(2),
                 heartbeatTimeout: TimeSpan.FromSeconds(3),
                 ipv6: true,
-                null, //todo
+                kmsProviders: kmsProviders,
                 localThreshold: TimeSpan.FromSeconds(4),
                 maxConnectionIdleTime: TimeSpan.FromSeconds(5),
                 maxConnectionLifeTime: TimeSpan.FromSeconds(6),
@@ -70,7 +85,7 @@ namespace MongoDB.Driver.Tests
                 minConnectionPoolSize: 8,
                 receiveBufferSize: 9,
                 replicaSetName: "rs",
-                null, //todo
+                schemaMap: schemaMap,
                 scheme: ConnectionStringScheme.MongoDB,
                 sdamLogFilename: "sdam.log",
                 sendBufferSize: 10,
@@ -94,9 +109,11 @@ namespace MongoDB.Driver.Tests
                     new IPEndPoint(IPAddress.Parse("[::1]"), 27018)
                 };
                 cluster.Settings.ConnectionMode.Should().Be(clusterKey.ConnectionMode.ToCore());
+                cluster.Settings.KmsProviders.Should().BeEquivalentTo(kmsProviders);
                 cluster.Settings.EndPoints.Should().Equal(expectedEndPoints);
                 cluster.Settings.MaxServerSelectionWaitQueueSize.Should().Be(clusterKey.WaitQueueSize);
                 cluster.Settings.ReplicaSetName.Should().Be(clusterKey.ReplicaSetName);
+                cluster.Settings.SchemaMap.Should().BeEquivalentTo(schemaMap);
                 cluster.Settings.Scheme.Should().Be(clusterKey.Scheme);
                 cluster.Settings.ServerSelectionTimeout.Should().Be(clusterKey.ServerSelectionTimeout);
 

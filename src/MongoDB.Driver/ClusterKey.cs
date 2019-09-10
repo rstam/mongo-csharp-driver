@@ -180,7 +180,7 @@ namespace MongoDB.Driver
                 _heartbeatInterval == rhs._heartbeatInterval &&
                 _heartbeatTimeout == rhs._heartbeatTimeout &&
                 _ipv6 == rhs._ipv6 &&
-                SequenceEqualWithNestedDictionary(_kmsProviders, rhs._kmsProviders) &&
+                GetValueOrEmpty(_kmsProviders).SequenceEqual(GetValueOrEmpty(rhs._kmsProviders), new KmsProvidersComparer()) &&
                 _localThreshold == rhs._localThreshold &&
                 _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
                 _maxConnectionLifeTime == rhs._maxConnectionLifeTime &&
@@ -212,35 +212,59 @@ namespace MongoDB.Driver
             return dictionary ?? new Dictionary<string, T>();
         }
 
-        // todo: fix this method!
-        private bool SequenceEqualWithNestedDictionary(
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> first,
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> second)
+        // nested types
+        private class KmsProvidersComparer : IEqualityComparer<KeyValuePair<string, IReadOnlyDictionary<string, object>>>
         {
-            first = GetValueOrEmpty(first);
-            second = GetValueOrEmpty(second);
-
-            if (first.Count != second.Count)
+            public bool Equals(KeyValuePair<string, IReadOnlyDictionary<string, object>> kmsOptionsX, KeyValuePair<string, IReadOnlyDictionary<string, object>> kmsOptionsY)
             {
-                return false;
-            }
-
-            foreach (var firstItem in first)
-            {
-                if (!second.ContainsKey(firstItem.Key))
+                if (kmsOptionsX.Key != kmsOptionsY.Key)
                 {
                     return false;
                 }
 
-                var firstItemNestedDictionary = GetValueOrEmpty(firstItem.Value);
-                var secondItemNestedDictionary = GetValueOrEmpty(second[firstItem.Key]);
-                if (!firstItemNestedDictionary.Keys.SequenceEqual(secondItemNestedDictionary.Keys))
+                if (kmsOptionsX.Value == null && kmsOptionsY.Value == null)
+                {
+                    return true;
+                }
+
+                // only one is null
+                if (kmsOptionsX.Value == null || kmsOptionsY.Value == null)
                 {
                     return false;
                 }
+
+                foreach (var kmsOptionX in kmsOptionsX.Value)
+                {
+                    if (!kmsOptionsY.Value.TryGetValue(kmsOptionX.Key, out var kmsOptionY))
+                    {
+                        return false;
+                    }
+
+                    // local options
+                    if (kmsOptionX.Value is byte[] kmsOptionXBytes && kmsOptionY is byte[] kmsOptionYBytes)
+                    {
+                        if (!kmsOptionXBytes.SequenceEqual(kmsOptionYBytes))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // aws options
+                        if (!kmsOptionX.Equals(kmsOptionY))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
             }
 
-            return true;
+            public int GetHashCode(KeyValuePair<string, IReadOnlyDictionary<string, object>> obj)
+            {
+                return obj.GetHashCode();
+            }
         }
     }
 }
