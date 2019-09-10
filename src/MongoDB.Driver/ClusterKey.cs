@@ -180,7 +180,7 @@ namespace MongoDB.Driver
                 _heartbeatInterval == rhs._heartbeatInterval &&
                 _heartbeatTimeout == rhs._heartbeatTimeout &&
                 _ipv6 == rhs._ipv6 &&
-                GetValueOrEmpty(_kmsProviders).SequenceEqual(GetValueOrEmpty(rhs._kmsProviders), new KmsProvidersComparer()) &&
+                KmsProvidersEquals(_kmsProviders, rhs.KmsProviders) &&
                 _localThreshold == rhs._localThreshold &&
                 _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
                 _maxConnectionLifeTime == rhs._maxConnectionLifeTime &&
@@ -188,7 +188,7 @@ namespace MongoDB.Driver
                 _minConnectionPoolSize == rhs._minConnectionPoolSize &&
                 _receiveBufferSize == rhs._receiveBufferSize &&
                 _replicaSetName == rhs._replicaSetName &&
-                GetValueOrEmpty(_schemaMap).SequenceEqual(GetValueOrEmpty(rhs._schemaMap)) &&
+                SchemaMapEquals(_schemaMap, rhs._schemaMap) &&
                 _scheme == rhs._scheme &&
                 _sdamLogFilename == rhs._sdamLogFilename &&
                 _sendBufferSize == rhs._sendBufferSize &&
@@ -207,9 +207,40 @@ namespace MongoDB.Driver
             return _hashCode;
         }
 
-        private IReadOnlyDictionary<string, T> GetValueOrEmpty<T>(IReadOnlyDictionary<string, T> dictionary)
+        private bool KmsProvidersEquals(
+            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> providerX,
+            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> providerY)
         {
-            return dictionary ?? new Dictionary<string, T>();
+            if (providerX == null && providerY == null)
+            {
+                return true;
+            }
+
+            // exactly one is null
+            if (providerX == null || providerY == null)
+            {
+                return false;
+            }
+
+            return providerX.SequenceEqual(providerY, new KmsProvidersComparer());
+        }
+
+        private bool SchemaMapEquals(
+            IReadOnlyDictionary<string, BsonDocument> schemaMapX,
+            IReadOnlyDictionary<string, BsonDocument> schemaMapY)
+        {
+            if (schemaMapX == null && schemaMapY == null)
+            {
+                return true;
+            }
+
+            // exactly one is null
+            if (schemaMapX == null || schemaMapY == null)
+            {
+                return false;
+            }
+
+            return schemaMapX.SequenceEqual(schemaMapY);
         }
 
         // nested types
@@ -227,7 +258,7 @@ namespace MongoDB.Driver
                     return true;
                 }
 
-                // only one is null
+                // exactly one is null
                 if (kmsOptionsX.Value == null || kmsOptionsY.Value == null)
                 {
                     return false;

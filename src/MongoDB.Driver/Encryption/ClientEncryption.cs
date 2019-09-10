@@ -18,6 +18,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Libmongocrypt;
+using CryptClientFactory = MongoDB.Driver.Core.Clusters.CryptClientFactory;
 
 namespace MongoDB.Driver.Encryption
 {
@@ -28,18 +29,22 @@ namespace MongoDB.Driver.Encryption
     {
         // private fields
         private bool _disposed;
+        private readonly CryptClient _cryptClient;
         private readonly LibMongoCryptController _libMongoCryptController;
 
         // constructors
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientEncryption"/> class.
         /// </summary>
-        /// <param name="client">The client.</param>
         /// <param name="clientEncryptionOptions">The client encryption options.</param>
-        public ClientEncryption(MongoClient client, ClientEncryptionOptions clientEncryptionOptions)
+        public ClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
         {
-            _libMongoCryptController = new LibMongoCryptController(client, clientEncryptionOptions);
-            _libMongoCryptController.Initialize();
+            _cryptClient = CryptClientFactory.CreateCryptClientIfRequired(
+                kmsProviders: clientEncryptionOptions.KmsProviders, 
+                schemaMap: null);
+            _libMongoCryptController = new LibMongoCryptController(
+                _cryptClient,
+                clientEncryptionOptions);
         }
 
         // public methods
@@ -103,7 +108,7 @@ namespace MongoDB.Driver.Encryption
         {
             if (!_disposed)
             {
-                _libMongoCryptController.Dispose();
+                _cryptClient.Dispose();
                 _disposed = true;
             }
         }
@@ -152,7 +157,7 @@ namespace MongoDB.Driver.Encryption
             out Guid? keyId,
             out EncryptionAlgorithm algorithm)
         {
-            keyId = encryptOptions.KeyId != null ? new Guid(encryptOptions.KeyId) : (Guid?)null;
+            keyId = encryptOptions.KeyIdBytes != null ? new Guid(encryptOptions.KeyIdBytes) : (Guid?)null;
             algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
         }
     }

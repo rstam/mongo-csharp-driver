@@ -195,17 +195,17 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
             EncryptOptions CreateEncryptionOptions(string algorithm, string identifier, string kms)
             {
-                byte[] keyId = null;
-                string altName = null;
+                byte[] keyIdBytes = null;
+                string alternateName = null;
                 if (identifier == "id")
                 {
                     switch (kms)
                     {
                         case "local":
-                            keyId = Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA==");
+                            keyIdBytes = Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA==");
                             break;
                         case "aws":
-                            keyId = Convert.FromBase64String("AWSAAAAAAAAAAAAAAAAAAA==");
+                            keyIdBytes = Convert.FromBase64String("AWSAAAAAAAAAAAAAAAAAAA==");
                             break;
                         default:
                             throw new ArgumentException($"Unsupported kms type {kms}.");
@@ -213,14 +213,14 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                 }
                 else if (identifier == "altname")
                 {
-                    altName = kms;
+                    alternateName = kms;
                 }
                 else
                 {
                     throw new ArgumentException($"Unsupported identifier {identifier}.", nameof(identifier));
                 }
 
-                return new EncryptOptions(ParseAlgorithm(algorithm).ToString(), altName, keyId);
+                return new EncryptOptions(ParseAlgorithm(algorithm).ToString(), alternateName, keyIdBytes);
             }
 
             var corpusSchema = JsonFileReader.Instance.Documents["corpus.corpus-schema.json"];
@@ -336,8 +336,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
         [SkippableTheory]
         [ParameterAttributeData]
         public void CreateDataKeyAndDoubleEncryptionTest(
-            [Values("local")] string kmsProvider,
-            [Values(false)] bool async)
+            [Values("local", "aws")] string kmsProvider,
+            [Values(false, true)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
@@ -372,7 +372,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
                 var encryptOptions = new EncryptOptions(
                     EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
-                    keyId: dataKey.AsBsonBinaryData.Bytes);
+                    keyIdBytes: dataKey.AsBsonBinaryData.Bytes);
 
                 var encryptedValue = ExplicitEncrypt(
                     clientEncryption,
@@ -444,7 +444,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
                 var encryptionOptions = new EncryptOptions(
                     algorithm: EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
-                    keyId: Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA=="));
+                    keyIdBytes: Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA=="));
                 exception = Record.Exception(() => ExplicitEncrypt(clientEncryption, encryptionOptions, "test", async));
                 if (withExternalKeyVault)
                 {
@@ -532,7 +532,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                 keyVaultNamespace: __keyVaultCollectionNamespace,
                 kmsProviders: GetKmsProviders());
 
-            return new ClientEncryption(client, clientEncryptionOptions);
+            return new ClientEncryption(clientEncryptionOptions);
         }
 
         private void CreateCollection(IMongoClient client, CollectionNamespace collectionNamespace, BsonDocument validatorSchema)

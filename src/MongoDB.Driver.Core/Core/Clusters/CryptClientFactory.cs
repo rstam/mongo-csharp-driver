@@ -26,7 +26,7 @@ namespace MongoDB.Driver.Core.Clusters
     /// <summary>
     /// Represents a factory for CryptClient.
     /// </summary>
-    public sealed class CryptClientHelper
+    public sealed class CryptClientFactory
     {
         #region static
 #pragma warning disable 3002
@@ -45,7 +45,7 @@ namespace MongoDB.Driver.Core.Clusters
                 return null;
             }
 
-            var helper = new CryptClientHelper(kmsProviders, schemaMap);
+            var helper = new CryptClientFactory(kmsProviders, schemaMap);
             var cryptOptions = helper.CreateCryptOptions();
             return helper.CreateCryptClient(cryptOptions);
         }
@@ -55,7 +55,7 @@ namespace MongoDB.Driver.Core.Clusters
         private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
         private readonly IReadOnlyDictionary<string, BsonDocument> _schemaMap;
 
-        private CryptClientHelper(
+        private CryptClientFactory(
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
             IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Core.Clusters
 
         private CryptClient CreateCryptClient(CryptOptions options)
         {
-            return CryptClientFactory.Create(options);
+            return Libmongocrypt.CryptClientFactory.Create(options);
         }
 
         private CryptOptions CreateCryptOptions()

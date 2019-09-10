@@ -25,7 +25,7 @@ namespace MongoDB.Driver.Encryption
         // private fields
         private readonly string _algorithm;
         private readonly string _alternateKeyName;
-        private readonly byte[] _keyId;
+        private readonly byte[] _keyIdBytes;
 
         // constructors
         /// <summary>
@@ -33,15 +33,15 @@ namespace MongoDB.Driver.Encryption
         /// </summary>
         /// <param name="algorithm">The encryption algorithm.</param>
         /// <param name="alternateKeyName">The alternate key name.</param>
-        /// <param name="keyId">The keyId.</param>
+        /// <param name="keyIdBytes">The key Id bytes.</param>
         public EncryptOptions(
             string algorithm,
             Optional<string> alternateKeyName = default,
-            Optional<byte[]> keyId = default)
+            Optional<byte[]> keyIdBytes = default)
         {
             _algorithm = Ensure.IsNotNull(algorithm, nameof(algorithm));
             _alternateKeyName = alternateKeyName.WithDefault(null);
-            _keyId = keyId.WithDefault(null);
+            _keyIdBytes = keyIdBytes.WithDefault(null);
             EnsureThatOptionsAreValid();
         }
 
@@ -68,7 +68,7 @@ namespace MongoDB.Driver.Encryption
         /// <value>
         /// The key identifier.
         /// </value>
-        public byte[] KeyId => _keyId;
+        public byte[] KeyIdBytes => _keyIdBytes;
 
         /// <summary>
         /// Returns a new EncryptOptions instance with some settings changed.
@@ -85,14 +85,14 @@ namespace MongoDB.Driver.Encryption
             return new EncryptOptions(
                 algorithm: algorithm.WithDefault(_algorithm),
                 alternateKeyName: alternateKeyName.WithDefault(_alternateKeyName),
-                keyId: keyId.WithDefault(_keyId));
+                keyIdBytes: keyId.WithDefault(_keyIdBytes));
         }
 
         // private methods
         private void EnsureThatOptionsAreValid()
         {
-            Ensure.That(!(_keyId == null && _alternateKeyName == null), "KeyId and AlternateKeyName may not both be null.");
-            Ensure.That(!(_keyId != null && _alternateKeyName != null), "KeyId and AlternateKeyName may not both be set.");
+            Ensure.That(!(_keyIdBytes == null && _alternateKeyName == null), "Key Id and AlternateKeyName may not both be null.");
+            Ensure.That(!(_keyIdBytes != null && _alternateKeyName != null), "Key Id and AlternateKeyName may not both be set.");
         }
     }
 }

@@ -28,11 +28,11 @@ namespace MongoDB.Driver.Tests
     {
         [Theory]
         [InlineData("mongocryptdURI", "mongodb://localhost:11111", "mongodb://localhost:11111")]
-        [InlineData("mongocryptdURI1", "mongodb://localhost:27020", "mongodb://localhost:27020")]
+        [InlineData("mongocryptdURI1", "mongodb://localhost:11111", "mongodb://localhost:27020")]
         [InlineData(null, null, "mongodb://localhost:27020")]
         public void CreateMongocryptdConnectionStringTest(string optionKey, string optionValue, string expectedConnectionString)
         {
-            var subject = new MongocryptdHelper();
+            var subject = new MongocryptdFactory();
             var extraOptions = new Dictionary<string, object>();
             if (optionKey != null)
             {
@@ -96,7 +96,7 @@ namespace MongoDB.Driver.Tests
                 .Elements
                 .ToDictionary(k => k.Name, v => CreateTypedExtraOptions(v.Value));
 
-            var subject = new MongocryptdHelper();
+            var subject = new MongocryptdFactory();
             subject._extraOptions(new ReadOnlyDictionary<string, object>(extraOptions));
 
             var result = subject.ShouldMongocryptdBeSpawned(out var path, out var args);
@@ -105,19 +105,19 @@ namespace MongoDB.Driver.Tests
             args.Should().Be(expectedArgs);
         }
     }
-    internal static class MongocryptdHelperReflector
+    internal static class MongocryptdFactoryReflector
     {
-        public static string CreateMongocryptdConnectionString(this MongocryptdHelper mongocryptdHelper)
+        public static string CreateMongocryptdConnectionString(this MongocryptdFactory mongocryptdHelper)
         {
             return (string)Reflector.Invoke(mongocryptdHelper, nameof(CreateMongocryptdConnectionString));
         }
 
-        public static void _extraOptions(this MongocryptdHelper mongocryptdHelper, IReadOnlyDictionary<string, object> extraOptions)
+        public static void _extraOptions(this MongocryptdFactory mongocryptdHelper, IReadOnlyDictionary<string, object> extraOptions)
         {
             Reflector.SetFieldValue(mongocryptdHelper, nameof(_extraOptions), extraOptions);
         }
 
-        public static bool ShouldMongocryptdBeSpawned(this MongocryptdHelper mongocryptdHelper, out string path, out string args)
+        public static bool ShouldMongocryptdBeSpawned(this MongocryptdFactory mongocryptdHelper, out string path, out string args)
         {
             return (bool)Reflector.Invoke(mongocryptdHelper, nameof(ShouldMongocryptdBeSpawned), out path, out args);
         }

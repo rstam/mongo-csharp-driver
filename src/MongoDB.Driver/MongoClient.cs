@@ -35,7 +35,6 @@ using MongoDB.Driver.Encryption;
 namespace MongoDB.Driver
 {
     /// <inheritdoc/>
-    [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable")] // ignore that LibMongoCryptControler is IDisposable
     public class MongoClient : MongoClientBase
     {
         #region static
@@ -84,8 +83,10 @@ namespace MongoDB.Driver
             _operationExecutor = new OperationExecutor(this);
             if (settings.AutoEncryptionOptions != null)
             {
-                _libMongoCryptController = new LibMongoCryptController(this, settings.AutoEncryptionOptions);
-                _libMongoCryptController.Initialize();
+                _libMongoCryptController = new LibMongoCryptController(
+                    this, 
+                    _cluster.CryptClient,
+                    settings.AutoEncryptionOptions);
             }
         }
 

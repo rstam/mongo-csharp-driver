@@ -20,7 +20,6 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Configuration;
@@ -198,7 +197,7 @@ namespace MongoDB.Driver.Core.Clusters
             ThrowIfDisposed();
             if (_state.TryChange(State.Initial, State.Open))
             {
-                _cryptClient = CryptClientHelper.CreateCryptClientIfRequired(_settings.KmsProviders, _settings.SchemaMap);
+                _cryptClient = CryptClientFactory.CreateCryptClientIfRequired(_settings.KmsProviders, _settings.SchemaMap);
             }
         }
 

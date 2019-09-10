@@ -54,13 +54,7 @@ namespace MongoDB.Driver.Tests
             };
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>()
             {
-                {
-                    "local",
-                    new Dictionary<string, object>()
-                    {
-                        { "key" , "test" }
-                    }
-                }
+                { "local", new Dictionary<string, object>() { { "key" , "test" } } }
             };
             var schemaMap = new Dictionary<string, BsonDocument>()
             {

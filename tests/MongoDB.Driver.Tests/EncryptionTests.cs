@@ -134,7 +134,7 @@ namespace MongoDB.Driver.Tests
                 __keyVaultCollectionNamespace,
                 kmsProviders: kmsProviders);
 
-            return new ClientEncryption(mongoClient, clientEncryptionOptions);
+            return new ClientEncryption(clientEncryptionOptions);
         }
 
         private Dictionary<string, IReadOnlyDictionary<string, object>> GetKmsProviders()

@@ -21,12 +21,12 @@ using System.IO;
 
 namespace MongoDB.Driver.Encryption
 {
-    internal class MongocryptdHelper
+    internal class MongocryptdFactory
     {
         #region static
         public static MongoClient CreateClientIfRequired(IReadOnlyDictionary<string, object> extraOptions)
         {
-            var helper = new MongocryptdHelper();
+            var helper = new MongocryptdFactory();
             helper._extraOptions = extraOptions ?? new Dictionary<string, object>();
             var client = helper.CreateMongocryptdClient();
             return client;
