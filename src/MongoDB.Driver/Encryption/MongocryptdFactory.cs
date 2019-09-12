@@ -24,7 +24,7 @@ namespace MongoDB.Driver.Encryption
     internal class MongocryptdFactory
     {
         #region static
-        public static MongoClient CreateClientIfRequired(IReadOnlyDictionary<string, object> extraOptions)
+        public static MongoClient CreateClient(IReadOnlyDictionary<string, object> extraOptions)
         {
             var helper = new MongocryptdFactory();
             helper._extraOptions = extraOptions ?? new Dictionary<string, object>();
@@ -50,12 +50,14 @@ namespace MongoDB.Driver.Encryption
 
         private string CreateMongocryptdConnectionString()
         {
-            if (!_extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
+            if (_extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
             {
-                connectionString = "mongodb://localhost:27020";
+                return (string)connectionString;
             }
-
-            return connectionString.ToString();
+            else
+            {
+                return "mongodb://localhost:27020";
+            }
         }
 
         private bool ShouldMongocryptdBeSpawned(out string path, out string args)

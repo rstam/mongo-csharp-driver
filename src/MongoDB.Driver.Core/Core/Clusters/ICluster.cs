@@ -14,10 +14,8 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using MongoDB.Bson;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Configuration;
@@ -74,8 +72,6 @@ namespace MongoDB.Driver.Core.Clusters
         /// </summary>
         /// <returns>A crypt client.</returns>
 #pragma warning disable CS3003
-#pragma warning disable CS3010
-        [CLSCompliant(false)]
         CryptClient CryptClient { get; }
 #pragma warning restore
 

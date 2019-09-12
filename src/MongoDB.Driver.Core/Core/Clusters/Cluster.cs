@@ -197,7 +197,10 @@ namespace MongoDB.Driver.Core.Clusters
             ThrowIfDisposed();
             if (_state.TryChange(State.Initial, State.Open))
             {
-                _cryptClient = CryptClientFactory.CreateCryptClientIfRequired(_settings.KmsProviders, _settings.SchemaMap);
+                if (_settings.KmsProviders != null || _settings.SchemaMap != null)
+                {
+                    _cryptClient = CryptClientCreator.CreateCryptClient(_settings.KmsProviders, _settings.SchemaMap);
+                }
             }
         }
 

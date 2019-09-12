@@ -24,9 +24,9 @@ using MongoDB.Libmongocrypt;
 namespace MongoDB.Driver.Core.Clusters
 {
     /// <summary>
-    /// Represents a factory for CryptClient.
+    /// Represents a creator for CryptClient.
     /// </summary>
-    public sealed class CryptClientFactory
+    public sealed class CryptClientCreator
     {
         #region static
 #pragma warning disable 3002
@@ -36,16 +36,11 @@ namespace MongoDB.Driver.Core.Clusters
         /// <param name="kmsProviders">The kms providers.</param>
         /// <param name="schemaMap">The schema map.</param>
         /// <returns>The CryptClient instance.</returns>
-        public static CryptClient CreateCryptClientIfRequired(
+        public static CryptClient CreateCryptClient(
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
             IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
-            if (kmsProviders == null && schemaMap == null)
-            {
-                return null;
-            }
-
-            var helper = new CryptClientFactory(kmsProviders, schemaMap);
+            var helper = new CryptClientCreator(kmsProviders, schemaMap);
             var cryptOptions = helper.CreateCryptOptions();
             return helper.CreateCryptClient(cryptOptions);
         }
@@ -55,7 +50,7 @@ namespace MongoDB.Driver.Core.Clusters
         private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> _kmsProviders;
         private readonly IReadOnlyDictionary<string, BsonDocument> _schemaMap;
 
-        private CryptClientFactory(
+        private CryptClientCreator(
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> kmsProviders,
             IReadOnlyDictionary<string, BsonDocument> schemaMap)
         {
@@ -65,7 +60,7 @@ namespace MongoDB.Driver.Core.Clusters
 
         private CryptClient CreateCryptClient(CryptOptions options)
         {
-            return Libmongocrypt.CryptClientFactory.Create(options);
+            return CryptClientFactory.Create(options);
         }
 
         private CryptOptions CreateCryptOptions()

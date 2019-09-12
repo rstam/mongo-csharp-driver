@@ -17,15 +17,15 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Bson;
+using MongoDB.Driver.Core.Clusters;
 using MongoDB.Libmongocrypt;
-using CryptClientFactory = MongoDB.Driver.Core.Clusters.CryptClientFactory;
 
 namespace MongoDB.Driver.Encryption
 {
     /// <summary>
     /// Explicit client encryption.
     /// </summary>
-    public class ClientEncryption : IDisposable
+    public sealed class ClientEncryption : IDisposable
     {
         // private fields
         private bool _disposed;
@@ -39,7 +39,7 @@ namespace MongoDB.Driver.Encryption
         /// <param name="clientEncryptionOptions">The client encryption options.</param>
         public ClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
         {
-            _cryptClient = CryptClientFactory.CreateCryptClientIfRequired(
+            _cryptClient = CryptClientCreator.CreateCryptClient(
                 kmsProviders: clientEncryptionOptions.KmsProviders,
                 schemaMap: null);
             _libMongoCryptController = new LibMongoCryptController(
@@ -88,7 +88,7 @@ namespace MongoDB.Driver.Encryption
         /// <param name="value">The value.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decrypted value.</returns>
-        public BsonBinaryData Decrypt(BsonBinaryData value, CancellationToken cancellationToken)
+        public BsonValue Decrypt(BsonBinaryData value, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.DecryptField(value, cancellationToken);
         }
@@ -99,7 +99,7 @@ namespace MongoDB.Driver.Encryption
         /// <param name="value">The value.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The decrypted value.</returns>
-        public Task<BsonBinaryData> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
+        public Task<BsonValue> DecryptAsync(BsonBinaryData value, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.DecryptFieldAsync(value, cancellationToken);
         }
@@ -123,10 +123,10 @@ namespace MongoDB.Driver.Encryption
         /// <returns>The encrypted value.</returns>
         public BsonBinaryData Encrypt(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            GetEncryptFieldArgs(encryptOptions, out var keyId, out var algorithm);
+            var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
             return _libMongoCryptController.EncryptField(
                 value,
-                keyId,
+                encryptOptions.KeyIdBytes,
                 encryptOptions.AlternateKeyName,
                 algorithm,
                 cancellationToken);
@@ -139,29 +139,16 @@ namespace MongoDB.Driver.Encryption
         /// <param name="encryptOptions">The encrypt options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The encrypted value.</returns>
-        public async Task<BsonBinaryData> EncryptAsync(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
+        public Task<BsonBinaryData> EncryptAsync(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
-            GetEncryptFieldArgs(encryptOptions, out var keyId, out var algorithm);
-            return await _libMongoCryptController
+            var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
+            return _libMongoCryptController
                 .EncryptFieldAsync(
                     value,
-                    keyId,
+                    encryptOptions.KeyIdBytes,
                     encryptOptions.AlternateKeyName,
                     algorithm,
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-
-        // private methods
-        private void GetEncryptFieldArgs(
-            EncryptOptions encryptOptions,
-            out Guid? keyId,
-            out EncryptionAlgorithm algorithm)
-        {
-            keyId = encryptOptions.KeyIdBytes != null
-                ? GuidConverter.FromBytes(encryptOptions.KeyIdBytes, GuidRepresentation.Standard)
-                : (Guid?)null;
-            algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
+                    cancellationToken);
         }
     }
 }
