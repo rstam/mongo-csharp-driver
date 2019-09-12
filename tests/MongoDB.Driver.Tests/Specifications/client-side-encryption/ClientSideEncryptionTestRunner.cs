@@ -18,7 +18,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using MongoDB.Bson;
-using MongoDB.Bson.IO;
 using MongoDB.Bson.TestHelpers.JsonDrivenTests;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Encryption;
@@ -34,9 +33,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
         [ClassData(typeof(TestCaseFactory))]
         public void Run(JsonDrivenTestCase testCase)
         {
-            var shared = RestoreGuidRepresentations(testCase.Shared);
-            var test = RestoreGuidRepresentations(testCase.Test);
-            SetupAndRunTest(new JsonDrivenTestCase(testCase.Name, shared, test));
+            SetupAndRunTest(testCase);
         }
 
         protected override string[] ExpectedTestColumns => new[] { "description", "clientOptions", "operations", "expectations", "skipReason", "async", "outcome" };
@@ -285,13 +282,6 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption
                     ReplaceTypeAssertionWithActual(actual.ElementAt(i).AsBsonArray, value.AsBsonArray);
                 }
             }
-        }
-
-        private BsonDocument RestoreGuidRepresentations(BsonDocument document)
-        {
-            var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Standard };
-            var bson = document.ToBson(writerSettings: writeSettings);
-            return new RawBsonDocument(bson).Materialize(new BsonBinaryReaderSettings { GuidRepresentation = GuidRepresentation.Standard });
         }
     }
 

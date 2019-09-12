@@ -24,8 +24,8 @@ namespace MongoDB.Driver.Encryption
     public class DataKeyOptions
     {
         // private fields
-        private readonly BsonDocument _masterKey;
         private readonly IReadOnlyList<string> _alternateKeyNames;
+        private readonly BsonDocument _masterKey;
 
         // constructors
         /// <summary>

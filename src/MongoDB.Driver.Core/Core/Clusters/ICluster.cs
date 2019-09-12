@@ -74,6 +74,8 @@ namespace MongoDB.Driver.Core.Clusters
         /// </summary>
         /// <returns>A crypt client.</returns>
 #pragma warning disable CS3003
+#pragma warning disable CS3010
+        [CLSCompliant(false)]
         CryptClient CryptClient { get; }
 #pragma warning restore
 

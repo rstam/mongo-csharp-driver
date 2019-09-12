@@ -40,11 +40,12 @@ namespace MongoDB.Driver.Encryption
         public ClientEncryption(ClientEncryptionOptions clientEncryptionOptions)
         {
             _cryptClient = CryptClientFactory.CreateCryptClientIfRequired(
-                kmsProviders: clientEncryptionOptions.KmsProviders, 
+                kmsProviders: clientEncryptionOptions.KmsProviders,
                 schemaMap: null);
             _libMongoCryptController = new LibMongoCryptController(
                 _cryptClient,
                 clientEncryptionOptions);
+            _libMongoCryptController.Initialize();
         }
 
         // public methods
@@ -157,7 +158,9 @@ namespace MongoDB.Driver.Encryption
             out Guid? keyId,
             out EncryptionAlgorithm algorithm)
         {
-            keyId = encryptOptions.KeyIdBytes != null ? new Guid(encryptOptions.KeyIdBytes) : (Guid?)null;
+            keyId = encryptOptions.KeyIdBytes != null
+                ? GuidConverter.FromBytes(encryptOptions.KeyIdBytes, GuidRepresentation.Standard)
+                : (Guid?)null;
             algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
         }
     }

@@ -15,7 +15,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -87,6 +86,7 @@ namespace MongoDB.Driver
                     this, 
                     _cluster.CryptClient,
                     settings.AutoEncryptionOptions);
+                _libMongoCryptController.Initialize();
             }
         }
 

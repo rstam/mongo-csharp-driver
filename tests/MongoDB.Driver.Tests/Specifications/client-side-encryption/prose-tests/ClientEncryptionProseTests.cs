@@ -336,8 +336,8 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
         [SkippableTheory]
         [ParameterAttributeData]
         public void CreateDataKeyAndDoubleEncryptionTest(
-            [Values("local", "aws")] string kmsProvider,
-            [Values(false, true)] bool async)
+            [Values("local")] string kmsProvider,
+            [Values(false)] bool async)
         {
             RequireServer.Check().Supports(Feature.ClientSideEncryption);
 
@@ -673,7 +673,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
             var localOptions = new Dictionary<string, object>
             {
-                { "key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey), BsonBinarySubType.Binary).Bytes }
+                { "key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey)).Bytes }
             };
             kmsProviders.Add("local", localOptions);
 

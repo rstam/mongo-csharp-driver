@@ -141,7 +141,7 @@ namespace MongoDB.Driver.Tests
         {
             var localOptions = new Dictionary<string, object>
             {
-                { "key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey), BsonBinarySubType.Binary).Bytes }
+                { "key", new BsonBinaryData(Convert.FromBase64String(LocalMasterKey)).Bytes }
             };
             var kmsProviders = new Dictionary<string, IReadOnlyDictionary<string, object>>()
             {
