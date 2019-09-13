@@ -19,7 +19,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Encryption;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using Xunit;
 
@@ -96,7 +95,7 @@ namespace MongoDB.Driver.Tests
             {
                 if (value.IsBsonArray)
                 {
-                    return value.AsBsonArray.Select(c => c); // IEnumerable
+                    return value.AsBsonArray; // IEnumerable
                 }
                 else if (value.IsBoolean)
                 {

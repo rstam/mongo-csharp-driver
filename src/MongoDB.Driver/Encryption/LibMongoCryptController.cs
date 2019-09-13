@@ -473,22 +473,15 @@ namespace MongoDB.Driver.Encryption
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
 
-            BsonDocument response;
-            int attempt = 0;
-            while (true)
+            BsonDocument response = null;
+            for (var attempt = 1; response == null; attempt++)
             {
                 try
                 {
                     response = database.RunCommand(command, cancellationToken: cancellationToken);
-                    break;
                 }
-                catch (TimeoutException)
+                catch (TimeoutException) when (attempt == 1)
                 {
-                    attempt++;
-                    if (attempt > 1)
-                    {
-                        throw;
-                    }
                     _mongocryptdFactory.SpawnMongocryptdProcessIfRequired();
                 }
             }
@@ -504,22 +497,15 @@ namespace MongoDB.Driver.Encryption
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
 
-            BsonDocument response;
-            int attempt = 0;
-            while (true)
+            BsonDocument response = null;
+            for (var attempt = 1; response == null; attempt++)
             {
                 try
                 {
                     response = await database.RunCommandAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
-                    break;
                 }
-                catch (TimeoutException)
+                catch (TimeoutException) when (attempt == 1)
                 {
-                    attempt++;
-                    if (attempt > 1)
-                    {
-                        throw;
-                    }
                     _mongocryptdFactory.SpawnMongocryptdProcessIfRequired();
                 }
             }

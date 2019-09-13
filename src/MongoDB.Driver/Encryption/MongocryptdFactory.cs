@@ -83,6 +83,18 @@ namespace MongoDB.Driver.Encryption
             }
         }
 
+        private bool IsMongoCryptBypassSpawnValid(object objectValue)
+        {
+            if (objectValue is bool value)
+            {
+                return value;
+            }
+            else
+            {
+                throw new InvalidCastException($"Invalid type: {objectValue.GetType().Name} of mongocryptdBypassSpawn option.");
+            }
+        }
+
         private bool ShouldMongocryptdBeSpawned(out string path, out string args)
         {
             path = null;
@@ -159,18 +171,6 @@ namespace MongoDB.Driver.Encryption
             catch (Exception ex)
             {
                 throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
-            }
-        }
-
-        private bool IsMongoCryptBypassSpawnValid(object objectValue)
-        {
-            if (objectValue is bool value)
-            {
-                return value;
-            }
-            else
-            {
-                throw new InvalidCastException($"Invalid type: {objectValue.GetType().Name} of mongocryptdBypassSpawn option.");
             }
         }
     }
