@@ -145,8 +145,8 @@ namespace MongoDB.Driver.Encryption
             {
                 using (var context = _cryptClient.StartExplicitDecryptionContext(wrappedValueBytes))
                 {
-                    var bytes = ProcessStates(context, databaseName: null, cancellationToken);
-                    return new BsonBinaryData(bytes, BsonBinarySubType.Binary);
+                    var wrappedBytes = ProcessStates(context, databaseName: null, cancellationToken);
+                    return UnwrapDecryptedValue(wrappedBytes);
                 }
             }
             catch (Exception ex)
@@ -165,8 +165,8 @@ namespace MongoDB.Driver.Encryption
             {
                 using (var context = _cryptClient.StartExplicitDecryptionContext(wrappedValueBytes))
                 {
-                    var bytes = await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
-                    return new BsonBinaryData(bytes, BsonBinarySubType.Binary);
+                    var wrappedBytes = await ProcessStatesAsync(context, databaseName: null, cancellationToken).ConfigureAwait(false);
+                    return UnwrapDecryptedValue(wrappedBytes);
                 }
             }
             catch (Exception ex)
@@ -667,6 +667,12 @@ namespace MongoDB.Driver.Encryption
             {
                 throw new InvalidOperationException($"{nameof(LibMongoCryptController)} must be initialized.");
             }
+        }
+
+        private BsonValue UnwrapDecryptedValue(byte[] wrappedBytes)
+        {
+            var wrappedDocument = new RawBsonDocument(wrappedBytes);
+            return wrappedDocument["v"];
         }
 
         private BsonBinaryData UnwrapEncryptedValue(byte[] encryptedWrappedBytes)
