@@ -209,6 +209,7 @@ namespace MongoDB.Driver
             return _hashCode;
         }
 
+        // private methods
         private void EnsureKmsProvidersAreValid()
         {
             if (_kmsProviders == null)
