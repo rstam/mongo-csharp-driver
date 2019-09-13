@@ -126,7 +126,7 @@ namespace MongoDB.Driver.Encryption
             var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
             return _libMongoCryptController.EncryptField(
                 value,
-                encryptOptions.KeyIdBytes,
+                encryptOptions.KeyId,
                 encryptOptions.AlternateKeyName,
                 algorithm,
                 cancellationToken);
@@ -145,7 +145,7 @@ namespace MongoDB.Driver.Encryption
             return _libMongoCryptController
                 .EncryptFieldAsync(
                     value,
-                    encryptOptions.KeyIdBytes,
+                    encryptOptions.KeyId,
                     encryptOptions.AlternateKeyName,
                     algorithm,
                     cancellationToken);

@@ -211,7 +211,7 @@ namespace MongoDB.Driver.Encryption
 
         public BsonBinaryData EncryptField(
             BsonValue value,
-            byte[] keyIdBytes,
+            Guid? keyId,
             string alternateKeyName,
             EncryptionAlgorithm encryptionAlgorithm,
             CancellationToken cancellationToken)
@@ -224,9 +224,10 @@ namespace MongoDB.Driver.Encryption
             try
             {
                 CryptContext context;
-                if (keyIdBytes != null)
+                if (keyId.HasValue)
                 {
-                    context = _cryptClient.StartExplicitEncryptionContextWithKeyId(keyIdBytes, encryptionAlgorithm, wrappedValueBytes);
+                    var bytes = GuidConverter.ToBytes(keyId.Value, GuidRepresentation.Standard);
+                    context = _cryptClient.StartExplicitEncryptionContextWithKeyId(bytes, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else if (wrappedAlternateKeyNameBytes != null)
                 {
@@ -251,7 +252,7 @@ namespace MongoDB.Driver.Encryption
 
         public async Task<BsonBinaryData> EncryptFieldAsync(
             BsonValue value,
-            byte[] keyIdBytes,
+            Guid? keyId,
             string alternateKeyName,
             EncryptionAlgorithm encryptionAlgorithm,
             CancellationToken cancellationToken)
@@ -264,9 +265,10 @@ namespace MongoDB.Driver.Encryption
             try
             {
                 CryptContext context;
-                if (keyIdBytes != null)
+                if (keyId.HasValue)
                 {
-                    context = _cryptClient.StartExplicitEncryptionContextWithKeyId(keyIdBytes, encryptionAlgorithm, wrappedValueBytes);
+                    var bytes = GuidConverter.ToBytes(keyId.Value, GuidRepresentation.Standard);
+                    context = _cryptClient.StartExplicitEncryptionContextWithKeyId(bytes, encryptionAlgorithm, wrappedValueBytes);
                 }
                 else if (wrappedAlternateKeyNameBytes != null)
                 {

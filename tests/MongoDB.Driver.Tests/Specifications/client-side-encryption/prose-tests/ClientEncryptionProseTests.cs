@@ -195,17 +195,17 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
             EncryptOptions CreateEncryptionOptions(string algorithm, string identifier, string kms)
             {
-                byte[] keyIdBytes = null;
+                Guid? keyId = null;
                 string alternateName = null;
                 if (identifier == "id")
                 {
                     switch (kms)
                     {
                         case "local":
-                            keyIdBytes = Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA==");
+                            keyId = GuidConverter.FromBytes(Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA=="), GuidRepresentation.Standard);
                             break;
                         case "aws":
-                            keyIdBytes = Convert.FromBase64String("AWSAAAAAAAAAAAAAAAAAAA==");
+                            keyId = GuidConverter.FromBytes(Convert.FromBase64String("AWSAAAAAAAAAAAAAAAAAAA=="), GuidRepresentation.Standard);
                             break;
                         default:
                             throw new ArgumentException($"Unsupported kms type {kms}.");
@@ -220,7 +220,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                     throw new ArgumentException($"Unsupported identifier {identifier}.", nameof(identifier));
                 }
 
-                return new EncryptOptions(ParseAlgorithm(algorithm).ToString(), alternateName, keyIdBytes);
+                return new EncryptOptions(ParseAlgorithm(algorithm).ToString(), alternateName, keyId);
             }
 
             var corpusSchema = JsonFileReader.Instance.Documents["corpus.corpus-schema.json"];
@@ -372,7 +372,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
                 var encryptOptions = new EncryptOptions(
                     EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
-                    keyIdBytes: dataKey.AsBsonBinaryData.Bytes);
+                    keyId: dataKey.AsBsonBinaryData.AsGuid);
 
                 var encryptedValue = ExplicitEncrypt(
                     clientEncryption,
@@ -444,7 +444,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
 
                 var encryptionOptions = new EncryptOptions(
                     algorithm: EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
-                    keyIdBytes: Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA=="));
+                    keyId: GuidConverter.FromBytes(Convert.FromBase64String("LOCALAAAAAAAAAAAAAAAAA=="), GuidRepresentation.Standard));
                 exception = Record.Exception(() => ExplicitEncrypt(clientEncryption, encryptionOptions, "test", async));
                 if (withExternalKeyVault)
                 {

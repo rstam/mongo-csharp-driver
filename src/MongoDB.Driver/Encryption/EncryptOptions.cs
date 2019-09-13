@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Driver.Core.Misc;
+using System;
 
 namespace MongoDB.Driver.Encryption
 {
@@ -25,7 +26,7 @@ namespace MongoDB.Driver.Encryption
         // private fields
         private readonly string _algorithm;
         private readonly string _alternateKeyName;
-        private readonly byte[] _keyIdBytes;
+        private readonly Guid? _keyId;
 
         // constructors
         /// <summary>
@@ -33,15 +34,15 @@ namespace MongoDB.Driver.Encryption
         /// </summary>
         /// <param name="algorithm">The encryption algorithm.</param>
         /// <param name="alternateKeyName">The alternate key name.</param>
-        /// <param name="keyIdBytes">The key Id bytes.</param>
+        /// <param name="keyId">The key Id.</param>
         public EncryptOptions(
             string algorithm,
             Optional<string> alternateKeyName = default,
-            Optional<byte[]> keyIdBytes = default)
+            Optional<Guid?> keyId = default)
         {
             _algorithm = Ensure.IsNotNull(algorithm, nameof(algorithm));
             _alternateKeyName = alternateKeyName.WithDefault(null);
-            _keyIdBytes = keyIdBytes.WithDefault(null);
+            _keyId = keyId.WithDefault(null);
             EnsureThatOptionsAreValid();
         }
 
@@ -68,7 +69,7 @@ namespace MongoDB.Driver.Encryption
         /// <value>
         /// The key identifier.
         /// </value>
-        public byte[] KeyIdBytes => _keyIdBytes;
+        public Guid? KeyId => _keyId;
 
         /// <summary>
         /// Returns a new EncryptOptions instance with some settings changed.
@@ -80,19 +81,19 @@ namespace MongoDB.Driver.Encryption
         public EncryptOptions With(
             Optional<string> algorithm,
             Optional<string> alternateKeyName = default,
-            Optional<byte[]> keyId = default)
+            Optional<Guid?> keyId = default)
         {
             return new EncryptOptions(
                 algorithm: algorithm.WithDefault(_algorithm),
                 alternateKeyName: alternateKeyName.WithDefault(_alternateKeyName),
-                keyIdBytes: keyId.WithDefault(_keyIdBytes));
+                keyId: keyId.WithDefault(_keyId));
         }
 
         // private methods
         private void EnsureThatOptionsAreValid()
         {
-            Ensure.That(!(_keyIdBytes == null && _alternateKeyName == null), "Key Id and AlternateKeyName may not both be null.");
-            Ensure.That(!(_keyIdBytes != null && _alternateKeyName != null), "Key Id and AlternateKeyName may not both be set.");
+            Ensure.That(!(!_keyId.HasValue && _alternateKeyName == null), "Key Id and AlternateKeyName may not both be null.");
+            Ensure.That(!(_keyId.HasValue && _alternateKeyName != null), "Key Id and AlternateKeyName may not both be set.");
         }
     }
 }
