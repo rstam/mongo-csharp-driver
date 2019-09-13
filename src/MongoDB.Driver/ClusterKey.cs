@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Configuration;
+using MongoDB.Driver.Core.Misc;
 using MongoDB.Shared;
 
 namespace MongoDB.Driver
@@ -119,6 +120,7 @@ namespace MongoDB.Driver
             _waitQueueTimeout = waitQueueTimeout;
 
             _hashCode = CalculateHashCode();
+            EnsureKmsProvidersAreValid();
         }
 
         // properties
@@ -207,6 +209,27 @@ namespace MongoDB.Driver
             return _hashCode;
         }
 
+        private void EnsureKmsProvidersAreValid()
+        {
+            if (_kmsProviders == null)
+            {
+                return;
+            }
+
+            foreach (var kmsProvider in _kmsProviders)
+            {
+                foreach (var option in Ensure.IsNotNull(kmsProvider.Value, "kmsProvider"))
+                {
+                    var optionValue = Ensure.IsNotNull(option.Value, "kmsProviderOption");
+                    var isSupported = optionValue is byte[] || optionValue is string;
+                    if (!isSupported)
+                    {
+                        throw new ArgumentException($"Invalid kms provider type: {optionValue.GetType().Name}.");
+                    }
+                }
+            }
+        }
+
         private bool KmsProvidersEquals(
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> providerX,
             IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> providerY)
@@ -222,7 +245,9 @@ namespace MongoDB.Driver
                 return false;
             }
 
-            return providerX.SequenceEqual(providerY, new KmsProvidersComparer());
+            var keySortedProviderX = providerX.OrderBy(kvp => kvp.Key);
+            var keySortedProviderY = providerY.OrderBy(kvp => kvp.Key);
+            return keySortedProviderX.SequenceEqual(keySortedProviderY, new KmsProvidersComparer());
         }
 
         private bool SchemaMapEquals(
@@ -240,7 +265,9 @@ namespace MongoDB.Driver
                 return false;
             }
 
-            return schemaMapX.SequenceEqual(schemaMapY);
+            var keySortedSchemaMapX = schemaMapX.OrderBy(kvp => kvp.Key);
+            var keySortedSchemaMapY = schemaMapY.OrderBy(kvp => kvp.Key);
+            return keySortedSchemaMapX.SequenceEqual(keySortedSchemaMapY);
         }
 
         // nested types
@@ -264,22 +291,22 @@ namespace MongoDB.Driver
                     return false;
                 }
 
-                foreach (var kmsOptionX in kmsOptionsX.Value)
+                foreach (var nestedKmsOptionX in kmsOptionsX.Value)
                 {
-                    if (!kmsOptionsY.Value.TryGetValue(kmsOptionX.Key, out var kmsOptionY))
+                    if (!kmsOptionsY.Value.TryGetValue(nestedKmsOptionX.Key, out var nestedKmsOptionYValue))
                     {
                         return false;
                     }
 
                     // local options
-                    if (kmsOptionX.Value is byte[] kmsOptionXBytes && kmsOptionY is byte[] kmsOptionYBytes)
+                    if (nestedKmsOptionX.Value is byte[] kmsOptionXBytes && nestedKmsOptionYValue is byte[] kmsOptionYBytes)
                     {
                         return kmsOptionXBytes.SequenceEqual(kmsOptionYBytes);
                     }
                     else
                     {
                         // aws options
-                        return kmsOptionX.Equals(kmsOptionY);
+                        return nestedKmsOptionX.Value.Equals(nestedKmsOptionYValue);
                     }
                 }
 
