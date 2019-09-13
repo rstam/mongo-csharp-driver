@@ -409,7 +409,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                 {
                     coll = GetCollection(clientEncrypted, __collCollectionNamespace);
                     var exception = Record.Exception(() => coll.InsertOne(new BsonDocument("encrypted_placeholder", encryptedValue)));
-                    exception.Should().BeOfType<MongoClientException>();
+                    exception.Should().BeOfType<MongoEncryptionException>();
                 }
             }
         }
@@ -481,7 +481,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                         view,
                         async,
                         documents: new BsonDocument("test", 1)));
-                exception.Message.Should().Be("cannot auto encrypt a view");
+                exception.Message.Should().Be($"Exception in encryption library: cannot auto encrypt a view.");
             }
         }
 

@@ -99,7 +99,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
 
             var wrappedKeyDocument = new RawBsonDocument(wrappedKeyBytes);
@@ -127,7 +127,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
 
             var wrappedKeyDocument = new RawBsonDocument(wrappedKeyBytes);
@@ -151,7 +151,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -171,7 +171,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -188,7 +188,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -205,7 +205,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -235,7 +235,7 @@ namespace MongoDB.Driver.Encryption
                 }
                 else
                 {
-                    throw new Exception("Key Id and Alternate key name cannot both be set.");
+                    throw new ArgumentException("Key Id and Alternate key name cannot both be set.");
                 }
 
                 using (context)
@@ -246,7 +246,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -276,7 +276,7 @@ namespace MongoDB.Driver.Encryption
                 }
                 else
                 {
-                    throw new Exception("Key Id and Alternate key name cannot both be set.");
+                    throw new ArgumentException("Key Id and Alternate key name cannot both be set.");
                 }
 
                 using (context)
@@ -287,7 +287,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -304,7 +304,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
@@ -321,7 +321,7 @@ namespace MongoDB.Driver.Encryption
             }
             catch (Exception ex)
             {
-                throw new MongoClientException(ex.Message, ex);
+                throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
             }
         }
 
