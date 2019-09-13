@@ -218,7 +218,7 @@ namespace MongoDB.Driver
 
             foreach (var kmsProvider in _kmsProviders)
             {
-                foreach (var option in Ensure.IsNotNull(kmsProvider.Value, "kmsProvider"))
+                foreach (var option in Ensure.IsNotNull(kmsProvider.Value, nameof(kmsProvider)))
                 {
                     var optionValue = Ensure.IsNotNull(option.Value, "kmsProviderOption");
                     var isSupported = optionValue is byte[] || optionValue is string;
