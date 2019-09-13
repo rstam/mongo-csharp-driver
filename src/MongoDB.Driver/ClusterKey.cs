@@ -274,18 +274,12 @@ namespace MongoDB.Driver
                     // local options
                     if (kmsOptionX.Value is byte[] kmsOptionXBytes && kmsOptionY is byte[] kmsOptionYBytes)
                     {
-                        if (!kmsOptionXBytes.SequenceEqual(kmsOptionYBytes))
-                        {
-                            return false;
-                        }
+                        return kmsOptionXBytes.SequenceEqual(kmsOptionYBytes);
                     }
                     else
                     {
                         // aws options
-                        if (!kmsOptionX.Equals(kmsOptionY))
-                        {
-                            return false;
-                        }
+                        return kmsOptionX.Equals(kmsOptionY);
                     }
                 }
 

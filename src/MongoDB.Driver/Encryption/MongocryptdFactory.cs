@@ -46,7 +46,9 @@ namespace MongoDB.Driver.Encryption
         public MongoClient CreateMongocryptdClient()
         {
             var connectionString = CreateMongocryptdConnectionString();
-            return new MongoClient(connectionString);
+            var clientSettings = MongoClientSettings.FromConnectionString(connectionString);
+            clientSettings.ServerSelectionTimeout = TimeSpan.FromMilliseconds(1000);
+            return new MongoClient(clientSettings);
         }
 
         public void SpawnMongocryptdProcessIfRequired()
