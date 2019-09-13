@@ -18,36 +18,46 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 
 namespace MongoDB.Driver.Encryption
 {
     internal class MongocryptdFactory
     {
         #region static
-        public static MongoClient CreateClient(IReadOnlyDictionary<string, object> extraOptions)
+        private static string[] __supportedExtraOptionKeys=
         {
-            var helper = new MongocryptdFactory();
-            helper._extraOptions = extraOptions ?? new Dictionary<string, object>();
-            var client = helper.CreateMongocryptdClient();
-            return client;
-        }
+            "mongocryptdURI",
+            "mongocryptdBypassSpawn",
+            "mongocryptdSpawnPath",
+            "mongocryptdSpawnArgs"
+        };
         #endregion
 
-        private IReadOnlyDictionary<string, object> _extraOptions;
+        private readonly IReadOnlyDictionary<string, object> _extraOptions;
 
-        // private methods
-        private MongoClient CreateMongocryptdClient()
+        public MongocryptdFactory(IReadOnlyDictionary<string, object> extraOptions)
+        {
+            _extraOptions = extraOptions ?? new Dictionary<string, object>();
+            EnsureThatExtraOptionsAreValid(extraOptions);
+        }
+
+        // public methods
+        public MongoClient CreateMongocryptdClient()
         {
             var connectionString = CreateMongocryptdConnectionString();
+            return new MongoClient(connectionString);
+        }
 
+        public void SpawnMongocryptdProcessIfRequired()
+        {
             if (ShouldMongocryptdBeSpawned(out var path, out var args))
             {
                 StartProcess(path, args);
             }
-
-            return new MongoClient(connectionString);
         }
 
+        // private methods
         private string CreateMongocryptdConnectionString()
         {
             if (_extraOptions.TryGetValue("mongocryptdURI", out var connectionString))
@@ -60,19 +70,31 @@ namespace MongoDB.Driver.Encryption
             }
         }
 
+        private void EnsureThatExtraOptionsAreValid(IReadOnlyDictionary<string, object> extraOptions)
+        {
+            foreach (var extraOption in extraOptions)
+            {
+                if (!__supportedExtraOptionKeys.Contains(extraOption.Key))
+                {
+                    throw new ArgumentException($"Invalid extra option key: {extraOption.Key}.");
+                }
+            }
+        }
+
         private bool ShouldMongocryptdBeSpawned(out string path, out string args)
         {
             path = null;
             args = null;
-            if (!_extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn) || (!bool.Parse(mongoCryptBypassSpawn.ToString())))
+            if (!_extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn)
+                || !IsMongoCryptBypassSpawnValid(mongoCryptBypassSpawn))
             {
-                if (!_extraOptions.TryGetValue("mongocryptdSpawnPath", out var objPath))
+                if (_extraOptions.TryGetValue("mongocryptdSpawnPath", out var objPath))
                 {
-                    path = string.Empty; // look at the PATH env variable
+                    path = (string)objPath;
                 }
                 else
                 {
-                    path = objPath.ToString();
+                    path = string.Empty; // look at the PATH env variable
                 }
 
                 if (!Path.HasExtension(path))
@@ -90,12 +112,6 @@ namespace MongoDB.Driver.Encryption
                         case string str:
                             args += str;
                             break;
-                        case IDictionary dictionary:
-                            foreach (var key in dictionary.Keys)
-                            {
-                                args += $"--{trimStartHyphens(key.ToString())} {dictionary[key]} ";
-                            }
-                            break;
                         case IEnumerable enumerable:
                             foreach (var item in enumerable)
                             {
@@ -103,8 +119,7 @@ namespace MongoDB.Driver.Encryption
                             }
                             break;
                         default:
-                            args = mongocryptdSpawnArgs.ToString();
-                            break;
+                            throw new InvalidCastException($"Invalid type: {mongocryptdSpawnArgs.GetType().Name} of mongocryptdSpawnArgs option.");
                     }
                 }
 
@@ -125,7 +140,7 @@ namespace MongoDB.Driver.Encryption
         {
             try
             {
-                using (Process mongoCryptD = new Process())
+                using (var mongoCryptD = new Process())
                 {
                     mongoCryptD.StartInfo.Arguments = args;
                     mongoCryptD.StartInfo.FileName = path;
@@ -142,6 +157,18 @@ namespace MongoDB.Driver.Encryption
             catch (Exception ex)
             {
                 throw new MongoClientException("Exception starting mongocryptd process. Is mongocryptd on the system path?", ex);
+            }
+        }
+
+        private bool IsMongoCryptBypassSpawnValid(object objectValue)
+        {
+            if (objectValue is bool value)
+            {
+                return value;
+            }
+            else
+            {
+                throw new InvalidCastException($"Invalid type: {objectValue.GetType().Name} of mongocryptdBypassSpawn option.");
             }
         }
     }

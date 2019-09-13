@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.TestHelpers;
@@ -24,23 +25,43 @@ using Xunit;
 
 namespace MongoDB.Driver.Tests
 {
-    public class MongocryptdHelperTests
+    public class MongocryptdFactoryTests
     {
         [Theory]
-        [InlineData("mongocryptdURI", "mongodb://localhost:11111", "mongodb://localhost:11111")]
-        [InlineData("mongocryptdURI1", "mongodb://localhost:11111", "mongodb://localhost:27020")]
-        [InlineData(null, null, "mongodb://localhost:27020")]
-        public void CreateMongocryptdConnectionStringTest(string optionKey, string optionValue, string expectedConnectionString)
+        [InlineData("mongocryptdURI1")]
+        [InlineData("test")]
+        public void Constructor_should_throw_when_an_invalid_extra_option_key(string key)
         {
-            var subject = new MongocryptdFactory();
+            var extraOptions = new Dictionary<string, object> { { key, new object() } };
+            var exception = Record.Exception(() => new MongocryptdFactory(extraOptions));
+            var e = exception.Should().BeOfType<ArgumentException>().Subject;
+            e.Message.Should().Be($"Invalid extra option key: {key}.");
+        }
+
+        [Theory]
+        [InlineData("mongocryptdURI", "mongodb://localhost:11111", "mongodb://localhost:11111")]
+        [InlineData(null, null, "mongodb://localhost:27020")]
+        public void CreateMongocryptdConnectionString_should_create_expeced_connection_string(string optionKey, string optionValue, string expectedConnectionString)
+        {
             var extraOptions = new Dictionary<string, object>();
             if (optionKey != null)
             {
                 extraOptions.Add(optionKey, optionValue);
-            };
-            subject._extraOptions(extraOptions);
+            }
+            var subject = new MongocryptdFactory(extraOptions);
             var connectionString = subject.CreateMongocryptdConnectionString();
             connectionString.Should().Be(expectedConnectionString);
+        }
+
+        [Fact]
+        public void CreateMongocryptdConnectionString_should_throw_when_argument_not_string()
+        {
+            var extraOptions = new Dictionary<string, object>();
+            extraOptions.Add("mongocryptdURI", true);
+            var subject = new MongocryptdFactory(extraOptions);
+            var exception = Record.Exception(() => subject.CreateMongocryptdConnectionString());
+            var e = exception.Should().BeOfType<InvalidCastException>().Subject;
+            e.Message.Should().Be("Unable to cast object of type 'System.Boolean' to type 'System.String'.");
         }
 
         [SkippableTheory]
@@ -54,11 +75,6 @@ namespace MongoDB.Driver.Tests
         // args string
         [InlineData("{ mongocryptdSpawnArgs : '--arg1 A --arg2 B' }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 60", true)]
         [InlineData("{ mongocryptdSpawnArgs : '--arg1 A --arg2 B --idleShutdownTimeoutSecs 50' }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 50", true)]
-        // args dictionary
-        [InlineData("{ mongocryptdSpawnArgs : { arg1 : 'A', arg2 : 'B' } }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 60", true)]
-        [InlineData("{ mongocryptdSpawnArgs : { arg1 : 'A', arg2 : 'B', idleShutdownTimeoutSecs : 50 } }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 50", true)]
-        [InlineData("{ mongocryptdSpawnArgs : { arg1 : 'A', arg2 : 'B', idleShutdownTimeoutSecs : 50 } }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 50", true)]
-        [InlineData("{ mongocryptdSpawnArgs : { '--arg1' : 'A', '--arg2' : 'B', '--idleShutdownTimeoutSecs' : 50 } }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 50", true)]
         // args list
         [InlineData("{ mongocryptdSpawnArgs : [ 'arg1 A', 'arg2 B'] }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 60", true)]
         [InlineData("{ mongocryptdSpawnArgs : [ 'arg1 A', 'arg2 B', 'idleShutdownTimeoutSecs 50'] }", "mongocryptd.exe", "--arg1 A --arg2 B --idleShutdownTimeoutSecs 50", true)]
@@ -80,15 +96,15 @@ namespace MongoDB.Driver.Tests
             {
                 if (value.IsBsonArray)
                 {
-                    return value.AsBsonArray.Select(c => c.ToString()); // IEnumerable
+                    return value.AsBsonArray.Select(c => c); // IEnumerable
                 }
-                else if (value.IsBsonDocument)
+                else if (value.IsBoolean)
                 {
-                    return value.ToBsonDocument().Elements.ToDictionary(k => k.Name, v => v.Value.ToString()); // Dictionary
+                    return (bool)value; // bool
                 }
                 else
                 {
-                    return value.ToString(); // string
+                    return (string)value; // string
                 }
             }
 
@@ -96,25 +112,33 @@ namespace MongoDB.Driver.Tests
                 .Elements
                 .ToDictionary(k => k.Name, v => CreateTypedExtraOptions(v.Value));
 
-            var subject = new MongocryptdFactory();
-            subject._extraOptions(new ReadOnlyDictionary<string, object>(extraOptions));
+            var subject = new MongocryptdFactory(extraOptions);
 
             var result = subject.ShouldMongocryptdBeSpawned(out var path, out var args);
             result.Should().Be(shouldBeSpawned);
             path.Should().Be(expectedPath);
             args.Should().Be(expectedArgs);
         }
+
+        [Theory]
+        [InlineData("mongocryptdBypassSpawn", 1)]
+        [InlineData("mongocryptdSpawnArgs", 1)]
+        public void Mongocryptd_should_throw_when_argument_has_unexpected_type(string key, object value)
+        {
+            var extraOptions = new Dictionary<string, object>();
+            extraOptions.Add(key, value);
+            var subject = new MongocryptdFactory(extraOptions);
+            var exception = Record.Exception(() => subject.ShouldMongocryptdBeSpawned(out _, out _));
+            var e = exception.Should().BeOfType<InvalidCastException>().Subject;
+            e.Message.Should().Be($"Invalid type: {value.GetType().Name} of {key} option.");
+        }
     }
+
     internal static class MongocryptdFactoryReflector
     {
         public static string CreateMongocryptdConnectionString(this MongocryptdFactory mongocryptdHelper)
         {
             return (string)Reflector.Invoke(mongocryptdHelper, nameof(CreateMongocryptdConnectionString));
-        }
-
-        public static void _extraOptions(this MongocryptdFactory mongocryptdHelper, IReadOnlyDictionary<string, object> extraOptions)
-        {
-            Reflector.SetFieldValue(mongocryptdHelper, nameof(_extraOptions), extraOptions);
         }
 
         public static bool ShouldMongocryptdBeSpawned(this MongocryptdFactory mongocryptdHelper, out string path, out string args)

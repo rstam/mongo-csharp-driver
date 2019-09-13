@@ -47,12 +47,12 @@ namespace MongoDB.Driver.Encryption
         private readonly MongoClient _client;
         private readonly CryptClient _cryptClient;
         private readonly EncryptionMode _encryptionMode;
-        private readonly IReadOnlyDictionary<string, object> _extraOptions;
         private bool _initialized;
         private readonly IMongoClient _keyVaultClient;
         private IMongoCollection<BsonDocument> _keyVaultCollection;
         private readonly CollectionNamespace _keyVaultNamespace;
         private MongoClient _mongocryptdClient;
+        private MongocryptdFactory _mongocryptdFactory;
 
         // constructors
         public LibMongoCryptController(
@@ -73,9 +73,9 @@ namespace MongoDB.Driver.Encryption
             _client = Ensure.IsNotNull(client, nameof(client));
             _cryptClient = Ensure.IsNotNull(cryptClient, nameof(cryptClient));
             _encryptionMode = EncryptionMode.Auto;
-            _extraOptions = autoEncryptionOptions.ExtraOptions;
             _keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? _client;
             _keyVaultNamespace = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace));
+            _mongocryptdFactory = new MongocryptdFactory(autoEncryptionOptions.ExtraOptions);
         }
 
         // public methods
@@ -331,7 +331,7 @@ namespace MongoDB.Driver.Encryption
 
                 if (_encryptionMode == EncryptionMode.Auto)
                 {
-                    _mongocryptdClient = MongocryptdFactory.CreateClient(_extraOptions);
+                    _mongocryptdClient = _mongocryptdFactory.CreateMongocryptdClient();
                 }
                 _initialized = true;
             }
@@ -472,7 +472,27 @@ namespace MongoDB.Driver.Encryption
             var commandBytes = context.GetOperation().ToArray();
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
-            var response = database.RunCommand(command, cancellationToken: cancellationToken);
+
+            BsonDocument response;
+            int attempt = 0;
+            while (true)
+            {
+                try
+                {
+                    response = database.RunCommand(command, cancellationToken: cancellationToken);
+                    break;
+                }
+                catch (TimeoutException)
+                {
+                    attempt++;
+                    if (attempt > 1)
+                    {
+                        throw;
+                    }
+                    _mongocryptdFactory.SpawnMongocryptdProcessIfRequired();
+                }
+            }
+
             RestoreDbNodeInResponse(commandDocument, response);
             FeedResult(context, response);
         }
@@ -483,7 +503,27 @@ namespace MongoDB.Driver.Encryption
             var commandBytes = context.GetOperation().ToArray();
             var commandDocument = new RawBsonDocument(commandBytes);
             var command = new BsonDocumentCommand<BsonDocument>(commandDocument);
-            var response = await database.RunCommandAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            BsonDocument response;
+            int attempt = 0;
+            while (true)
+            {
+                try
+                {
+                    response = await database.RunCommandAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    break;
+                }
+                catch (TimeoutException)
+                {
+                    attempt++;
+                    if (attempt > 1)
+                    {
+                        throw;
+                    }
+                    _mongocryptdFactory.SpawnMongocryptdProcessIfRequired();
+                }
+            }
+
             RestoreDbNodeInResponse(commandDocument, response);
             FeedResult(context, response);
         }
