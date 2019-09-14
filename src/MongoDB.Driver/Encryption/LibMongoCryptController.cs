@@ -47,9 +47,8 @@ namespace MongoDB.Driver.Encryption
         private readonly MongoClient _client;
         private readonly CryptClient _cryptClient;
         private readonly EncryptionMode _encryptionMode;
-        private bool _initialized;
         private readonly IMongoClient _keyVaultClient;
-        private IMongoCollection<BsonDocument> _keyVaultCollection;
+        private Lazy<IMongoCollection<BsonDocument>> _keyVaultCollection;
         private readonly CollectionNamespace _keyVaultNamespace;
         private MongoClient _mongocryptdClient;
         private MongocryptdFactory _mongocryptdFactory;
@@ -63,6 +62,7 @@ namespace MongoDB.Driver.Encryption
             _encryptionMode = EncryptionMode.Explicit;
             _keyVaultClient = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultClient, nameof(clientEncryptionOptions.KeyVaultClient));
             _keyVaultNamespace = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultNamespace, nameof(clientEncryptionOptions.KeyVaultNamespace));
+            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection);
         }
 
         public LibMongoCryptController(
@@ -73,9 +73,11 @@ namespace MongoDB.Driver.Encryption
             _client = Ensure.IsNotNull(client, nameof(client));
             _cryptClient = Ensure.IsNotNull(cryptClient, nameof(cryptClient));
             _encryptionMode = EncryptionMode.Auto;
-            _keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? _client;
+            _keyVaultClient = autoEncryptionOptions.KeyVaultClient;
             _keyVaultNamespace = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace));
+            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection);
             _mongocryptdFactory = new MongocryptdFactory(autoEncryptionOptions.ExtraOptions);
+            _mongocryptdClient = _mongocryptdFactory.CreateMongocryptdClient();
         }
 
         // public methods
@@ -85,8 +87,6 @@ namespace MongoDB.Driver.Encryption
             BsonDocument masterKey,
             CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             var kmsKeyId = GetKmsKeyId(kmsProvider, alternateKeyNames, masterKey);
 
             byte[] wrappedKeyBytes;
@@ -94,7 +94,7 @@ namespace MongoDB.Driver.Encryption
             {
                 using (var context = _cryptClient.StartCreateDataKeyContext(kmsKeyId))
                 {
-                    wrappedKeyBytes = ProcessStates(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken);
+                    wrappedKeyBytes = ProcessStates(context, _keyVaultNamespace.DatabaseNamespace.DatabaseName, cancellationToken);
                 }
             }
             catch (Exception ex)
@@ -103,7 +103,7 @@ namespace MongoDB.Driver.Encryption
             }
 
             var wrappedKeyDocument = new RawBsonDocument(wrappedKeyBytes);
-            _keyVaultCollection.InsertOne(wrappedKeyDocument, cancellationToken: cancellationToken);
+            _keyVaultCollection.Value.InsertOne(wrappedKeyDocument, cancellationToken: cancellationToken);
             return wrappedKeyDocument["_id"].AsBsonBinaryData;
         }
 
@@ -113,8 +113,6 @@ namespace MongoDB.Driver.Encryption
             BsonDocument masterKey,
             CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             var kmsKeyId = GetKmsKeyId(kmsProvider, alternateKeyNames, masterKey);
 
             byte[] wrappedKeyBytes;
@@ -122,7 +120,7 @@ namespace MongoDB.Driver.Encryption
             {
                 using (var context = _cryptClient.StartCreateDataKeyContext(kmsKeyId))
                 {
-                    wrappedKeyBytes = await ProcessStatesAsync(context, _keyVaultCollection.Database.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
+                    wrappedKeyBytes = await ProcessStatesAsync(context, _keyVaultNamespace.DatabaseNamespace.DatabaseName, cancellationToken).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)
@@ -131,14 +129,12 @@ namespace MongoDB.Driver.Encryption
             }
 
             var wrappedKeyDocument = new RawBsonDocument(wrappedKeyBytes);
-            await _keyVaultCollection.InsertOneAsync(wrappedKeyDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await _keyVaultCollection.Value.InsertOneAsync(wrappedKeyDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
             return wrappedKeyDocument["_id"].AsBsonBinaryData;
         }
 
         public BsonValue DecryptField(BsonBinaryData encryptedValue, CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             var wrappedValueBytes = GetWrappedValueBytes(encryptedValue);
 
             try
@@ -157,8 +153,6 @@ namespace MongoDB.Driver.Encryption
 
         public async Task<BsonValue> DecryptFieldAsync(BsonBinaryData wrappedBinaryValue, CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             var wrappedValueBytes = GetWrappedValueBytes(wrappedBinaryValue);
 
             try
@@ -177,8 +171,6 @@ namespace MongoDB.Driver.Encryption
 
         public byte[] DecryptFields(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             try
             {
                 using (var context = _cryptClient.StartDecryptionContext(encryptedDocumentBytes))
@@ -194,8 +186,6 @@ namespace MongoDB.Driver.Encryption
 
         public async Task<byte[]> DecryptFieldsAsync(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             try
             {
                 using (var context = _cryptClient.StartDecryptionContext(encryptedDocumentBytes))
@@ -216,8 +206,6 @@ namespace MongoDB.Driver.Encryption
             EncryptionAlgorithm encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             var wrappedValueBytes = GetWrappedValueBytes(value);
             var wrappedAlternateKeyNameBytes = GetWrappedAlternateKeyNameBytes(alternateKeyName);
 
@@ -257,8 +245,6 @@ namespace MongoDB.Driver.Encryption
             EncryptionAlgorithm encryptionAlgorithm,
             CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             var wrappedValueBytes = GetWrappedValueBytes(value);
             var wrappedAlternateKeyNameBytes = GetWrappedAlternateKeyNameBytes(alternateKeyName);
 
@@ -293,8 +279,6 @@ namespace MongoDB.Driver.Encryption
 
         public byte[] EncryptFields(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             try
             {
                 using (var context = _cryptClient.StartEncryptionContext(databaseName, unencryptedCommandBytes))
@@ -310,8 +294,6 @@ namespace MongoDB.Driver.Encryption
 
         public async Task<byte[]> EncryptFieldsAsync(string databaseName, byte[] unencryptedCommandBytes, CancellationToken cancellationToken)
         {
-            ThrowIfNotInitialized();
-
             try
             {
                 using (var context = _cryptClient.StartEncryptionContext(databaseName, unencryptedCommandBytes))
@@ -322,20 +304,6 @@ namespace MongoDB.Driver.Encryption
             catch (Exception ex)
             {
                 throw new MongoEncryptionException($"Exception in encryption library: {ex.Message}.", ex);
-            }
-        }
-
-        public void Initialize()
-        {
-            if (!_initialized)
-            {
-                _keyVaultCollection = GetKeyVaultCollection(_keyVaultClient, _keyVaultNamespace);
-
-                if (_encryptionMode == EncryptionMode.Auto)
-                {
-                    _mongocryptdClient = _mongocryptdFactory.CreateMongocryptdClient();
-                }
-                _initialized = true;
             }
         }
 
@@ -359,10 +327,11 @@ namespace MongoDB.Driver.Encryption
             context.MarkDone();
         }
 
-        private IMongoCollection<BsonDocument> GetKeyVaultCollection(IMongoClient keyValueClient, CollectionNamespace keyVaultNamespace)
+        private IMongoCollection<BsonDocument> GetKeyVaultCollection()
         {
-            var keyVaultDatabase = keyValueClient.GetDatabase(keyVaultNamespace.DatabaseNamespace.DatabaseName);
-            return keyVaultDatabase.GetCollection<BsonDocument>(keyVaultNamespace.CollectionName);
+            var keyVaultClient = _keyVaultClient ?? _client;
+            var keyVaultDatabase = keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
+            return keyVaultDatabase.GetCollection<BsonDocument>(_keyVaultNamespace.CollectionName);
         }
 
         private IKmsKeyId GetKmsKeyId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)
@@ -453,7 +422,7 @@ namespace MongoDB.Driver.Encryption
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
             var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
-            var cursor = _keyVaultCollection.FindSync(filter, cancellationToken: cancellationToken);
+            var cursor = _keyVaultCollection.Value.FindSync(filter, cancellationToken: cancellationToken);
             var results = cursor.ToList(cancellationToken);
             FeedResults(context, results);
         }
@@ -463,7 +432,7 @@ namespace MongoDB.Driver.Encryption
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
             var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
-            var cursor = await _keyVaultCollection.FindAsync(filter, cancellationToken: cancellationToken).ConfigureAwait(false);
+            var cursor = await _keyVaultCollection.Value.FindAsync(filter, cancellationToken: cancellationToken).ConfigureAwait(false);
             var results = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
             FeedResults(context, results);
         }
@@ -660,14 +629,6 @@ namespace MongoDB.Driver.Encryption
             if (_encryptionMode != EncryptionMode.Auto)
             {
                 throw new InvalidOperationException($"{state} is available only for auto encryption.");
-            }
-        }
-
-        private void ThrowIfNotInitialized()
-        {
-            if (!_initialized)
-            {
-                throw new InvalidOperationException($"{nameof(LibMongoCryptController)} must be initialized.");
             }
         }
 

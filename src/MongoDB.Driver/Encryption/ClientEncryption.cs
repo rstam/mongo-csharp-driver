@@ -45,7 +45,6 @@ namespace MongoDB.Driver.Encryption
             _libMongoCryptController = new LibMongoCryptController(
                 _cryptClient,
                 clientEncryptionOptions);
-            _libMongoCryptController.Initialize();
         }
 
         // public methods
