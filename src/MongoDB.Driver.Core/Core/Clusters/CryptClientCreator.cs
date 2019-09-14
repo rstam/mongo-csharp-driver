@@ -66,7 +66,7 @@ namespace MongoDB.Driver.Core.Clusters
         private CryptOptions CreateCryptOptions()
         {
             Dictionary<KmsType, IKmsCredentials> kmsProvidersMap = null;
-            if (_kmsProviders != null && _kmsProviders.Any())
+            if (_kmsProviders != null && _kmsProviders.Count > 0)
             {
                 kmsProvidersMap = new Dictionary<KmsType, IKmsCredentials>();
                 if (_kmsProviders.TryGetValue("aws", out var awsProvider))
@@ -91,13 +91,12 @@ namespace MongoDB.Driver.Core.Clusters
             }
 
             byte[] schemaBytes = null;
-            var schemaMap = _schemaMap;
-            if (schemaMap != null)
+            if (_schemaMap != null)
             {
-                var schemaMapElements = schemaMap.Select(c => new BsonElement(c.Key, c.Value));
+                var schemaMapElements = _schemaMap.Select(c => new BsonElement(c.Key, c.Value));
                 var schemaDocument = new BsonDocument(schemaMapElements);
-                var writeSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
-                schemaBytes = schemaDocument.ToBson(writerSettings: writeSettings);
+                var writerSettings = new BsonBinaryWriterSettings { GuidRepresentation = GuidRepresentation.Unspecified };
+                schemaBytes = schemaDocument.ToBson(writerSettings: writerSettings);
             }
 
             return new CryptOptions(kmsProvidersMap, schemaBytes);
