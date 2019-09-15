@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Encryption
         #endregion
 
         // private fields
-        private readonly MongoClient _client;
+        private readonly IMongoClient _client;
         private readonly CryptClient _cryptClient;
         private readonly EncryptionMode _encryptionMode;
         private readonly IMongoClient _keyVaultClient;
@@ -57,27 +57,39 @@ namespace MongoDB.Driver.Encryption
         public LibMongoCryptController(
             CryptClient cryptClient,
             ClientEncryptionOptions clientEncryptionOptions)
+            : this(
+                  Ensure.IsNotNull(cryptClient, nameof(cryptClient)),
+                  Ensure.IsNotNull(Ensure.IsNotNull(clientEncryptionOptions, nameof(clientEncryptionOptions)).KeyVaultClient, nameof(clientEncryptionOptions.KeyVaultClient)),
+                  Ensure.IsNotNull(Ensure.IsNotNull(clientEncryptionOptions, nameof(clientEncryptionOptions)).KeyVaultNamespace, nameof(clientEncryptionOptions.KeyVaultNamespace)))
         {
-            _cryptClient = Ensure.IsNotNull(cryptClient, nameof(cryptClient));
             _encryptionMode = EncryptionMode.Explicit;
-            _keyVaultClient = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultClient, nameof(clientEncryptionOptions.KeyVaultClient));
-            _keyVaultNamespace = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultNamespace, nameof(clientEncryptionOptions.KeyVaultNamespace));
-            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection);
         }
 
         public LibMongoCryptController(
-            MongoClient client,
+            IMongoClient client,
             CryptClient cryptClient,
             AutoEncryptionOptions autoEncryptionOptions)
+            : this(
+                  Ensure.IsNotNull(cryptClient, nameof(cryptClient)),
+                  Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions)).KeyVaultClient ?? client,
+                  Ensure.IsNotNull(Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions)).KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace)))
         {
             _client = Ensure.IsNotNull(client, nameof(client));
-            _cryptClient = Ensure.IsNotNull(cryptClient, nameof(cryptClient));
             _encryptionMode = EncryptionMode.Auto;
-            _keyVaultClient = autoEncryptionOptions.KeyVaultClient;
-            _keyVaultNamespace = Ensure.IsNotNull(autoEncryptionOptions.KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace));
-            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection);
+
             _mongocryptdFactory = new MongocryptdFactory(autoEncryptionOptions.ExtraOptions);
             _mongocryptdClient = _mongocryptdFactory.CreateMongocryptdClient();
+        }
+
+        private LibMongoCryptController(
+             CryptClient cryptClient,
+             IMongoClient keyVaultClient,
+             CollectionNamespace keyVaultNamespace)
+        {
+            _cryptClient = cryptClient;
+            _keyVaultClient = keyVaultClient;
+            _keyVaultNamespace = keyVaultNamespace;
+            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection);
         }
 
         // public methods
@@ -331,8 +343,7 @@ namespace MongoDB.Driver.Encryption
 
         private IMongoCollection<BsonDocument> GetKeyVaultCollection()
         {
-            var keyVaultClient = _keyVaultClient ?? _client;
-            var keyVaultDatabase = keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
+            var keyVaultDatabase = _keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
             return keyVaultDatabase.GetCollection<BsonDocument>(_keyVaultNamespace.CollectionName);
         }
 
