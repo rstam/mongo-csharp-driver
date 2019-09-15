@@ -81,7 +81,7 @@ namespace MongoDB.Driver.Encryption
         }
 
         // public methods
-        public BsonBinaryData CreateDataKey(
+        public Guid CreateDataKey(
             string kmsProvider,
             IReadOnlyList<string> alternateKeyNames,
             BsonDocument masterKey,
@@ -104,10 +104,11 @@ namespace MongoDB.Driver.Encryption
 
             var wrappedKeyDocument = new RawBsonDocument(wrappedKeyBytes);
             _keyVaultCollection.Value.InsertOne(wrappedKeyDocument, cancellationToken: cancellationToken);
-            return wrappedKeyDocument["_id"].AsBsonBinaryData;
+            var keyBytes = wrappedKeyDocument["_id"].AsBsonBinaryData.Bytes;
+            return GuidConverter.FromBytes(keyBytes, GuidRepresentation.Standard);
         }
 
-        public async Task<BsonBinaryData> CreateDataKeyAsync(
+        public async Task<Guid> CreateDataKeyAsync(
             string kmsProvider,
             IReadOnlyList<string> alternateKeyNames,
             BsonDocument masterKey,
@@ -130,7 +131,8 @@ namespace MongoDB.Driver.Encryption
 
             var wrappedKeyDocument = new RawBsonDocument(wrappedKeyBytes);
             await _keyVaultCollection.Value.InsertOneAsync(wrappedKeyDocument, cancellationToken: cancellationToken).ConfigureAwait(false);
-            return wrappedKeyDocument["_id"].AsBsonBinaryData;
+            var keyBytes = wrappedKeyDocument["_id"].AsBsonBinaryData.Bytes;
+            return GuidConverter.FromBytes(keyBytes, GuidRepresentation.Standard);
         }
 
         public BsonValue DecryptField(BsonBinaryData encryptedValue, CancellationToken cancellationToken)

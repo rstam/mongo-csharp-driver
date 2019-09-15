@@ -79,7 +79,7 @@ namespace MongoDB.Driver.Encryption
         /// <param name="keyId">The keyId.</param>
         /// <returns>A new EncryptOptions instance.</returns>
         public EncryptOptions With(
-            Optional<string> algorithm,
+            Optional<string> algorithm = default,
             Optional<string> alternateKeyName = default,
             Optional<Guid?> keyId = default)
         {

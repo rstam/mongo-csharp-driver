@@ -55,7 +55,7 @@ namespace MongoDB.Driver.Encryption
         /// <param name="dataKeyOptions">The data key options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A data key.</returns>
-        public BsonBinaryData CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
+        public Guid CreateDataKey(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
             return _libMongoCryptController.CreateDataKey(
                 kmsProvider,
@@ -71,14 +71,13 @@ namespace MongoDB.Driver.Encryption
         /// <param name="dataKeyOptions">The data key options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A data key.</returns>
-        public Task<BsonBinaryData> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
+        public Task<Guid> CreateDataKeyAsync(string kmsProvider, DataKeyOptions dataKeyOptions, CancellationToken cancellationToken)
         {
-            return _libMongoCryptController
-                .CreateDataKeyAsync(
-                    kmsProvider,
-                    dataKeyOptions.AlternateKeyNames,
-                    dataKeyOptions.MasterKey,
-                    cancellationToken);
+            return _libMongoCryptController.CreateDataKeyAsync(
+                kmsProvider,
+                dataKeyOptions.AlternateKeyNames,
+                dataKeyOptions.MasterKey,
+                cancellationToken);
         }
 
         /// <summary>
@@ -141,13 +140,12 @@ namespace MongoDB.Driver.Encryption
         public Task<BsonBinaryData> EncryptAsync(BsonValue value, EncryptOptions encryptOptions, CancellationToken cancellationToken)
         {
             var algorithm = (EncryptionAlgorithm)Enum.Parse(typeof(EncryptionAlgorithm), encryptOptions.Algorithm);
-            return _libMongoCryptController
-                .EncryptFieldAsync(
-                    value,
-                    encryptOptions.KeyId,
-                    encryptOptions.AlternateKeyName,
-                    algorithm,
-                    cancellationToken);
+            return _libMongoCryptController.EncryptFieldAsync(
+                value,
+                encryptOptions.KeyId,
+                encryptOptions.AlternateKeyName,
+                algorithm,
+                cancellationToken);
         }
     }
 }
