@@ -347,7 +347,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
             {
                 var dataKeyOptions = CreateDataKeyOptions(kmsProvider);
 
-                BsonValue dataKey;
+                Guid dataKey;
                 if (async)
                 {
                     dataKey = clientEncryption
@@ -359,20 +359,19 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                 {
                     dataKey = clientEncryption.CreateDataKey(kmsProvider, dataKeyOptions, CancellationToken.None);
                 }
-                dataKey.AsBsonBinaryData.SubType.Should().Be(BsonBinarySubType.UuidStandard);
 
                 var keyVaultCollection = GetCollection(client, __keyVaultCollectionNamespace);
                 var keyVaultDocument =
                     Find(
                         keyVaultCollection,
-                        new BsonDocument("_id", dataKey),
+                        new BsonDocument("_id", new BsonBinaryData(dataKey, GuidRepresentation.Standard)),
                         async)
                     .Single();
                 keyVaultDocument["masterKey"]["provider"].Should().Be(BsonValue.Create(kmsProvider));
 
                 var encryptOptions = new EncryptOptions(
                     EncryptionAlgorithm.AEAD_AES_256_CBC_HMAC_SHA_512_Deterministic.ToString(),
-                    keyId: dataKey.AsBsonBinaryData.AsGuid);
+                    keyId: dataKey);
 
                 var encryptedValue = ExplicitEncrypt(
                     clientEncryption,
