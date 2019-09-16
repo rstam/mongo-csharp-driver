@@ -182,7 +182,7 @@ namespace MongoDB.Driver
                 _heartbeatInterval == rhs._heartbeatInterval &&
                 _heartbeatTimeout == rhs._heartbeatTimeout &&
                 _ipv6 == rhs._ipv6 &&
-                KmsProvidersEquals(_kmsProviders, rhs.KmsProviders) &&
+                _kmsProviders.IsEquivalentTo(rhs.KmsProviders, KmsProviderIsEquivalentTo) &&
                 _localThreshold == rhs._localThreshold &&
                 _maxConnectionIdleTime == rhs._maxConnectionIdleTime &&
                 _maxConnectionLifeTime == rhs._maxConnectionLifeTime &&
@@ -190,7 +190,7 @@ namespace MongoDB.Driver
                 _minConnectionPoolSize == rhs._minConnectionPoolSize &&
                 _receiveBufferSize == rhs._receiveBufferSize &&
                 _replicaSetName == rhs._replicaSetName &&
-                SchemaMapEquals(_schemaMap, rhs._schemaMap) &&
+                _schemaMap.IsEquivalentTo(rhs._schemaMap, object.Equals) &&
                 _scheme == rhs._scheme &&
                 _sdamLogFilename == rhs._sdamLogFilename &&
                 _sendBufferSize == rhs._sendBufferSize &&
@@ -231,92 +231,20 @@ namespace MongoDB.Driver
             }
         }
 
-        private bool KmsProvidersEquals(
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> providerX,
-            IReadOnlyDictionary<string, IReadOnlyDictionary<string, object>> providerY)
+        private bool KmsProviderIsEquivalentTo(IReadOnlyDictionary<string, object> x, IReadOnlyDictionary<string, object> y)
         {
-            if (providerX == null && providerY == null)
-            {
-                return true;
-            }
-
-            // exactly one is null
-            if (providerX == null || providerY == null)
-            {
-                return false;
-            }
-
-            var keySortedProviderX = providerX.OrderBy(kvp => kvp.Key);
-            var keySortedProviderY = providerY.OrderBy(kvp => kvp.Key);
-            return keySortedProviderX.SequenceEqual(keySortedProviderY, new KmsProvidersComparer());
+            return x.IsEquivalentTo(y, KmsProviderOptionEquals);
         }
 
-        private bool SchemaMapEquals(
-            IReadOnlyDictionary<string, BsonDocument> schemaMapX,
-            IReadOnlyDictionary<string, BsonDocument> schemaMapY)
+        public bool KmsProviderOptionEquals(object x, object y)
         {
-            if (schemaMapX == null && schemaMapY == null)
+            if (x is byte[] xBytes && y is byte[] yBytes)
             {
-                return true;
+                return xBytes.SequenceEqual(yBytes);
             }
-
-            // exactly one is null
-            if (schemaMapX == null || schemaMapY == null)
+            else
             {
-                return false;
-            }
-
-            var keySortedSchemaMapX = schemaMapX.OrderBy(kvp => kvp.Key);
-            var keySortedSchemaMapY = schemaMapY.OrderBy(kvp => kvp.Key);
-            return keySortedSchemaMapX.SequenceEqual(keySortedSchemaMapY);
-        }
-
-        // nested types
-        private class KmsProvidersComparer : IEqualityComparer<KeyValuePair<string, IReadOnlyDictionary<string, object>>>
-        {
-            public bool Equals(KeyValuePair<string, IReadOnlyDictionary<string, object>> kmsOptionsX, KeyValuePair<string, IReadOnlyDictionary<string, object>> kmsOptionsY)
-            {
-                if (kmsOptionsX.Key != kmsOptionsY.Key)
-                {
-                    return false;
-                }
-
-                if (kmsOptionsX.Value == null && kmsOptionsY.Value == null)
-                {
-                    return true;
-                }
-
-                // exactly one is null
-                if (kmsOptionsX.Value == null || kmsOptionsY.Value == null)
-                {
-                    return false;
-                }
-
-                foreach (var nestedKmsOptionX in kmsOptionsX.Value)
-                {
-                    if (!kmsOptionsY.Value.TryGetValue(nestedKmsOptionX.Key, out var nestedKmsOptionYValue))
-                    {
-                        return false;
-                    }
-
-                    // local options
-                    if (nestedKmsOptionX.Value is byte[] kmsOptionXBytes && nestedKmsOptionYValue is byte[] kmsOptionYBytes)
-                    {
-                        return kmsOptionXBytes.SequenceEqual(kmsOptionYBytes);
-                    }
-                    else
-                    {
-                        // aws options
-                        return nestedKmsOptionX.Value.Equals(nestedKmsOptionYValue);
-                    }
-                }
-
-                return true;
-            }
-
-            public int GetHashCode(KeyValuePair<string, IReadOnlyDictionary<string, object>> obj)
-            {
-                return obj.GetHashCode();
+                return object.Equals(x, y);
             }
         }
     }
