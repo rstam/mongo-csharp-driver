@@ -43,7 +43,7 @@ namespace MongoDB.Driver.Encryption
         }
 
         // public methods
-        public MongoClient CreateMongocryptdClient()
+        public IMongoClient CreateMongocryptdClient()
         {
             var connectionString = CreateMongocryptdConnectionString();
             var clientSettings = MongoClientSettings.FromConnectionString(connectionString);
@@ -83,7 +83,7 @@ namespace MongoDB.Driver.Encryption
             }
         }
 
-        private bool IsMongoCryptBypassSpawnValid(object objectValue)
+        private bool CastMongoCryptdBypassSpawnToBool(object objectValue)
         {
             if (objectValue is bool value)
             {
@@ -100,7 +100,7 @@ namespace MongoDB.Driver.Encryption
             path = null;
             args = null;
             if (!_extraOptions.TryGetValue("mongocryptdBypassSpawn", out var mongoCryptBypassSpawn)
-                || !IsMongoCryptBypassSpawnValid(mongoCryptBypassSpawn))
+                || !CastMongoCryptdBypassSpawnToBool(mongoCryptBypassSpawn))
             {
                 if (_extraOptions.TryGetValue("mongocryptdSpawnPath", out var objPath))
                 {
@@ -154,14 +154,14 @@ namespace MongoDB.Driver.Encryption
         {
             try
             {
-                using (var mongoCryptD = new Process())
+                using (var process = new Process())
                 {
-                    mongoCryptD.StartInfo.Arguments = args;
-                    mongoCryptD.StartInfo.FileName = path;
-                    mongoCryptD.StartInfo.CreateNoWindow = true;
-                    mongoCryptD.StartInfo.UseShellExecute = false;
+                    process.StartInfo.Arguments = args;
+                    process.StartInfo.FileName = path;
+                    process.StartInfo.CreateNoWindow = true;
+                    process.StartInfo.UseShellExecute = false;
 
-                    if (!mongoCryptD.Start())
+                    if (!process.Start())
                     {
                         // skip it. This case can happen if no new process resource is started
                         // (for example, if an existing process is reused)
