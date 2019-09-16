@@ -32,9 +32,9 @@ namespace MongoDB.Driver.Encryption
         /// <summary>
         /// Initializes a new instance of the <see cref="MongoEncryptionException"/> class.
         /// </summary>
-        /// <param name="message">The error message.</param>
         /// <param name="innerException">The inner exception.</param>
-        public MongoEncryptionException(string message, Exception innerException) : base(message, innerException)
+        public MongoEncryptionException(Exception innerException) 
+            : base($"Exception in encryption library: {innerException.Message}.", innerException)
         {
         }
     }
