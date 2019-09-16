@@ -408,7 +408,7 @@ namespace MongoDB.Driver.Tests.Specifications.client_side_encryption.prose_tests
                 if (kmsProvider == "local") // the test description expects this assert only once for a local kms provider
                 {
                     coll = GetCollection(clientEncrypted, __collCollectionNamespace);
-                    var exception = Record.Exception(() => coll.InsertOne(new BsonDocument("encrypted_placeholder", encryptedValue)));
+                    var exception = Record.Exception(() => Insert(coll, async, new BsonDocument("encrypted_placeholder", encryptedValue)));
                     exception.Should().BeOfType<MongoEncryptionException>();
                 }
             }
