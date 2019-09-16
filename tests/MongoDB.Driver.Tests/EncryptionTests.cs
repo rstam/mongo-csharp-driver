@@ -85,8 +85,6 @@ namespace MongoDB.Driver.Tests
 
                     var clientEncryptionController = clientEncryption._libMongoCryptController();
                     clientEncryptionController.Should().NotBeNull();
-                    var mongoCryptD = clientEncryptionController._mongocryptdClient();
-                    mongoCryptD.Should().BeNull();
                 }
                 else
                 {
@@ -94,8 +92,6 @@ namespace MongoDB.Driver.Tests
 
                     var clientEncryptionController = clientEncryption._libMongoCryptController();
                     clientEncryptionController.Should().NotBeNull();
-                    var mongoCryptD = clientEncryptionController._mongocryptdClient();
-                    mongoCryptD.Should().BeNull();
                 }
             }
         }
@@ -153,22 +149,25 @@ namespace MongoDB.Driver.Tests
 
     internal static class ClientEncryptionReflector
     {
-        public static LibMongoCryptController _libMongoCryptController(this ClientEncryption clientEncryption)
+        public static ExplicitEncryptionLibMongoCryptController _libMongoCryptController(this ClientEncryption clientEncryption)
         {
-            return (LibMongoCryptController)Reflector.GetFieldValue(clientEncryption, nameof(_libMongoCryptController));
+            return (ExplicitEncryptionLibMongoCryptController)Reflector.GetFieldValue(clientEncryption, nameof(_libMongoCryptController));
         }
     }
 
-    internal static class LibMongoCryptControllerReflector
+    internal static class LibMongoCryptControllerBaseReflector
     {
-        public static CryptClient _cryptClient(this LibMongoCryptController libMongoCryptController)
+        public static CryptClient _cryptClient(this LibMongoCryptControllerBase libMongoCryptController)
         {
             return (CryptClient)Reflector.GetFieldValue(libMongoCryptController, nameof(_cryptClient));
         }
+    }
 
-        public static MongoClient _mongocryptdClient(this LibMongoCryptController libMongoCryptController)
+    internal static class AutoEncryptionLibMongoCryptControllerReflector
+    {
+        public static IMongoClient _mongocryptdClient(this AutoEncryptionLibMongoCryptController libMongoCryptController)
         {
-            return (MongoClient)Reflector.GetFieldValue(libMongoCryptController, nameof(_mongocryptdClient));
+            return (IMongoClient)Reflector.GetFieldValue(libMongoCryptController, nameof(_mongocryptdClient));
         }
     }
 }

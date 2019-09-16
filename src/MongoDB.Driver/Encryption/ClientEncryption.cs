@@ -28,9 +28,9 @@ namespace MongoDB.Driver.Encryption
     public sealed class ClientEncryption : IDisposable
     {
         // private fields
-        private bool _disposed;
         private readonly CryptClient _cryptClient;
-        private readonly LibMongoCryptController _libMongoCryptController;
+        private bool _disposed;
+        private readonly ExplicitEncryptionLibMongoCryptController _libMongoCryptController;
 
         // constructors
         /// <summary>
@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Encryption
             _cryptClient = CryptClientCreator.CreateCryptClient(
                 kmsProviders: clientEncryptionOptions.KmsProviders,
                 schemaMap: null);
-            _libMongoCryptController = new LibMongoCryptController(
+            _libMongoCryptController = new ExplicitEncryptionLibMongoCryptController(
                 _cryptClient,
                 clientEncryptionOptions);
         }

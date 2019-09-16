@@ -54,7 +54,7 @@ namespace MongoDB.Driver
 
         // private fields
         private readonly ICluster _cluster;
-        private readonly LibMongoCryptController _libMongoCryptController;
+        private readonly AutoEncryptionLibMongoCryptController _libMongoCryptController;
         private readonly IOperationExecutor _operationExecutor;
         private readonly MongoClientSettings _settings;
 
@@ -82,7 +82,7 @@ namespace MongoDB.Driver
             _operationExecutor = new OperationExecutor(this);
             if (settings.AutoEncryptionOptions != null)
             {
-                _libMongoCryptController = new LibMongoCryptController(
+                _libMongoCryptController = new AutoEncryptionLibMongoCryptController(
                     this, 
                     _cluster.CryptClient,
                     settings.AutoEncryptionOptions);
@@ -137,7 +137,7 @@ namespace MongoDB.Driver
         }
 
         // internal properties
-        internal LibMongoCryptController LibMongoCryptController => _libMongoCryptController;
+        internal AutoEncryptionLibMongoCryptController LibMongoCryptController => _libMongoCryptController;
         internal IOperationExecutor OperationExecutor => _operationExecutor;
         
         // internal methods
