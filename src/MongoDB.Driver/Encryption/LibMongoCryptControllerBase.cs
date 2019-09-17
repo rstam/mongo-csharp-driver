@@ -65,84 +65,68 @@ namespace MongoDB.Driver.Encryption
             context.MarkDone();
         }
 
-        protected virtual void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        protected virtual void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            throw new NotSupportedException($"{GetType().Name} does not support {nameof(ProcessNeedCollectionInfoState)}.");
+            switch (context.State)
+            {
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_KMS:
+                    ProcessNeedKmsState(context, cancellationToken);
+                    break;
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_KEYS:
+                    ProcessNeedMongoKeysState(context, cancellationToken);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected context state: {context.State}.");
+            }
         }
 
-        protected virtual Task ProcessNeedCollectionInfoStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        protected virtual async Task ProcessStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            throw new NotSupportedException($"{GetType().Name} does not support {nameof(ProcessNeedCollectionInfoStateAsync)}.");
-        }
-
-        protected virtual void ProcessNeedMongoMarkingsState(CryptContext context, string databaseName, CancellationToken cancellationToken)
-        {
-            throw new NotSupportedException($"{GetType().Name} does not support {nameof(ProcessNeedMongoMarkingsState)}.");
-        }
-
-        protected virtual Task ProcessNeedMongoMarkingsStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
-        {
-            throw new NotSupportedException($"{GetType().Name} does not support {nameof(ProcessNeedMongoMarkingsStateAsync)}.");
+            switch (context.State)
+            {
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_KMS:
+                    await ProcessNeedKmsStateAsync(context, cancellationToken).ConfigureAwait(false);
+                    break;
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_KEYS:
+                    await ProcessNeedMongoKeysStateAsync(context, cancellationToken).ConfigureAwait(false);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected context state: {context.State}.");
+            }
         }
 
         protected byte[] ProcessStates(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             byte[] result = null;
-            while (true)
+            while (context.State != CryptContext.StateCode.MONGOCRYPT_CTX_DONE)
             {
-                switch (context.State)
+                if (context.State == CryptContext.StateCode.MONGOCRYPT_CTX_READY)
                 {
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_DONE:
-                        return result;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_KMS:
-                        ProcessNeedKmsState(context, cancellationToken);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_COLLINFO:
-                        ProcessNeedCollectionInfoState(context, databaseName, cancellationToken);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_KEYS:
-                        ProcessNeedMongoKeysState(context, cancellationToken);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_MARKINGS:
-                        ProcessNeedMongoMarkingsState(context, databaseName, cancellationToken);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_READY:
-                        result = ProcessReadyState(context);
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unexpected context state: {context.State}.");
+                    result = ProcessReadyState(context);
+                }
+                else
+                {
+                    ProcessState(context, databaseName, cancellationToken);
                 }
             }
+            return result;
         }
 
         protected async Task<byte[]> ProcessStatesAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             byte[] result = null;
-            while (true)
+            while (context.State != CryptContext.StateCode.MONGOCRYPT_CTX_DONE)
             {
-                switch (context.State)
+                if (context.State == CryptContext.StateCode.MONGOCRYPT_CTX_READY)
                 {
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_DONE:
-                        return result;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_KMS:
-                        await ProcessNeedKmsStateAsync(context, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_COLLINFO:
-                        await ProcessNeedCollectionInfoStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_KEYS:
-                        await ProcessNeedMongoKeysStateAsync(context, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_MARKINGS:
-                        await ProcessNeedMongoMarkingsStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
-                        break;
-                    case CryptContext.StateCode.MONGOCRYPT_CTX_READY:
-                        result = ProcessReadyState(context); // no async version needed
-                        break;
-                    default:
-                        throw new InvalidOperationException($"Unexpected context state: {context.State}.");
+                    result = ProcessReadyState(context);
+                }
+                else
+                {
+                    await ProcessStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
                 }
             }
+            return result;
         }
 
         // private methods

@@ -107,7 +107,40 @@ namespace MongoDB.Driver.Encryption
         }
 
         // protected methods
-        protected override void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        protected override void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        {
+            switch (context.State)
+            {
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_COLLINFO:
+                    ProcessNeedCollectionInfoState(context, databaseName, cancellationToken);
+                    break;
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_MARKINGS:
+                    ProcessNeedMongoMarkingsState(context, databaseName, cancellationToken);
+                    break;
+                default:
+                    base.ProcessState(context, databaseName, cancellationToken);
+                    break;
+            }
+        }
+
+        protected override async Task ProcessStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        {
+            switch (context.State)
+            {
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_COLLINFO:
+                    await ProcessNeedCollectionInfoStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
+                    break;
+                case CryptContext.StateCode.MONGOCRYPT_CTX_NEED_MONGO_MARKINGS:
+                    await ProcessNeedMongoMarkingsStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
+                    break;
+                default:
+                    await base.ProcessStateAsync(context, databaseName, cancellationToken).ConfigureAwait(false);
+                    break;
+            }
+        }
+
+        // private methods
+        private void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             var database = _client.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
@@ -119,7 +152,7 @@ namespace MongoDB.Driver.Encryption
             FeedResults(context, results);
         }
 
-        protected override async Task ProcessNeedCollectionInfoStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        private async Task ProcessNeedCollectionInfoStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             var database = _client.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
@@ -131,7 +164,7 @@ namespace MongoDB.Driver.Encryption
             FeedResults(context, results);
         }
 
-        protected override void ProcessNeedMongoMarkingsState(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        private void ProcessNeedMongoMarkingsState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             var database = _mongocryptdClient.GetDatabase(databaseName);
             var commandBytes = context.GetOperation().ToArray();
@@ -155,7 +188,7 @@ namespace MongoDB.Driver.Encryption
             FeedResult(context, response);
         }
 
-        protected override async Task ProcessNeedMongoMarkingsStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
+        private async Task ProcessNeedMongoMarkingsStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             var database = _mongocryptdClient.GetDatabase(databaseName);
             var commandBytes = context.GetOperation().ToArray();
@@ -179,7 +212,6 @@ namespace MongoDB.Driver.Encryption
             FeedResult(context, response);
         }
 
-        // private methods
         private void RestoreDbNodeInResponse(BsonDocument request, BsonDocument response)
         {
             if (request.TryGetElement("$db", out var db))
