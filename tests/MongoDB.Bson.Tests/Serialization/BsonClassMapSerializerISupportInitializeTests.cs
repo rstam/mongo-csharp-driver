@@ -24,51 +24,6 @@ namespace MongoDB.Bson.Tests.Serialization
     {
         // public methods
         [Fact]
-        public void BeginInit_and_EndInit_should_be_called_when_deserializing_ClassImplementingISupportInitialize()
-        {
-            var subject = BsonSerializer.LookupSerializer<ClassImplementingISupportInitialize>();
-            using (var reader = new JsonReader("{ }"))
-            {
-                var context = BsonDeserializationContext.CreateRoot(reader);
-
-                var result = subject.Deserialize(context);
-
-                result.BeginInitWasCalled.Should().BeTrue();
-                result.EndInitWasCalled.Should().BeTrue();
-            }
-        }
-
-        [Fact]
-        public void BeginInit_and_EndInit_should_be_called_when_deserializing_ClassImplementingISupportInitializeExplicitly()
-        {
-            var subject = BsonSerializer.LookupSerializer<ClassImplementingISupportInitializeExplicitly>();
-            using (var reader = new JsonReader("{ }"))
-            {
-                var context = BsonDeserializationContext.CreateRoot(reader);
-
-                var result = subject.Deserialize(context);
-
-                result.BeginInitWasCalled.Should().BeTrue();
-                result.EndInitWasCalled.Should().BeTrue();
-            }
-        }
-
-        [Fact]
-        public void BeginInit_and_EndInit_should_not_be_called_when_deserializing_ClassImplementingISupportInitializeInDifferentNamespace()
-        {
-            var subject = BsonSerializer.LookupSerializer<ClassImplementingISupportInitializeInDifferentNamespace>();
-            using (var reader = new JsonReader("{ }"))
-            {
-                var context = BsonDeserializationContext.CreateRoot(reader);
-
-                var result = subject.Deserialize(context);
-
-                result.BeginInitWasCalled.Should().BeFalse();
-                result.EndInitWasCalled.Should().BeFalse();
-            }
-        }
-
-        [Fact]
         public void BeginInit_and_EndInit_should_be_called_when_deserializing_ClassDerivedFromClassImplementingISupportInitialize()
         {
             var subject = BsonSerializer.LookupSerializer<ClassDerivedFromClassImplementingISupportInitialize>();
@@ -99,9 +54,54 @@ namespace MongoDB.Bson.Tests.Serialization
         }
 
         [Fact]
+        public void BeginInit_and_EndInit_should_be_called_when_deserializing_ClassImplementingISupportInitialize()
+        {
+            var subject = BsonSerializer.LookupSerializer<ClassImplementingISupportInitialize>();
+            using (var reader = new JsonReader("{ }"))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                var result = subject.Deserialize(context);
+
+                result.BeginInitWasCalled.Should().BeTrue();
+                result.EndInitWasCalled.Should().BeTrue();
+            }
+        }
+
+        [Fact]
+        public void BeginInit_and_EndInit_should_be_called_when_deserializing_ClassImplementingISupportInitializeExplicitly()
+        {
+            var subject = BsonSerializer.LookupSerializer<ClassImplementingISupportInitializeExplicitly>();
+            using (var reader = new JsonReader("{ }"))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                var result = subject.Deserialize(context);
+
+                result.BeginInitWasCalled.Should().BeTrue();
+                result.EndInitWasCalled.Should().BeTrue();
+            }
+        }
+
+        [Fact]
         public void BeginInit_and_EndInit_should_not_be_called_when_deserializing_ClassDerivedFromClassImplementingISupportInitializeInDifferentNamespace()
         {
             var subject = BsonSerializer.LookupSerializer<ClassDerivedFromClassImplementingISupportInitializeInDifferentNamespace>();
+            using (var reader = new JsonReader("{ }"))
+            {
+                var context = BsonDeserializationContext.CreateRoot(reader);
+
+                var result = subject.Deserialize(context);
+
+                result.BeginInitWasCalled.Should().BeFalse();
+                result.EndInitWasCalled.Should().BeFalse();
+            }
+        }
+
+        [Fact]
+        public void BeginInit_and_EndInit_should_not_be_called_when_deserializing_ClassImplementingISupportInitializeInDifferentNamespace()
+        {
+            var subject = BsonSerializer.LookupSerializer<ClassImplementingISupportInitializeInDifferentNamespace>();
             using (var reader = new JsonReader("{ }"))
             {
                 var context = BsonDeserializationContext.CreateRoot(reader);

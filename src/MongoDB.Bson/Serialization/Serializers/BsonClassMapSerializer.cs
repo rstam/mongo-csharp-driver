@@ -34,12 +34,12 @@ namespace MongoDB.Bson.Serialization
         private static void CheckForISupportInitializeInterface(out MethodInfo beginInitMethodInfo, out MethodInfo endInitMethodInfo)
         {
             var classTypeInfo = typeof(TClass).GetTypeInfo();
-            var isupportInitializeType = classTypeInfo.GetInterface("ISupportInitialize");
-            if (isupportInitializeType != null && isupportInitializeType.FullName == "System.ComponentModel.ISupportInitialize")
+            var iSupportInitializeType = classTypeInfo.GetInterface("ISupportInitialize");
+            if (iSupportInitializeType != null && iSupportInitializeType.FullName == "System.ComponentModel.ISupportInitialize")
             {
-                var isupportInitializeTypeInfo = isupportInitializeType.GetTypeInfo();
-                beginInitMethodInfo = isupportInitializeTypeInfo.GetMethod("BeginInit");
-                endInitMethodInfo = isupportInitializeTypeInfo.GetMethod("EndInit");
+                var iSupportInitializeTypeInfo = iSupportInitializeType.GetTypeInfo();
+                beginInitMethodInfo = iSupportInitializeTypeInfo.GetMethod("BeginInit");
+                endInitMethodInfo = iSupportInitializeTypeInfo.GetMethod("EndInit");
                 return;
             }
 
