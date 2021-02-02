@@ -27,15 +27,19 @@ namespace MongoDB.Driver.Encryption
 {
     internal sealed class ExplicitEncryptionLibMongoCryptController : LibMongoCryptControllerBase
     {
+        // private fields
+        private readonly IMongoClient _keyVaultClient;
+
         // constructors
         public ExplicitEncryptionLibMongoCryptController(
             CryptClient cryptClient,
             ClientEncryptionOptions clientEncryptionOptions)
             : base(
                   Ensure.IsNotNull(cryptClient, nameof(cryptClient)),
-                  Ensure.IsNotNull(Ensure.IsNotNull(clientEncryptionOptions, nameof(clientEncryptionOptions)).KeyVaultClient, nameof(clientEncryptionOptions.KeyVaultClient)),
                   Ensure.IsNotNull(Ensure.IsNotNull(clientEncryptionOptions, nameof(clientEncryptionOptions)).KeyVaultNamespace, nameof(clientEncryptionOptions.KeyVaultNamespace)))
         {
+            Ensure.IsNotNull(clientEncryptionOptions, nameof(clientEncryptionOptions));
+            _keyVaultClient = Ensure.IsNotNull(clientEncryptionOptions.KeyVaultClient, nameof(clientEncryptionOptions.KeyVaultClient));
         }
 
         // public methods
@@ -228,6 +232,9 @@ namespace MongoDB.Driver.Encryption
                 throw new MongoEncryptionException(ex);
             }
         }
+
+        // protected methods
+        protected override IMongoClient GetKeyVaultClient() => _keyVaultClient;
 
         // private methods
         private KmsKeyId GetKmsKeyId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)

@@ -29,6 +29,7 @@ namespace MongoDB.Driver.Encryption
     internal sealed class AutoEncryptionLibMongoCryptController : LibMongoCryptControllerBase, IBinaryDocumentFieldDecryptor, IBinaryCommandFieldEncryptor
     {
         // private fields
+        private readonly AutoEncryptionOptions _autoEncryptionOptions;
         private readonly IMongoClient _client;
         private readonly IMongoClient _mongocryptdClient;
         private readonly MongocryptdFactory _mongocryptdFactory;
@@ -40,10 +41,11 @@ namespace MongoDB.Driver.Encryption
             AutoEncryptionOptions autoEncryptionOptions)
             : base(
                   Ensure.IsNotNull(cryptClient, nameof(cryptClient)),
-                  Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions)).KeyVaultClient ?? client,
                   Ensure.IsNotNull(Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions)).KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace)))
         {
             _client = Ensure.IsNotNull(client, nameof(client)); // _client might not be fully constructed at this point, don't call any instance methods on it yet
+            _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+
             _mongocryptdFactory = new MongocryptdFactory(autoEncryptionOptions.ExtraOptions);
             _mongocryptdClient = _mongocryptdFactory.CreateMongocryptdClient();
         }
@@ -118,6 +120,8 @@ namespace MongoDB.Driver.Encryption
         }
 
         // protected methods
+        protected override IMongoClient GetKeyVaultClient() => _autoEncryptionOptions.KeyVaultClient ?? ((IMongoClientInternal)_client).GetKeyVaultClient();
+
         protected override void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             switch (context.State)
@@ -153,7 +157,8 @@ namespace MongoDB.Driver.Encryption
         // private methods
         private void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var database = _client.GetDatabase(databaseName);
+            var metadataClient = ((IMongoClientInternal)_client).GetMetadataClient();
+            var database = metadataClient.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
             var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
@@ -165,7 +170,8 @@ namespace MongoDB.Driver.Encryption
 
         private async Task ProcessNeedCollectionInfoStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var database = _client.GetDatabase(databaseName);
+            var metadataClient = ((IMongoClientInternal)_client).GetMetadataClient();
+            var database = metadataClient.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
             var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
