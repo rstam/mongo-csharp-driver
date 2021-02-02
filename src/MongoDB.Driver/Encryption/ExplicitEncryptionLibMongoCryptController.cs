@@ -234,7 +234,7 @@ namespace MongoDB.Driver.Encryption
         }
 
         // protected methods
-        protected override IMongoClient GetOrCreateKeyVaultClient() => _keyVaultClient;
+        protected override IMongoClient GetKeyVaultClient() => _keyVaultClient;
 
         // private methods
         private KmsKeyId GetKmsKeyId(string kmsProvider, IReadOnlyList<string> alternateKeyNames, BsonDocument masterKey)

@@ -240,10 +240,10 @@ namespace MongoDB.Driver.TestHelpers
 
             if (wrapped is MongoClient mongoClient)
             {
-                var lazyInternalClient = mongoClient.LibMongoCryptController?.LazyInternalClient;
-                if (lazyInternalClient.IsValueCreated)
+                var internalClient = mongoClient.LibMongoCryptController?.InternalClient;
+                if (internalClient != null)
                 {
-                    ClusterRegistry.Instance.UnregisterAndDisposeCluster(lazyInternalClient.Value.Cluster);
+                    ClusterRegistry.Instance.UnregisterAndDisposeCluster(internalClient.Cluster);
                 }
             }
         }

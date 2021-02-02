@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Encryption
         // private fields
         private readonly AutoEncryptionOptions _autoEncryptionOptions;
         private readonly IMongoClient _client;
-        private readonly Lazy<IMongoClient> _lazyInternalClient;
+        private readonly IMongoClient _internalClient;
         private readonly IMongoClient _mongocryptdClient;
         private readonly MongocryptdFactory _mongocryptdFactory;
 
@@ -45,7 +45,7 @@ namespace MongoDB.Driver.Encryption
                   Ensure.IsNotNull(Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions)).KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace)))
         {
             _client = Ensure.IsNotNull(client, nameof(client)); // _client might not be fully constructed at this point, don't call any instance methods on it yet
-            _lazyInternalClient = new Lazy<IMongoClient>(CreateInternalClient, isThreadSafe: true);
+            _internalClient = CreateInternalClient(client.Settings);
             _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
 
             _mongocryptdFactory = new MongocryptdFactory(autoEncryptionOptions.ExtraOptions);
@@ -53,7 +53,7 @@ namespace MongoDB.Driver.Encryption
         }
 
         // public properties
-        public Lazy<IMongoClient> LazyInternalClient => _lazyInternalClient;
+        public IMongoClient InternalClient => _internalClient;
 
         // public methods
         public byte[] DecryptFields(byte[] encryptedDocumentBytes, CancellationToken cancellationToken)
@@ -125,9 +125,9 @@ namespace MongoDB.Driver.Encryption
         }
 
         // protected methods
-        protected override IMongoClient GetOrCreateKeyVaultClient()
+        protected override IMongoClient GetKeyVaultClient()
         {
-            return _autoEncryptionOptions.KeyVaultClient ?? _lazyInternalClient.Value;
+            return _autoEncryptionOptions.KeyVaultClient ?? _internalClient;
         }
 
         protected override void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
@@ -163,22 +163,22 @@ namespace MongoDB.Driver.Encryption
         }
 
         // private methods
-        private IMongoClient CreateInternalClient()
+        private IMongoClient CreateInternalClient(MongoClientSettings settings)
         {
-            var internalClientMongoSettings = _client.Settings.Clone();
+            var internalClientMongoSettings = settings.Clone();
             internalClientMongoSettings.AutoEncryptionOptions = null;
             internalClientMongoSettings.MinConnectionPoolSize = 0;
             return new MongoClient(internalClientMongoSettings);
         }
 
-        private IMongoClient GetOrCreateMetadataClient()
+        private IMongoClient GetMetadataClient()
         {
-            return _lazyInternalClient.Value;
+            return _internalClient;
         }
 
         private void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var metadataClient = GetOrCreateMetadataClient();
+            var metadataClient = GetMetadataClient();
             var database = metadataClient.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
@@ -191,7 +191,7 @@ namespace MongoDB.Driver.Encryption
 
         private async Task ProcessNeedCollectionInfoStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var metadataClient = GetOrCreateMetadataClient();
+            var metadataClient = GetMetadataClient();
             var database = metadataClient.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
