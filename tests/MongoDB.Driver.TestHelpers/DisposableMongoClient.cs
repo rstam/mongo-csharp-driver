@@ -22,7 +22,7 @@ using MongoDB.Driver.Core.Operations;
 
 namespace MongoDB.Driver.TestHelpers
 {
-    public class DisposableMongoClient : IMongoClient, IDisposable
+    public class DisposableMongoClient : IMongoClient, IMongoClientInternal, IDisposable
     {
         private readonly IMongoClient wrapped;
 
@@ -237,6 +237,32 @@ namespace MongoDB.Driver.TestHelpers
         public void Dispose()
         {
             ClusterRegistry.Instance.UnregisterAndDisposeCluster(wrapped.Cluster);
+            if (HasInternalClient())
+            {
+                var internalClient = GetInternalClient();
+                ClusterRegistry.Instance.UnregisterAndDisposeCluster(internalClient.Cluster);
+            }
+        }
+
+        // IMongoClientInternal methods
+        public IMongoClient GetInternalClient()
+        {
+            return ((IMongoClientInternal)wrapped).GetInternalClient();
+        }
+
+        public IMongoClient GetKeyVaultClient()
+        {
+            return ((IMongoClientInternal)wrapped).GetKeyVaultClient();
+        }
+
+        public IMongoClient GetMetadataClient()
+        {
+            return ((IMongoClientInternal)wrapped).GetMetadataClient();
+        }
+
+        public bool HasInternalClient()
+        {
+            return ((IMongoClientInternal)wrapped).HasInternalClient();
         }
     }
 }

@@ -34,7 +34,7 @@ using MongoDB.Driver.Encryption;
 namespace MongoDB.Driver
 {
     /// <inheritdoc/>
-    public class MongoClient : MongoClientBase
+    public class MongoClient : MongoClientBase, IMongoClientInternal
     {
         #region static
         // private static methods
@@ -55,6 +55,7 @@ namespace MongoDB.Driver
 
         // private fields
         private readonly ICluster _cluster;
+        private readonly Lazy<IMongoClient> _lazyInternalClient;
         private readonly AutoEncryptionLibMongoCryptController _libMongoCryptController;
         private readonly IOperationExecutor _operationExecutor;
         private readonly MongoClientSettings _settings;
@@ -83,6 +84,7 @@ namespace MongoDB.Driver
             _operationExecutor = new OperationExecutor(this);
             if (settings.AutoEncryptionOptions != null)
             {
+                _lazyInternalClient = new Lazy<IMongoClient>(CreateInternalClient);
                 _libMongoCryptController = new AutoEncryptionLibMongoCryptController(
                     this,
                     _cluster.CryptClient,
@@ -454,6 +456,27 @@ namespace MongoDB.Driver
             return new MongoClient(_operationExecutor, newSettings);
         }
 
+        // explicit interface implementation methods
+        IMongoClient IMongoClientInternal.GetInternalClient()
+        {
+            return _lazyInternalClient.Value;
+        }
+
+        IMongoClient IMongoClientInternal.GetKeyVaultClient()
+        {
+            return _settings.AutoEncryptionOptions?.KeyVaultClient ?? _lazyInternalClient.Value;
+        }
+
+        IMongoClient IMongoClientInternal.GetMetadataClient()
+        {
+            return _lazyInternalClient.Value;
+        }
+
+        bool IMongoClientInternal.HasInternalClient()
+        {
+            return _lazyInternalClient.IsValueCreated;
+        }
+
         // private methods
         private bool AreSessionsSupported(CancellationToken cancellationToken)
         {
@@ -504,6 +527,14 @@ namespace MongoDB.Driver
             return new BatchTransformingAsyncCursor<BsonDocument, string>(
                 cursor,
                 databases => databases.Select(database => database["name"].AsString));
+        }
+
+        private IMongoClient CreateInternalClient()
+        {
+            var internalClientMongoSettings = _settings.Clone();
+            internalClientMongoSettings.AutoEncryptionOptions = null;
+            internalClientMongoSettings.MinConnectionPoolSize = 0;
+            return new MongoClient(internalClientMongoSettings);
         }
 
         private ListDatabasesOperation CreateListDatabaseOperation(
