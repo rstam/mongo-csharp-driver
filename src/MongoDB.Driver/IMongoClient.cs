@@ -359,12 +359,4 @@ namespace MongoDB.Driver
         /// <returns>A new IMongoClient instance with a different write concern setting.</returns>
         IMongoClient WithWriteConcern(WriteConcern writeConcern);
     }
-
-    internal interface IMongoClientInternal
-    {
-        IMongoClient GetInternalClient();
-        IMongoClient GetKeyVaultClient();
-        IMongoClient GetMetadataClient();
-        bool HasInternalClient();
-    }
 }

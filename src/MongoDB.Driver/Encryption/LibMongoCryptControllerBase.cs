@@ -76,7 +76,7 @@ namespace MongoDB.Driver.Encryption
             context.MarkDone();
         }
 
-        protected abstract IMongoClient GetKeyVaultClient();
+        protected abstract IMongoClient GetOrCreateKeyVaultClient();
 
         protected virtual void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
@@ -157,7 +157,7 @@ namespace MongoDB.Driver.Encryption
         // private methods
         private IMongoCollection<BsonDocument> GetKeyVaultCollection()
         {
-            var keyVaultClient = GetKeyVaultClient();
+            var keyVaultClient = GetOrCreateKeyVaultClient();
             var keyVaultDatabase = keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
 
             var collectionSettings = new MongoCollectionSettings
