@@ -28,25 +28,51 @@ namespace MongoDB.Driver.Encryption
 {
     internal sealed class AutoEncryptionLibMongoCryptController : LibMongoCryptControllerBase, IBinaryDocumentFieldDecryptor, IBinaryCommandFieldEncryptor
     {
+        #region static
+        private static AutoEncryptionLibMongoCryptController Create(IMongoClient client, CryptClient cryptClient, AutoEncryptionOptions autoEncryptionOptions)
+        {
+            var lazyInternalClient = new Lazy<IMongoClient>(() => CreateInternalClient());
+            var keyVaultClient = autoEncryptionOptions.KeyVaultClient ?? lazyInternalClient.Value;
+            var metadataClient = autoEncryptionOptions.BypassAutoEncryption ? null : lazyInternalClient.Value;
+            var internalClient = lazyInternalClient.IsValueCreated ? lazyInternalClient.Value : null;
+
+            return new AutoEncryptionLibMongoCryptController(
+                internalClient,
+                keyVaultClient,
+                metadataClient,
+                cryptClient,
+                autoEncryptionOptions);
+
+            IMongoClient CreateInternalClient()
+            {
+                var internalClientSettings = client.Settings.Clone();
+                internalClientSettings.AutoEncryptionOptions = null;
+                internalClientSettings.MinConnectionPoolSize = 0;
+                return new MongoClient(internalClientSettings);
+            }
+        }
+        #endregion
+
         // private fields
-        private readonly AutoEncryptionOptions _autoEncryptionOptions;
-        private readonly IMongoClient _client;
         private readonly IMongoClient _internalClient;
+        private readonly IMongoClient _metadataClient;
         private readonly IMongoClient _mongocryptdClient;
         private readonly MongocryptdFactory _mongocryptdFactory;
 
         // constructors
-        public AutoEncryptionLibMongoCryptController(
-            IMongoClient client,
+        private AutoEncryptionLibMongoCryptController(
+            IMongoClient internalClient,
+            IMongoClient keyVaultClient,
+            IMongoClient metadataClient,
             CryptClient cryptClient,
             AutoEncryptionOptions autoEncryptionOptions)
             : base(
                   Ensure.IsNotNull(cryptClient, nameof(cryptClient)),
+                  keyVaultClient,
                   Ensure.IsNotNull(Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions)).KeyVaultNamespace, nameof(autoEncryptionOptions.KeyVaultNamespace)))
         {
-            _client = Ensure.IsNotNull(client, nameof(client)); // _client might not be fully constructed at this point, don't call any instance methods on it yet
-            _internalClient = CreateInternalClient(client.Settings);
-            _autoEncryptionOptions = Ensure.IsNotNull(autoEncryptionOptions, nameof(autoEncryptionOptions));
+            _internalClient = internalClient;
+            _metadataClient = metadataClient;
 
             _mongocryptdFactory = new MongocryptdFactory(autoEncryptionOptions.ExtraOptions);
             _mongocryptdClient = _mongocryptdFactory.CreateMongocryptdClient();
@@ -125,11 +151,6 @@ namespace MongoDB.Driver.Encryption
         }
 
         // protected methods
-        protected override IMongoClient GetKeyVaultClient()
-        {
-            return _autoEncryptionOptions.KeyVaultClient ?? _internalClient;
-        }
-
         protected override void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
             switch (context.State)
@@ -163,23 +184,11 @@ namespace MongoDB.Driver.Encryption
         }
 
         // private methods
-        private IMongoClient CreateInternalClient(MongoClientSettings settings)
-        {
-            var internalClientMongoSettings = settings.Clone();
-            internalClientMongoSettings.AutoEncryptionOptions = null;
-            internalClientMongoSettings.MinConnectionPoolSize = 0;
-            return new MongoClient(internalClientMongoSettings);
-        }
-
-        private IMongoClient GetMetadataClient()
-        {
-            return _internalClient;
-        }
-
         private void ProcessNeedCollectionInfoState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var metadataClient = GetMetadataClient();
-            var database = metadataClient.GetDatabase(databaseName);
+            Ensure.IsNotNull(_metadataClient, nameof(_metadataClient)); // should not be reached
+
+            var database = _metadataClient.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
             var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);
@@ -191,8 +200,9 @@ namespace MongoDB.Driver.Encryption
 
         private async Task ProcessNeedCollectionInfoStateAsync(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
-            var metadataClient = GetMetadataClient();
-            var database = metadataClient.GetDatabase(databaseName);
+            Ensure.IsNotNull(_metadataClient, nameof(_metadataClient)); // should not be reached
+
+            var database = _metadataClient.GetDatabase(databaseName);
             var filterBytes = context.GetOperation().ToArray();
             var filterDocument = new RawBsonDocument(filterBytes);
             var filter = new BsonDocumentFilterDefinition<BsonDocument>(filterDocument);

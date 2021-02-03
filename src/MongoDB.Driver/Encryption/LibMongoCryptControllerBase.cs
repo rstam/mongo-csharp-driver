@@ -31,17 +31,20 @@ namespace MongoDB.Driver.Encryption
     {
         // protected fields
         protected readonly CryptClient _cryptClient;
+        protected readonly IMongoClient _keyVaultClient;
         protected readonly Lazy<IMongoCollection<BsonDocument>> _keyVaultCollection;
         protected readonly CollectionNamespace _keyVaultNamespace;
 
         // constructors
         protected LibMongoCryptControllerBase(
              CryptClient cryptClient,
+             IMongoClient keyVaultClient,
              CollectionNamespace keyVaultNamespace)
         {
             _cryptClient = cryptClient;
+            _keyVaultClient = keyVaultClient; // _keyVaultClient might not be fully constructed at this point, don't call any instance methods on it yet
             _keyVaultNamespace = keyVaultNamespace;
-            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection); // delay creating the instance until needed
+            _keyVaultCollection = new Lazy<IMongoCollection<BsonDocument>>(GetKeyVaultCollection); // delay use _keyVaultClient
         }
 
         // protected methods
@@ -75,8 +78,6 @@ namespace MongoDB.Driver.Encryption
             }
             context.MarkDone();
         }
-
-        protected abstract IMongoClient GetKeyVaultClient();
 
         protected virtual void ProcessState(CryptContext context, string databaseName, CancellationToken cancellationToken)
         {
@@ -157,8 +158,7 @@ namespace MongoDB.Driver.Encryption
         // private methods
         private IMongoCollection<BsonDocument> GetKeyVaultCollection()
         {
-            var keyVaultClient = GetKeyVaultClient();
-            var keyVaultDatabase = keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
+            var keyVaultDatabase = _keyVaultClient.GetDatabase(_keyVaultNamespace.DatabaseNamespace.DatabaseName);
 
             var collectionSettings = new MongoCollectionSettings
             {
