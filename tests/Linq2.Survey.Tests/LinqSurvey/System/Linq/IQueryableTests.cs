@@ -467,6 +467,52 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void ElementAt_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.ElementAt(1));
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void ElementAtOrDefault_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.ElementAtOrDefault(1));
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void Except_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new[] { new DocumentWithInt32() };
+
+            var queryable = subject.Except(source2);
+
+            AssertNotSupported(queryable);
+        }
+        [Fact]
+        public void Except_wit_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new[] { new DocumentWithInt32() };
+            var comparer = Mock.Of<IEqualityComparer<DocumentWithInt32>>();
+
+            var queryable = subject.Except(source2, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_should_translate_to_match_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
