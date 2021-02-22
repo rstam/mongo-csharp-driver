@@ -393,6 +393,32 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Count_should_translate_to_group_stage()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Count());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : 1 } } }");
+            AssertResult(queryable, terminator, 2);
+        }
+
+        [Fact]
+        public void Count_with_predicate_should_translate_to_match_and_group_stages()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Count(d => d.X == 1));
+
+            AssertStages(queryable, terminator, "{ $match : { X : 1 } }", "{ $group : { _id : 1, __result : { $sum : 1 } } }");
+            AssertResult(queryable, terminator, 1);
+        }
+
+        [Fact]
         public void Where_should_translate_to_match_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
