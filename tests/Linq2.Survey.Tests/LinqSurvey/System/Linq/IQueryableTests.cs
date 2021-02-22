@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Linq.Expressions;
+using FluentAssertions;
 using Linq2.Survey.Tests.Classes;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
@@ -11,6 +12,18 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
     public class IQueryableTests : LinqSurveyTest
     {
         // public methods
+        [Fact]
+        public void All_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var exception = Record.Exception(() => subject.All(d => d.X > 0));
+
+            exception.Should().BeOfType<NotSupportedException>();
+        }
+
         [Fact]
         public void Any_should_translate_to_limit_stage()
         {
