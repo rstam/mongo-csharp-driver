@@ -3,6 +3,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
 using Linq2.Survey.Tests.Classes;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Xunit;
@@ -15,49 +16,45 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Aggregate_is_not_supported()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
 
-            var exception = Record.Exception(() => subject.Aggregate((a, d) => new DocumentWithInt32 { Id = 0, X = a.X + d.X }));
+            var (queryable, terminator) = subject.WithTerminator(q => q.Aggregate((a, d) => new DocumentWithInt32 { Id = 0, X = a.X + d.X }));
 
-            exception.Should().BeOfType<NotSupportedException>();
+            AssertNotSupported(queryable, terminator);
         }
 
         [Fact]
         public void Aggregate_with_seed_is_not_supported()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
 
-            var exception = Record.Exception(() => subject.Aggregate(0, (a, d) => a + d.X));
+            var (queryable, terminator) = subject.WithTerminator(q => q.Aggregate(0, (a, d) => a + d.X));
 
-            exception.Should().BeOfType<NotSupportedException>();
+            AssertNotSupported(queryable, terminator);
         }
 
         [Fact]
         public void Aggregate_with_seed_and_selector_is_not_supported()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
 
-            var exception = Record.Exception(() => subject.Aggregate(new DocumentWithInt32 { X = 0 }, (a, d) => new DocumentWithInt32 { Id = 0, X = a.X + d.X }, a => a.X));
+            var (queryable, terminator) = subject.WithTerminator(q => q.Aggregate(new DocumentWithInt32 { X = 0 }, (a, d) => new DocumentWithInt32 { Id = 0, X = a.X + d.X }, a => a.X));
 
-            exception.Should().BeOfType<NotSupportedException>();
+            AssertNotSupported(queryable, terminator);
         }
 
         [Fact]
         public void All_is_not_supported()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
 
-            var exception = Record.Exception(() => subject.All(d => d.X > 0));
+            var (queryable, terminator) = subject.WithTerminator(q => q.All(d => d.X > 0));
 
-            exception.Should().BeOfType<NotSupportedException>();
+            AssertNotSupported(queryable, terminator);
         }
 
         [Fact]
@@ -344,6 +341,18 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
 
             AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
             AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Cast_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Cast<BsonDocument>();
+
+            AssertNotSupported(queryable);
         }
 
         [Fact]

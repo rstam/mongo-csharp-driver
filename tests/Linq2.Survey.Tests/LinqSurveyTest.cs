@@ -11,12 +11,33 @@ using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MongoDB.Driver.Linq.Expressions;
 using MongoDB.Driver.Tests;
+using Xunit;
 
 namespace Linq2.Survey.Tests.LinqSurvey
 {
     public class LinqSurveyTest
     {
         // public methods
+        public void AssertNotSupported<TSource>(
+            IQueryable<TSource> queryable)
+        {
+            var exception = Record.Exception(() => queryable.ToList());
+
+            exception.Should().BeOfType<NotSupportedException>();
+        }
+
+        public void AssertNotSupported<TSource, TResult>(
+            IQueryable<TSource> queryable,
+            Expression<Func<IQueryable<TSource>, TResult>> terminator)
+        {
+            var provider = queryable.Provider;
+            var expression = CreateExpression(queryable, terminator);
+
+            var exception = Record.Exception(() => provider.Execute(expression));
+
+            exception.Should().BeOfType<NotSupportedException>();
+        }
+
         public void AssertResult<TSource, TResult>(
             IQueryable<TSource> queryable,
             Expression<Func<IQueryable<TSource>, TResult>> terminator,
@@ -32,6 +53,22 @@ namespace Linq2.Survey.Tests.LinqSurvey
             where TResult : IHasId<TId>
         {
             AssertResults(queryable, r => r.Id, expectedIds);
+        }
+
+        public void AssertResults<TResult>(
+            IQueryable<TResult> queryable,
+            params TResult[] expectedResults)
+        {
+            var results = queryable.ToList();
+            results.Should().Equal(expectedResults);
+        }
+
+        public void AssertResults<TResult>(
+            IQueryable<TResult> queryable,
+            IEnumerable<TResult> expectedResults)
+        {
+            var results = queryable.ToList();
+            results.Should().Equal(expectedResults);
         }
 
         public void AssertResults<TResult, TTransformed>(
@@ -83,6 +120,12 @@ namespace Linq2.Survey.Tests.LinqSurvey
             return collection;
         }
 
+        // protected methods
+        protected IEnumerable<BsonDocument> Parse(IEnumerable<string> documents)
+        {
+            return documents.Select(x => BsonDocument.Parse(x));
+        }
+
         // private methods
         private Expression CreateExpression<TSource, TResult>(
             IQueryable<TSource> queryable,
@@ -110,11 +153,6 @@ namespace Linq2.Survey.Tests.LinqSurvey
             var model = provider.GetExecutionModel(expression);
             var stages = (IEnumerable<BsonDocument>)Reflector.GetPropertyValue(model, "Stages", BindingFlags.Public | BindingFlags.Instance);
             return stages.ToList();
-        }
-
-        private IEnumerable<BsonDocument> Parse(IEnumerable<string> documents)
-        {
-            return documents.Select(x => BsonDocument.Parse(x));
         }
     }
 }
