@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
@@ -6,6 +7,7 @@ using Linq2.Survey.Tests.Classes;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using Moq;
 using Xunit;
 
 namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
@@ -346,13 +348,48 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Cast_is_not_supported()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
 
             var queryable = subject.Cast<BsonDocument>();
 
             AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Concat_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Concat(new DocumentWithInt32[0]);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Contains_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var item = new DocumentWithInt32();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Contains(item));
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void Contains_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var item = new DocumentWithInt32();
+            var comparer = Mock.Of<IEqualityComparer<DocumentWithInt32>>();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Contains(item, comparer));
+
+            AssertNotSupported(queryable, terminator);
         }
 
         [Fact]
