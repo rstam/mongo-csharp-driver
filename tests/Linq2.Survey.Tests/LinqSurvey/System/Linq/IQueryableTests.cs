@@ -166,7 +166,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Average_with_int_selector_should_return_expected_result()
         {
-            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
             var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
@@ -179,7 +179,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Average_with_int_should_return_expected_result()
         {
-            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
             var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable().Select(d => d.X);
 
@@ -192,7 +192,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Average_with_long_selector_should_return_expected_result()
         {
-            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }" };
             var collection = CreateCollection<DocumentWithInt64>(documents: documents);
             var subject = collection.AsQueryable();
 
@@ -205,7 +205,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Average_with_long_should_return_expected_result()
         {
-            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }" };
             var collection = CreateCollection<DocumentWithInt64>(documents: documents);
             var subject = collection.AsQueryable().Select(d => d.X);
 
@@ -322,7 +322,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Average_with_nullable_long_selector_should_return_expected_result()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }", "{ _id : 3, X : null }" };
             var collection = CreateCollection<DocumentWithNullableInt64>(documents: documents);
             var subject = collection.AsQueryable();
 
@@ -335,7 +335,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         [Fact]
         public void Average_with_nullable_long_should_return_expected_result()
         {
-            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }", "{ _id : 3, X : null }" };
             var collection = CreateCollection<DocumentWithNullableInt64>(documents: documents);
             var subject = collection.AsQueryable().Select(d => d.X);
 
@@ -437,6 +437,31 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var defaultValue = new DocumentWithInt32();
 
             var queryable = subject.DefaultIfEmpty(defaultValue);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Distinct_should_translate_to_group_stage()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var queryable = subject.Distinct();
+
+            AssertStages(queryable, "{ $group : { _id : '$X' } }");
+            AssertResults(queryable, new[] { 1, 2 });
+        }
+
+        [Fact]
+        public void Distinct_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable().Select(d => d.X);
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.Distinct(comparer);
 
             AssertNotSupported(queryable);
         }
