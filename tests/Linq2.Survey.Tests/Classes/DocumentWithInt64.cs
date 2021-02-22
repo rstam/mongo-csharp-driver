@@ -1,8 +1,8 @@
 ﻿namespace Linq2.Survey.Tests.Classes
 {
-    public class DocumentWithInt : IHasId<int>
+    public class DocumentWithInt64 : IHasId<int>
     {
         public int Id { get; set; }
-        public int X { get; set; }
+        public long X { get; set; }
     }
 }

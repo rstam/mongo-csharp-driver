@@ -16,10 +16,10 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         public void Aggregate_is_not_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
-            var exception = Record.Exception(() => subject.Aggregate((a, d) => new DocumentWithInt { Id = 0, X = a.X + d.X }));
+            var exception = Record.Exception(() => subject.Aggregate((a, d) => new DocumentWithInt32 { Id = 0, X = a.X + d.X }));
 
             exception.Should().BeOfType<NotSupportedException>();
         }
@@ -28,7 +28,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         public void Aggregate_with_seed_is_not_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
             var exception = Record.Exception(() => subject.Aggregate(0, (a, d) => a + d.X));
@@ -40,10 +40,10 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         public void Aggregate_with_seed_and_selector_is_not_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
-            var exception = Record.Exception(() => subject.Aggregate(new DocumentWithInt { X = 0 }, (a, d) => new DocumentWithInt { Id = 0, X = a.X + d.X }, a => a.X));
+            var exception = Record.Exception(() => subject.Aggregate(new DocumentWithInt32 { X = 0 }, (a, d) => new DocumentWithInt32 { Id = 0, X = a.X + d.X }, a => a.X));
 
             exception.Should().BeOfType<NotSupportedException>();
         }
@@ -52,7 +52,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         public void All_is_not_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
             var exception = Record.Exception(() => subject.All(d => d.X > 0));
@@ -64,7 +64,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         public void Any_should_translate_to_limit_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
             var (queryable, terminator) = subject.WithTerminator(q => q.Any());
@@ -77,7 +77,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         public void Any_with_predicate_should_translate_to_match_and_limit_stages()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
             var (queryable, terminator) = subject.WithTerminator(q => q.Any(d => d.X == 3));
@@ -87,10 +87,270 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Average_with_decimal_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }" };
+            var collection = CreateCollection<DocumentWithDecimal>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5M);
+        }
+
+        [Fact]
+        public void Average_with_decimal_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }" };
+            var collection = CreateCollection<DocumentWithDecimal>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5M);
+        }
+
+        [Fact]
+        public void Average_with_double_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithDouble>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_double_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithDouble>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_float_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithSingle>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5F);
+        }
+
+        [Fact]
+        public void Average_with_float_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithSingle>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5F);
+        }
+
+        [Fact]
+        public void Average_with_int_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_int_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_long_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithInt64>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_long_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithInt64>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_nullable_decimal_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDecimal>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5M);
+        }
+
+        [Fact]
+        public void Average_with_nullable_decimal_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDecimal>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5M);
+        }
+
+        [Fact]
+        public void Average_with_nullable_double_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDouble>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_nullable_double_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDouble>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_nullable_float_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableSingle>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5F);
+        }
+
+        [Fact]
+        public void Average_with_nullable_float_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableSingle>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5F);
+        }
+
+        [Fact]
+        public void Average_with_nullable_int_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_nullable_int_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt32>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_nullable_long_selector_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt64>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
+        public void Average_with_nullable_long_should_return_expected_result()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt64>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Average());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $avg : '$X' } } }");
+            AssertResult(queryable, terminator, 1.5);
+        }
+
+        [Fact]
         public void Where_should_translate_to_match_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
-            var collection = CreateCollection<DocumentWithInt>(documents: documents);
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
             var queryable = subject.Where(d => d.X == 1);
