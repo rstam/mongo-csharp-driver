@@ -419,6 +419,29 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void DefaultIfEmpty_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.DefaultIfEmpty();
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void DefaultIfEmpty_with_defaultValue_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var defaultValue = new DocumentWithInt32();
+
+            var queryable = subject.DefaultIfEmpty(defaultValue);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_should_translate_to_match_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
