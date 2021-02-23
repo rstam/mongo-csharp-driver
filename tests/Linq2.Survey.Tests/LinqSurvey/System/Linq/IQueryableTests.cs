@@ -826,6 +826,54 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Last_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Last());
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void Last_with_predicate_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Last(d => d.X == 1));
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void LastOrDefault_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.LastOrDefault());
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void LastOrDefault_with_predicate_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.LastOrDefault(d => d.X == 3));
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
