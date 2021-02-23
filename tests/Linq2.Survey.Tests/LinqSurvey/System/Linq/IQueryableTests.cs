@@ -1235,6 +1235,266 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Sum_with_decimal_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }" };
+            var collection = CreateCollection<DocumentWithDecimal>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0M);
+        }
+
+        [Fact]
+        public void Sum_with_decimal_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }" };
+            var collection = CreateCollection<DocumentWithDecimal>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0M);
+        }
+
+        [Fact]
+        public void Sum_with_double_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithDouble>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0);
+        }
+
+        [Fact]
+        public void Sum_with_double_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithDouble>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0);
+        }
+
+        [Fact]
+        public void Sum_with_float_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithSingle>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0F);
+        }
+
+        [Fact]
+        public void Sum_with_float_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }" };
+            var collection = CreateCollection<DocumentWithSingle>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0F);
+        }
+
+        [Fact]
+        public void Sum_with_int_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_int_is_supportedt()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_long_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }" };
+            var collection = CreateCollection<DocumentWithInt64>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_long_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }" };
+            var collection = CreateCollection<DocumentWithInt64>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_decimal_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDecimal>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0M);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_decimal_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberDecimal : '1.0' } }", "{ _id : 2, X : { $numberDecimal : '2.0' } }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDecimal>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0M);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_double_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDouble>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_double_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableDouble>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_float_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableSingle>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0F);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_float_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1.0 }", "{ _id : 2, X : 2.0 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableSingle>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3.0F);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_int_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_int_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt32>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_long_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt64>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
+        public void Sum_with_nullable_long_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : { $numberLong : '1' } }", "{ _id : 2, X : { $numberLong : '2' } }", "{ _id : 3, X : null }" };
+            var collection = CreateCollection<DocumentWithNullableInt64>(documents: documents);
+            var subject = collection.AsQueryable().Select(d => d.X);
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Sum());
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $sum : '$X' } } }");
+            AssertResult(queryable, terminator, 3);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
