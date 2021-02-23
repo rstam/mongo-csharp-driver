@@ -64,7 +64,7 @@ namespace Linq2.Survey.Tests.LinqSurvey
         public void AssertResultIds<TResult, TId>(IQueryable<TResult> queryable, params TId[] expectedIds)
             where TResult : IHasId<TId>
         {
-            AssertResults(queryable, r => r.Id, expectedIds);
+            AssertTransformedResults(queryable, r => r.Id, expectedIds);
         }
 
         public void AssertResults<TResult>(
@@ -83,14 +83,13 @@ namespace Linq2.Survey.Tests.LinqSurvey
             results.Should().Equal(expectedResults);
         }
 
-        public void AssertResults<TResult, TTransformed>(
+        public void AssertSortedResults<TResult, TSort>(
             IQueryable<TResult> queryable,
-            Func<TResult, TTransformed> transformer,
-            params TTransformed[] expectedValues)
+            Func<TResult, TSort> keySelector,
+            params TSort[] expectedResults)
         {
-            var results = queryable.ToList();
-            var values = results.Select(x => transformer(x)).ToList();
-            values.Should().Equal(expectedValues);
+            var results = queryable.AsEnumerable().OrderBy(keySelector).ToList(); ;
+            results.Should().Equal(expectedResults);
         }
 
         public void AssertStages<TResult>(
@@ -108,6 +107,16 @@ namespace Linq2.Survey.Tests.LinqSurvey
         {
             var stages = GetStages(queryable, terminator);
             stages.Should().Equal(Parse(expectedStages));
+        }
+
+        public void AssertTransformedResults<TResult, TTransformed>(
+            IQueryable<TResult> queryable,
+            Func<TResult, TTransformed> transformer,
+            params TTransformed[] expectedValues)
+        {
+            var results = queryable.ToList();
+            var values = results.Select(x => transformer(x)).ToList();
+            values.Should().Equal(expectedValues);
         }
 
         public IMongoCollection<TDocument> CreateCollection<TDocument>(

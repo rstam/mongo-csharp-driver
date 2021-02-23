@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using FluentAssertions;
 using Linq2.Survey.Tests.Classes;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Moq;
@@ -451,7 +452,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var queryable = subject.Distinct();
 
             AssertStages(queryable, "{ $group : { _id : '$X' } }");
-            AssertResults(queryable, new[] { 1, 2 });
+            AssertSortedResults(queryable, r => r, new[] { 1, 2 });
         }
 
         [Fact]
@@ -562,6 +563,109 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
 
             AssertStages(queryable, terminator, "{ $match : { X : 3 } }", "{ $limit : 1 }");
             AssertResult(queryable, terminator, null);
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_has_a_bug()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.GroupBy(d => d.X);
+
+            AssertStages(queryable, "{ $group : { _id : '$X' } }"); // bug: failure to project $$ROOT
+            var results = queryable.ToList();
+            results.Count.Should().Be(2);
+            AssertGrouping(results[0], 1); // bug: grouping is empty
+            AssertGrouping(results[1], 2); // bug: grouping is empty
+
+            void AssertGrouping(IGrouping<int, DocumentWithInt32> grouping, int expectedKey, params string[] expectedElements)
+            {
+                grouping.Key.Should().Be(expectedKey);
+                grouping.ToList().Should().Equal(expectedElements.Select(e => BsonSerializer.Deserialize<DocumentWithInt32>(e)));
+            }
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_and_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.GroupBy(d => d.X, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_and_elementSelector_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.GroupBy(d => d.X, d => d.Id);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_and_elementSelector_and_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.GroupBy(d => d.X, d => d.Id, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_and_elementSelector_and_resultSelector_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.GroupBy(d => d.X, d => d.Id, (k, e) => e.Count());
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_and_elementSelector_and_resultSelector_and_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.GroupBy(d => d.X, d => d.Id, (k, e) => e.Count(), comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_and_resultSelector_has_a_bug()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.GroupBy(d => d.X, (k, e) => e.Count());
+
+            AssertStages(queryable, "{ $group : { $sum : 1, _id : 0} }"); // bug: invalid stage
+        }
+
+        [Fact]
+        public void GroupBy_with_keySelector_resultSelector_and_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.GroupBy(d => d.X, (k, e) => e.Count(), comparer);
+
+            AssertNotSupported(queryable);
         }
 
         [Fact]
