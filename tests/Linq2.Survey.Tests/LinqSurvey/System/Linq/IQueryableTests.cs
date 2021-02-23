@@ -900,6 +900,54 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Max_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Max());
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void Max_with_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Max(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $max : '$X' } } }");
+            AssertResult(queryable, terminator, 2);
+        }
+
+        [Fact]
+        public void Min_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Min());
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void Min_with_selector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Min(d => d.X));
+
+            AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $min : '$X' } } }");
+            AssertResult(queryable, terminator, 1);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
