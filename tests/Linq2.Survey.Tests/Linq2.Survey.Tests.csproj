@@ -94,6 +94,7 @@
     <Compile Include="Classes\DocumentWithDecimal.cs" />
     <Compile Include="Classes\DocumentWithDouble.cs" />
     <Compile Include="Classes\DocumentWithInt32.cs" />
+    <Compile Include="Classes\DocumentWithInt32Array.cs" />
     <Compile Include="Classes\DocumentWithInt64.cs" />
     <Compile Include="Classes\DocumentWithNullableDecimal.cs" />
     <Compile Include="Classes\DocumentWithNullableDouble.cs" />

@@ -1063,13 +1063,61 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
-        public void Select_with_index_is_not_supported()
+        public void Select_with_selector_taking_index_is_not_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
             var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
 
             var queryable = subject.Select((d, i) => d.X);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void SelectMany_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, A : [1] }", "{ _id : 2, A : [2, 3] }" };
+            var collection = CreateCollection<DocumentWithInt32Array>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.SelectMany(d => d.A);
+
+            AssertStages(queryable, "{ $unwind : '$A' }", "{ $project : { A : '$A', _id : 0 } }");
+            AssertResults(queryable, 1, 2, 3);
+        }
+
+        [Fact]
+        public void SelectMany_with_selector_taking_index_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32Array>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.SelectMany((d, i) => d.A);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void SelectMany_with_collectionSelector_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, A : [1] }", "{ _id : 2, A : [2, 3] }" };
+            var collection = CreateCollection<DocumentWithInt32Array>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.SelectMany(d => d.A, (d, e) => e);
+
+            AssertStages(queryable, "{ $unwind : '$A' }", "{ $project : { A : '$A', _id : 0 } }");
+            AssertResults(queryable, 1, 2, 3);
+        }
+
+        [Fact]
+        public void SelectMany_with_collectionSelector_taking_index_is_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32Array>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.SelectMany((d, i) => d.A, (d, e) => e);
 
             AssertNotSupported(queryable);
         }
