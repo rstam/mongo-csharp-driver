@@ -1039,6 +1039,17 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Reverse_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Reverse();
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
