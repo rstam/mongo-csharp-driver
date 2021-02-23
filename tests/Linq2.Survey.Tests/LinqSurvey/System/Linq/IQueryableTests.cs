@@ -669,6 +669,75 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void GroupJoin_with_ienumerable_inner_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var inner = new DocumentWithInt32[0];
+
+            var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i });
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void GroupJoin_with_imongocollection_inner_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+            var innerDocuments = new[] { "{ _id : 1, X : 11 }" };
+            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments);
+
+            var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i });
+
+            AssertStages(queryable, "{ $lookup : { from : 'inner', localField : '_id', foreignField : '_id', as : 'i' } }");
+            var results = queryable.AsEnumerable().OrderBy(d => d.o.Id).ToList();
+            results.Count().Should().Be(2);
+            var result1 = results[0];
+            var result2 = results[1];
+            result1.o.Id.Should().Be(1);
+            result1.i.Select(d => d.Id).Should().Equal(1);
+            result2.o.Id.Should().Be(2);
+            result2.i.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void GroupJoin_with_iqueryable_inner_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+            var innerDocuments = new[] { "{ _id : 1, X : 11 }" };
+            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments);
+
+            var queryable = subject.GroupJoin(inner.AsQueryable(), o => o.Id, i => i.Id, (o, i) => new { o, i });
+
+            AssertStages(queryable, "{ $lookup : { from : 'inner', localField : '_id', foreignField : '_id', as : 'i' } }");
+            var results = queryable.AsEnumerable().OrderBy(d => d.o.Id).ToList();
+            results.Count().Should().Be(2);
+            var result1 = results[0];
+            var result2 = results[1];
+            result1.o.Id.Should().Be(1);
+            result1.i.Select(d => d.Id).Should().Equal(1);
+            result2.o.Id.Should().Be(2);
+            result2.i.Should().BeEmpty();
+        }
+
+        [Fact]
+        public void GroupJoin_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var inner = new DocumentWithInt32[0];
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i }, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_should_translate_to_match_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
