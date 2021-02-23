@@ -1050,6 +1050,31 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Select_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Select(d => d.X);
+
+            AssertStages(queryable, "{ $project : { X : '$X', _id : 0 } }");
+            AssertResults(queryable, 1, 2);
+        }
+
+        [Fact]
+        public void Select_with_index_is_not_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Select((d, i) => d.X);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
