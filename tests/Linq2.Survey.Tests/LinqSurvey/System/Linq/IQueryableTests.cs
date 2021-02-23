@@ -6,6 +6,7 @@ using FluentAssertions;
 using Linq2.Survey.Tests.Classes;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using Moq;
@@ -945,6 +946,46 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
 
             AssertStages(queryable, terminator, "{ $group : { _id : 1, __result : { $min : '$X' } } }");
             AssertResult(queryable, terminator, 1);
+        }
+
+        [Fact]
+        public void OfType_with_hierarchical_discriminator_is_supported()
+        {
+            _ = new BaseDocumentWithHierarchicalDiscriminator(); // force execution of static constructor
+            BsonSerializer.LookupDiscriminatorConvention(typeof(BaseDocumentWithHierarchicalDiscriminator)).Should().BeOfType<HierarchicalDiscriminatorConvention>();
+
+            var documents = new[]
+            {
+                "{ _id : 1, _t : 'BaseDocumentWithHierarchicalDiscriminator', X : 1 }",
+                "{ _id : 2, _t : ['BaseDocumentWithHierarchicalDiscriminator', 'DerivedDocumentWithHierarchicalDiscriminator'], X : 2, Y : 2 }"
+            };
+            var collection = CreateCollection<BaseDocumentWithHierarchicalDiscriminator>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.OfType<DerivedDocumentWithHierarchicalDiscriminator>();
+
+            AssertStages(queryable, "{ $match : { _t : 'DerivedDocumentWithHierarchicalDiscriminator' } }");
+            AssertResultIds(queryable, 2);
+        }
+
+        [Fact]
+        public void OfType_with_scalar_discriminator_is_supported()
+        {
+            _ = new BaseDocumentWithScalarDiscriminator(); // force execution of static constructor
+            BsonSerializer.LookupDiscriminatorConvention(typeof(BaseDocumentWithScalarDiscriminator)).Should().BeOfType<ScalarDiscriminatorConvention>();
+
+            var documents = new[]
+            {
+                "{ _id : 1, _t : 'BaseDocumentWithScalarDiscriminator', X : 1 }",
+                "{ _id : 2, _t : 'DerivedDocumentWithScalarDiscriminator', X : 2, Y : 2 }"
+            };
+            var collection = CreateCollection<BaseDocumentWithScalarDiscriminator>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.OfType<DerivedDocumentWithScalarDiscriminator>();
+
+            AssertStages(queryable, "{ $match : { _t : 'DerivedDocumentWithScalarDiscriminator' } }");
+            AssertResultIds(queryable, 2);
         }
 
         [Fact]
