@@ -513,6 +513,58 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void First_should_translate_to_limit_stage()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.First());
+
+            AssertStages(queryable, terminator, "{ $limit : 1 }");
+            AssertResultId(queryable, terminator, 1);
+        }
+
+        [Fact]
+        public void First_with_predicate_should_translate_to_match_and_limit_stages()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.First(d => d.X == 2));
+
+            AssertStages(queryable, terminator, "{ $match : { X : 2 } }", "{ $limit : 1 }");
+            AssertResultId(queryable, terminator, 2);
+        }
+
+        [Fact]
+        public void FirstOrDefault_should_translate_to_limit_stage()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.FirstOrDefault());
+
+            AssertStages(queryable, terminator, "{ $limit : 1 }");
+            AssertResultId(queryable, terminator, 1);
+        }
+
+        [Fact]
+        public void FirstOrDefault_with_predicate_should_translate_to_match_and_limit_stages()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.FirstOrDefault(d => d.X == 3));
+
+            AssertStages(queryable, terminator, "{ $match : { X : 3 } }", "{ $limit : 1 }");
+            AssertResult(queryable, terminator, null);
+        }
+
+        [Fact]
         public void Where_should_translate_to_match_stage()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };

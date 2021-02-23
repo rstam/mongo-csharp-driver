@@ -49,6 +49,18 @@ namespace Linq2.Survey.Tests.LinqSurvey
             result.Should().Be(expectedResult);
         }
 
+        public void AssertResultId<TSource, TResult, TId>(
+            IQueryable<TSource> queryable,
+            Expression<Func<IQueryable<TSource>, TResult>> terminator,
+            TId expectedId)
+            where TResult: IHasId<TId>
+        {
+            var provider = queryable.Provider;
+            var expression = CreateExpression(queryable, terminator);
+            var result = (TResult)provider.Execute(expression);
+            result.Id.Should().Be(expectedId);
+        }
+
         public void AssertResultIds<TResult, TId>(IQueryable<TResult> queryable, params TId[] expectedIds)
             where TResult : IHasId<TId>
         {
