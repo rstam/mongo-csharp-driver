@@ -501,7 +501,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             AssertNotSupported(queryable);
         }
         [Fact]
-        public void Except_wit_comparer_is_not_supported()
+        public void Except_with_comparer_is_not_supported()
         {
             var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
@@ -687,9 +687,9 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
             var innerDocuments = new[] { "{ _id : 1, X : 11 }" };
-            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments);
+            var innerCollection = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments);
 
-            var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i });
+            var queryable = subject.GroupJoin(innerCollection, o => o.Id, i => i.Id, (o, i) => new { o, i });
 
             AssertStages(queryable, "{ $lookup : { from : 'inner', localField : '_id', foreignField : '_id', as : 'i' } }");
             var results = queryable.AsEnumerable().OrderBy(d => d.o.Id).ToList();
@@ -709,9 +709,9 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var collection = CreateCollection<DocumentWithInt32>(documents: documents);
             var subject = collection.AsQueryable();
             var innerDocuments = new[] { "{ _id : 1, X : 11 }" };
-            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments);
+            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments).AsQueryable();
 
-            var queryable = subject.GroupJoin(inner.AsQueryable(), o => o.Id, i => i.Id, (o, i) => new { o, i });
+            var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i });
 
             AssertStages(queryable, "{ $lookup : { from : 'inner', localField : '_id', foreignField : '_id', as : 'i' } }");
             var results = queryable.AsEnumerable().OrderBy(d => d.o.Id).ToList();
@@ -729,7 +729,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         {
             var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();
-            var inner = new DocumentWithInt32[0];
+            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner").AsQueryable();
             var comparer = Mock.Of<IEqualityComparer<int>>();
 
             var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i }, comparer);
@@ -758,6 +758,69 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var comparer = Mock.Of<IEqualityComparer<DocumentWithInt32>>();
 
             var queryable = subject.Intersect(source2, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Join_with_ienumerable_inner_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var inner = new DocumentWithInt32[0];
+
+            var queryable = subject.Join(inner, o => o.Id, i => i.Id, (o, i) => new { o, i });
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Join_with_imongocollection_inner_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+            var innerDocuments = new[] { "{ _id : 1, X : 11 }" };
+            var innerCollection = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments);
+
+            var queryable = subject.Join(innerCollection, o => o.Id, i => i.Id, (o, i) => new { o, i });
+
+            AssertStages(queryable, "{ $lookup : { from : 'inner', localField : '_id', foreignField : '_id', as : 'i' } }", "{ $unwind : '$i' }");
+            var results = queryable.AsEnumerable().OrderBy(d => d.o.Id).ToList();
+            results.Count().Should().Be(1);
+            var result1 = results[0];
+            result1.o.Id.Should().Be(1);
+            result1.i.Id.Should().Be(1);
+        }
+
+        [Fact]
+        public void Join_with_iqueryable_inner_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+            var innerDocuments = new[] { "{ _id : 1, X : 11 }" };
+            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner", documents: innerDocuments).AsQueryable();
+
+            var queryable = subject.Join(inner, o => o.Id, i => i.Id, (o, i) => new { o, i });
+
+            AssertStages(queryable, "{ $lookup : { from : 'inner', localField : '_id', foreignField : '_id', as : 'i' } }", "{ $unwind : '$i' }");
+            var results = queryable.AsEnumerable().OrderBy(d => d.o.Id).ToList();
+            results.Count().Should().Be(1);
+            var result1 = results[0];
+            result1.o.Id.Should().Be(1);
+            result1.i.Id.Should().Be(1);
+        }
+
+        [Fact]
+        public void Join_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var inner = CreateCollection<DocumentWithInt32>(collectionName: "inner").AsQueryable();
+            var comparer = Mock.Of<IEqualityComparer<int>>();
+
+            var queryable = subject.Join(inner, o => o.Id, i => i.Id, (o, i) => new { o, i }, comparer);
 
             AssertNotSupported(queryable);
         }
