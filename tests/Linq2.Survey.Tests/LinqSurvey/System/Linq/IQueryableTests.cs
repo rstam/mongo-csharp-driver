@@ -1148,6 +1148,58 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Single_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Single());
+
+            AssertStages(queryable, terminator, "{ $limit : 2 }");
+            AssertResultId(queryable, terminator, 1);
+        }
+
+        [Fact]
+        public void Single_with_predicate_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.Single(d => d.X == 2));
+
+            AssertStages(queryable, terminator, "{ $match : { X : 2 } }", "{ $limit : 2 }");
+            AssertResultId(queryable, terminator, 2);
+        }
+
+        [Fact]
+        public void SingleOrDefault_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.SingleOrDefault());
+
+            AssertStages(queryable, terminator, "{ $limit : 2 }");
+            AssertResultId(queryable, terminator, 1);
+        }
+
+        [Fact]
+        public void SingleOrDefault_with_predicate_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.SingleOrDefault(d => d.X == 3));
+
+            AssertStages(queryable, terminator, "{ $match : { X : 3 } }", "{ $limit : 2 }");
+            AssertResult(queryable, terminator, null);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
