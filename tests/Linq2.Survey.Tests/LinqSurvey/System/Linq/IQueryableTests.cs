@@ -575,7 +575,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var queryable = subject.GroupBy(d => d.X);
 
             AssertStages(queryable, "{ $group : { _id : '$X' } }"); // bug: failure to project $$ROOT
-            var results = queryable.ToList();
+            var results = queryable.AsEnumerable().OrderBy(g => g.Key).ToList();
             results.Count.Should().Be(2);
             AssertGrouping(results[0], 1); // bug: grouping is empty
             AssertGrouping(results[1], 2); // bug: grouping is empty
@@ -733,6 +733,31 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var comparer = Mock.Of<IEqualityComparer<int>>();
 
             var queryable = subject.GroupJoin(inner, o => o.Id, i => i.Id, (o, i) => new { o, i }, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Intersect_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+
+            var queryable = subject.Intersect(source2);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Intersect_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+            var comparer = Mock.Of<IEqualityComparer<DocumentWithInt32>>();
+
+            var queryable = subject.Intersect(source2, comparer);
 
             AssertNotSupported(queryable);
         }
