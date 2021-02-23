@@ -1112,7 +1112,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
-        public void SelectMany_with_collectionSelector_taking_index_is_supported()
+        public void SelectMany_with_collectionSelector_taking_index_is_not_supported()
         {
             var collection = CreateCollection<DocumentWithInt32Array>();
             var subject = collection.AsQueryable();
@@ -1120,6 +1120,31 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             var queryable = subject.SelectMany((d, i) => d.A, (d, e) => e);
 
             AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void SequenceEqual_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.SequenceEqual(source2));
+
+            AssertNotSupported(queryable, terminator);
+        }
+
+        [Fact]
+        public void SequenceEqual_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+            var comparer = Mock.Of<IEqualityComparer<DocumentWithInt32>>();
+
+            var (queryable, terminator) = subject.WithTerminator(q => q.SequenceEqual(source2, comparer));
+
+            AssertNotSupported(queryable, terminator);
         }
 
         [Fact]
