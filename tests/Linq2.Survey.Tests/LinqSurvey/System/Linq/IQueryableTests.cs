@@ -989,6 +989,56 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void OrderBy_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.OrderBy(d => d.Id);
+
+            AssertStages(queryable, "{ $sort : { _id : 1 } }");
+            AssertResultIds(queryable, 1, 2);
+        }
+
+        [Fact]
+        public void OrderBy_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var comparer = Mock.Of<IComparer<int>>();
+
+            var queryable = subject.OrderBy(d => d.Id, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void OrderByDescending_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.OrderByDescending(d => d.Id);
+
+            AssertStages(queryable, "{ $sort : { _id : -1 } }");
+            AssertResultIds(queryable, 2, 1);
+        }
+
+        [Fact]
+        public void OrderByDescending_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var comparer = Mock.Of<IComparer<int>>();
+
+            var queryable = subject.OrderByDescending(d => d.Id, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
