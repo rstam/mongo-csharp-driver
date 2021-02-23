@@ -1200,6 +1200,41 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Skip_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Skip(1);
+
+            AssertStages(queryable, "{ $skip : 1 }");
+            AssertResultIds(queryable, 2);
+        }
+
+        [Fact]
+        public void SkipWhile_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.SkipWhile(d => d.X < 2);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void SkipWhile_with_predicate_taking_index_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.SkipWhile((d, i) => d.X < 2);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
