@@ -13,7 +13,7 @@ using MongoDB.Driver.Linq.Expressions;
 using MongoDB.Driver.Tests;
 using Xunit;
 
-namespace Linq2.Survey.Tests.LinqSurvey
+namespace Linq2.Survey.Tests
 {
     public class LinqSurveyTest
     {
@@ -80,6 +80,15 @@ namespace Linq2.Survey.Tests.LinqSurvey
             IEnumerable<TResult> expectedResults)
         {
             var results = queryable.ToList();
+            results.Should().Equal(expectedResults);
+        }
+
+        public void AssertSortedResultIds<TResult, TSort>(
+            IQueryable<TResult> queryable,
+            params TSort[] expectedResults)
+            where TResult : IHasId<TSort>
+        {
+            var results = queryable.AsEnumerable().Select(d => d.Id).OrderBy(id => id).ToList();
             results.Should().Equal(expectedResults);
         }
 

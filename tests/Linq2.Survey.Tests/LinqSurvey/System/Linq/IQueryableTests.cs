@@ -567,7 +567,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
-        public void GroupBy_with_keySelector_has_a_bug()
+        public void GroupBy_with_keySelector_is_supported_but_has_bugs()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }", "{ _id : 3, X : 2 }" };
             var collection = CreateCollection<DocumentWithInt32>(documents: documents);
@@ -647,7 +647,7 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
-        public void GroupBy_with_keySelector_and_resultSelector_has_a_bug()
+        public void GroupBy_with_keySelector_and_resultSelector_is_supported_but_has_bugs()
         {
             var collection = CreateCollection<DocumentWithInt32>();
             var subject = collection.AsQueryable();

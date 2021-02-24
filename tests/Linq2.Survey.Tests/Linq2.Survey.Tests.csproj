@@ -105,11 +105,10 @@
     <Compile Include="Classes\IHasId.cs" />
     <Compile Include="LinqSurveyTest.cs" />
     <Compile Include="LinqSurvey\System\Linq\IQueryableTests.cs" />
+    <Compile Include="MqlSurvey\StagesTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="MqlSurvey\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
