@@ -1580,6 +1580,31 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Union_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+
+            var queryable = subject.Union(source2);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void Union_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+            var comparer = Mock.Of<IEqualityComparer<DocumentWithInt32>>();
+
+            var queryable = subject.Union(source2, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
