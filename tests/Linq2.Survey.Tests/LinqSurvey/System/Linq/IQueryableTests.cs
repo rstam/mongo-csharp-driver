@@ -1530,6 +1530,56 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void ThenBy_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 1 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable().OrderBy(d => d.X);
+
+            var queryable = subject.ThenBy(d => d.Id);
+
+            AssertStages(queryable, "{ $sort : { X : 1, _id : 1 } }");
+            AssertResultIds(queryable, 1, 2);
+        }
+
+        [Fact]
+        public void ThenBy_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable().OrderBy(d => d.X); ;
+            var comparer = Mock.Of<IComparer<int>>();
+
+            var queryable = subject.ThenBy(d => d.Id, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void ThenByDescending_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 1 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable().OrderBy(d => d.X); ;
+
+            var queryable = subject.ThenByDescending(d => d.Id);
+
+            AssertStages(queryable, "{ $sort : { X : 1, _id : -1 } }");
+            AssertResultIds(queryable, 2, 1);
+        }
+
+        [Fact]
+        public void ThenByDescending_with_comparer_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable().OrderBy(d => d.X); ;
+            var comparer = Mock.Of<IComparer<int>>();
+
+            var queryable = subject.ThenByDescending(d => d.Id, comparer);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
