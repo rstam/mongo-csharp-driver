@@ -1495,6 +1495,41 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
         }
 
         [Fact]
+        public void Take_is_supported()
+        {
+            var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
+            var collection = CreateCollection<DocumentWithInt32>(documents: documents);
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Take(1);
+
+            AssertStages(queryable, "{ $limit : 1 }");
+            AssertResultIds(queryable, 1);
+        }
+
+        [Fact]
+        public void TakeWhile_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.TakeWhile(d => d.X < 2);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
+        public void TakeWhile_with_predicate_taking_index_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.TakeWhile((d, i) => d.X < 2);
+
+            AssertNotSupported(queryable);
+        }
+
+        [Fact]
         public void Where_is_supported()
         {
             var documents = new[] { "{ _id : 1, X : 1 }", "{ _id : 2, X : 2 }" };
