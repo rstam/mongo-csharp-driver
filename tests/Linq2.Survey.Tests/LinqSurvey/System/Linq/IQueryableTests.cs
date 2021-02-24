@@ -1616,6 +1616,17 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             AssertStages(queryable, "{ $match : { X : 1 } }");
             AssertResultIds(queryable, 1);
         }
+
+        [Fact]
+        public void Where_with_predicate_taking_index_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+
+            var queryable = subject.Where((d, i) => d.X == 1);
+
+            AssertNotSupported(queryable);
+        }
     }
 
     public static class IQueryableExtensions
