@@ -1627,6 +1627,18 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
 
             AssertNotSupported(queryable);
         }
+
+        [Fact]
+        public void Zip_is_not_supported()
+        {
+            var collection = CreateCollection<DocumentWithInt32>();
+            var subject = collection.AsQueryable();
+            var source2 = new DocumentWithInt32[0];
+
+            var queryable = subject.Zip(source2, (a, b) => new { a, b });
+
+            AssertNotSupported(queryable);
+        }
     }
 
     public static class IQueryableExtensions
