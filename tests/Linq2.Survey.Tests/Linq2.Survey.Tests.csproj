@@ -105,7 +105,8 @@
     <Compile Include="Classes\IHasId.cs" />
     <Compile Include="LinqSurveyTest.cs" />
     <Compile Include="LinqSurvey\System\Linq\IQueryableTests.cs" />
-    <Compile Include="MqlSurvey\StagesTests.cs" />
+    <Compile Include="MqlSurvey\AggregationOperatorTests.cs" />
+    <Compile Include="MqlSurvey\AggregationStagesTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

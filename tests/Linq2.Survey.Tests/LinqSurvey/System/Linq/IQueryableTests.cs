@@ -580,12 +580,6 @@ namespace Linq2.Survey.Tests.LinqSurvey.System.Linq
             results.Count.Should().Be(2);
             AssertGrouping(results[0], 1); // bug: grouping is empty
             AssertGrouping(results[1], 2); // bug: grouping is empty
-
-            void AssertGrouping(IGrouping<int, DocumentWithInt32> grouping, int expectedKey, params string[] expectedElements)
-            {
-                grouping.Key.Should().Be(expectedKey);
-                grouping.ToList().Should().Equal(expectedElements.Select(e => BsonSerializer.Deserialize<DocumentWithInt32>(e)));
-            }
         }
 
         [Fact]

@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Linq2.Survey.Tests.MqlSurvey
 {
-    public class StagesTests : LinqSurveyTest
+    public class AggregationStagesTests : LinqSurveyTest
     {
         [Fact]
         public void AddFields_stage_is_not_supported()

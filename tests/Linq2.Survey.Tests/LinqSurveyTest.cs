@@ -18,6 +18,12 @@ namespace Linq2.Survey.Tests
     public class LinqSurveyTest
     {
         // public methods
+        public void AssertGrouping<TKey, TElement>(IGrouping<TKey, TElement> grouping, TKey expectedKey, params TElement[] expectedElements)
+        {
+            grouping.Key.Should().Be(expectedKey);
+            grouping.ToList().Should().Equal(expectedElements);
+        }
+
         public void AssertNotSupported<TSource>(
             IQueryable<TSource> queryable)
         {
