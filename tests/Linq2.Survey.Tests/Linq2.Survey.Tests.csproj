@@ -91,6 +91,7 @@
     <Compile Include="Classes\BaseDocumentWithScalarDiscriminator.cs" />
     <Compile Include="Classes\DerivedDocumentWithHierarchicalDiscriminator.cs" />
     <Compile Include="Classes\DerivedDocumentWithScalarDiscriminator.cs" />
+    <Compile Include="Classes\DocumentWithTwoBsonDocuments.cs" />
     <Compile Include="Classes\DocumentWithDecimal.cs" />
     <Compile Include="Classes\DocumentWithDouble.cs" />
     <Compile Include="Classes\DocumentWithInt32.cs" />
@@ -102,6 +103,8 @@
     <Compile Include="Classes\DocumentWithNullableInt64.cs" />
     <Compile Include="Classes\DocumentWithNullableSingle.cs" />
     <Compile Include="Classes\DocumentWithSingle.cs" />
+    <Compile Include="Classes\DocumentWithTwoInt32Arrays.cs" />
+    <Compile Include="Classes\DocumentWithTwoStrings.cs" />
     <Compile Include="Classes\IHasId.cs" />
     <Compile Include="LinqSurveyTest.cs" />
     <Compile Include="LinqSurvey\System\Linq\IQueryableTests.cs" />

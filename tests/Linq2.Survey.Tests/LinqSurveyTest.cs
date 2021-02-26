@@ -18,6 +18,30 @@ namespace Linq2.Survey.Tests
     public class LinqSurveyTest
     {
         // public methods
+        public void AssertEnumerableResults<TResult, TElement>(
+           IQueryable<TResult> queryable,
+           params IEnumerable<TElement>[] expectedResults)
+            where TResult : IEnumerable<TElement>
+        {
+            var results = queryable.ToList();
+            results.Should().Equal(expectedResults, EnumerableEqualityComparison);
+
+            bool EnumerableEqualityComparison(TResult x, IEnumerable<TElement> y)
+            {
+                if (object.ReferenceEquals(x, y))
+                {
+                    return true;
+                }
+
+                if (object.ReferenceEquals(x, null) || object.ReferenceEquals(y, null))
+                {
+                    return false;
+                }
+
+                return x.SequenceEqual(y);
+            }
+        }
+
         public void AssertGrouping<TKey, TElement>(IGrouping<TKey, TElement> grouping, TKey expectedKey, params TElement[] expectedElements)
         {
             grouping.Key.Should().Be(expectedKey);
