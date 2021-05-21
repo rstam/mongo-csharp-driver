@@ -196,7 +196,7 @@ namespace MongoDB.Driver.Core.Configuration
             else if (connectionString.WaitQueueMultiple != null)
             {
                 var maxConnections = connectionString.MaxPoolSize ?? new ConnectionPoolSettings().MaxConnections;
-                var waitQueueSize = (int)Math.Round(maxConnections * connectionString.WaitQueueMultiple.Value);
+                var waitQueueSize = ConnectionPoolSettings.GetComputedWaitQueueSize(connectionString.WaitQueueMultiple.Value, maxConnections);
                 builder = builder.ConfigureConnectionPool(s => s.With(waitQueueSize: waitQueueSize));
             }
 #pragma warning restore 618

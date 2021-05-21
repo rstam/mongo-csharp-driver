@@ -223,7 +223,7 @@ namespace MongoDB.Driver
                 }
                 else
                 {
-                    return (int)(_waitQueueMultiple * _maxConnectionPoolSize);
+                    return ConnectionPoolSettings.GetComputedWaitQueueSize(_waitQueueMultiple, _maxConnectionPoolSize);
                 }
             }
         }
@@ -460,9 +460,9 @@ namespace MongoDB.Driver
             get { return _maxConnectionPoolSize; }
             set
             {
-                if (value <= 0)
+                if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value", "MaxConnectionPoolSize must be greater than zero.");
+                    throw new ArgumentOutOfRangeException("value", "MaxConnectionPoolSize must be greater than or equal to zero.");
                 }
                 _maxConnectionPoolSize = value;
             }

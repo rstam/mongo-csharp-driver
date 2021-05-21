@@ -30,6 +30,7 @@ namespace MongoDB.Driver.Core.ConnectionPools
         // fields
         private readonly IConnectionFactory _connectionFactory;
         private readonly ListConnectionHolder _connectionHolder;
+        private readonly int _effectiveMaxConnections;
         private readonly EndPoint _endPoint;
         private int _generation;
         private readonly CancellationTokenSource _maintenanceCancellationTokenSource;
@@ -66,12 +67,13 @@ namespace MongoDB.Driver.Core.ConnectionPools
             _serverId = Ensure.IsNotNull(serverId, nameof(serverId));
             _endPoint = Ensure.IsNotNull(endPoint, nameof(endPoint));
             _settings = Ensure.IsNotNull(settings, nameof(settings));
+            _effectiveMaxConnections = _settings.GetEffectiveMaxConnections();
             _connectionFactory = Ensure.IsNotNull(connectionFactory, nameof(connectionFactory));
             Ensure.IsNotNull(eventSubscriber, nameof(eventSubscriber));
 
             _connectingQueue = new SemaphoreSlimSignalable(MongoInternalDefaults.ConnectionPool.MaxConnecting);
             _connectionHolder = new ListConnectionHolder(eventSubscriber, _connectingQueue);
-            _poolQueue = new WaitQueue(settings.MaxConnections);
+            _poolQueue = new WaitQueue(_effectiveMaxConnections);
 #pragma warning disable 618
             _waitQueue = new SemaphoreSlim(settings.WaitQueueSize);
 #pragma warning restore 618
@@ -148,7 +150,7 @@ namespace MongoDB.Driver.Core.ConnectionPools
             get
             {
                 ThrowIfDisposed();
-                return _settings.MaxConnections - AvailableCount;
+                return _effectiveMaxConnections - AvailableCount;
             }
         }
 

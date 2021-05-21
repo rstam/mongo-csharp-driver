@@ -48,8 +48,8 @@ namespace MongoDB.Driver.Core.Configuration
 
         [Theory]
         [ParameterAttributeData]
-        public void constructor_should_throw_when_maxConnections_is_negative_or_zero(
-            [Values(-1, 0)]
+        public void constructor_should_throw_when_maxConnections_is_negative(
+            [Values(-1)]
             int maxConnections)
         {
             Action action = () => new ConnectionPoolSettings(maxConnections: maxConnections);

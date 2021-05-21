@@ -899,7 +899,6 @@ namespace MongoDB.Driver.Tests
         {
             var builder = new MongoUrlBuilder { Server = _localhost };
             Assert.Throws<ArgumentOutOfRangeException>(() => { builder.MaxConnectionPoolSize = -1; });
-            Assert.Throws<ArgumentOutOfRangeException>(() => { builder.MaxConnectionPoolSize = 0; });
             builder.MaxConnectionPoolSize = 1;
         }
 

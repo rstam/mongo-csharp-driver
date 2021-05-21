@@ -225,7 +225,7 @@ namespace MongoDB.Driver
                 }
                 else
                 {
-                    return (int)(_waitQueueMultiple * _maxConnectionPoolSize);
+                    return ConnectionPoolSettings.GetComputedWaitQueueSize(_waitQueueMultiple, _maxConnectionPoolSize);
                 }
             }
         }

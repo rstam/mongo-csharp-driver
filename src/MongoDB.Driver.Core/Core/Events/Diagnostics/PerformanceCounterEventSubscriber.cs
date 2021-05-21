@@ -83,7 +83,7 @@ namespace MongoDB.Driver.Core.Events.Diagnostics
         private void Handle(ConnectionPoolOpenedEvent @event)
         {
             var serverPackage = GetServerPackage(@event.ServerId.EndPoint);
-            ConnectionPoolPerformanceRecorder recorder = new ConnectionPoolPerformanceRecorder(@event.ConnectionPoolSettings.MaxConnections, _appPackage, serverPackage);
+            ConnectionPoolPerformanceRecorder recorder = new ConnectionPoolPerformanceRecorder(@event.ConnectionPoolSettings.GetEffectiveMaxConnections(), _appPackage, serverPackage);
             if (_connectionPoolRecorders.TryAdd(@event.ServerId, recorder))
             {
                 recorder.Opened();
