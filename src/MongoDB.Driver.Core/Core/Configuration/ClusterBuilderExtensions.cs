@@ -182,7 +182,8 @@ namespace MongoDB.Driver.Core.Configuration
             // Connection Pool
             if (connectionString.MaxPoolSize != null)
             {
-                builder = builder.ConfigureConnectionPool(s => s.With(maxConnections: connectionString.GetEffectiveMaxPoolSize().Value));
+                var effectiveMaxConnections = ConnectionPoolSettings.GetEffectiveMaxConnections(connectionString.MaxPoolSize.Value);
+                builder = builder.ConfigureConnectionPool(s => s.With(maxConnections: effectiveMaxConnections));
             }
             if (connectionString.MinPoolSize != null)
             {
@@ -195,9 +196,9 @@ namespace MongoDB.Driver.Core.Configuration
             }
             else if (connectionString.WaitQueueMultiple != null)
             {
-                var maxConnections = connectionString.GetEffectiveMaxPoolSize() ?? new ConnectionPoolSettings().MaxConnections;
-                var waitQueueSize = (int)Math.Round(maxConnections * connectionString.WaitQueueMultiple.Value);
-                builder = builder.ConfigureConnectionPool(s => s.With(waitQueueSize: waitQueueSize));
+                var effectiveMaxConnections = ConnectionPoolSettings.GetEffectiveMaxConnections(connectionString.MaxPoolSize) ?? new ConnectionPoolSettings().MaxConnections;
+                var computedWaitQueueSize = ConnectionPoolSettings.GetComputedWaitQueueSize(effectiveMaxConnections, connectionString.WaitQueueMultiple.Value);
+                builder = builder.ConfigureConnectionPool(s => s.With(waitQueueSize: computedWaitQueueSize));
             }
 #pragma warning restore 618
             if (connectionString.WaitQueueTimeout != null)
