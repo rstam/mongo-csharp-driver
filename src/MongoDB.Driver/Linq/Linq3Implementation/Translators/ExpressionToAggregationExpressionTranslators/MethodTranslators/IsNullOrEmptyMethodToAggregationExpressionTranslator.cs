@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.Is(StringMethod.IsNullOrEmpty))
+            if (method.Is(StringMemberInfo.IsNullOrEmptyMethod))
             {
                 var stringExpression = arguments[0];
                 var stringTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, stringExpression);

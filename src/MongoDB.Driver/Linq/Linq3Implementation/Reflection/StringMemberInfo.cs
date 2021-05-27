@@ -20,7 +20,7 @@ using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 {
-    internal static class StringMethod
+    internal static class StringMemberInfo
     {
         // private static fields
         private static readonly MethodInfo __contains;
@@ -41,6 +41,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
         private static readonly MethodInfo __indexOfWithStringAndStartIndexAndComparisonType;
         private static readonly MethodInfo __indexOfWithStringAndStartIndexAndCountAndComparisonType;
         private static readonly MethodInfo __isNullOrEmpty;
+        private static readonly PropertyInfo __lengthProperty;
         private static readonly MethodInfo __splitWithChars;
         private static readonly MethodInfo __splitWithCharsAndCount;
         private static readonly MethodInfo __splitWithCharsAndCountAndOptions;
@@ -64,7 +65,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
         private static readonly MethodInfo __trimWithChars;
 
         // static constructor
-        static StringMethod()
+        static StringMemberInfo()
         {
             __contains = ReflectionInfo.Method((string s, string value) => s.Contains(value));
             __endsWith = ReflectionInfo.Method((string s, string value) => s.EndsWith(value));
@@ -88,6 +89,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             __indexOfWithStringAndStartIndexAndComparisonType = ReflectionInfo.Method((string s, string value, int startIndex, StringComparison comparisonType) => s.IndexOf(value, startIndex, comparisonType));
             __indexOfWithStringAndStartIndexAndCountAndComparisonType = ReflectionInfo.Method((string s, string value, int startIndex, int count, StringComparison comparisonType) => s.IndexOf(value, startIndex, count, comparisonType));
             __isNullOrEmpty = ReflectionInfo.Method((string value) => string.IsNullOrEmpty(value));
+            __lengthProperty = ReflectionInfo.Property((string s) => s.Length);
             __splitWithChars = ReflectionInfo.Method((string s, char[] separator) => s.Split(separator));
             __splitWithCharsAndCount = ReflectionInfo.Method((string s, char[] separator, int count) => s.Split(separator, count));
             __splitWithCharsAndCountAndOptions = ReflectionInfo.Method((string s, char[] separator, int count, StringSplitOptions options) => s.Split(separator, count, options));
@@ -124,44 +126,45 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
         }
 
         // public properties
-        public static MethodInfo Contains => __contains;
-        public static MethodInfo EndsWith => __endsWith;
-        public static MethodInfo EndsWithWithComparisonType => __endsWithWithComparisonType;
-        public static MethodInfo EndsWithWithIgnoreCaseAndCulture => __endsWithWithIgnoreCaseAndCulture;
-        public static MethodInfo GetChars => __getChars;
-        public static MethodInfo IndexOfAny => __indexOfAny;
-        public static MethodInfo IndexOfAnyWithStartIndex => __indexOfAnyWithStartIndex;
-        public static MethodInfo IndexOfAnyWithStartIndexAndCount => __indexOfAnyWithStartIndexAndCount;
-        public static MethodInfo IndexOfWithChar => __indexOfWithChar;
-        public static MethodInfo IndexOfWithCharAndStartIndex => __indexOfWithCharAndStartIndex;
-        public static MethodInfo IndexOfWithCharAndStartIndexAndCount => __indexOfWithCharAndStartIndexAndCount;
-        public static MethodInfo IndexOfWithString => __indexOfWithString;
-        public static MethodInfo IndexOfWithStringAndStartIndex => __indexOfWithStringAndStartIndex;
-        public static MethodInfo IndexOfWithStringAndStartIndexAndCount => __indexOfWithStringAndStartIndexAndCount;
-        public static MethodInfo IndexOfWithStringAndComparisonType => __indexOfWithStringAndComparisonType;
-        public static MethodInfo IndexOfWithStringAndStartIndexAndComparisonType => __indexOfWithStringAndStartIndexAndComparisonType;
-        public static MethodInfo IndexOfWithStringAndStartIndexAndCountAndComparisonType => __indexOfWithStringAndStartIndexAndCountAndComparisonType;
-        public static MethodInfo IsNullOrEmpty => __isNullOrEmpty;
-        public static MethodInfo SplitWithChars => __splitWithChars;
-        public static MethodInfo SplitWithCharsAndCount => __splitWithCharsAndCount;
-        public static MethodInfo SplitWithCharsAndCountAndOptions => __splitWithCharsAndCountAndOptions;
-        public static MethodInfo SplitWithCharsAndOptions => __splitWithCharsAndOptions;
-        public static MethodInfo SplitWithStringsAndCountAndOptions => __splitWithStringsAndCountAndOptions;
-        public static MethodInfo SplitWithStringsAndOptions => __splitWithStringsAndOptions;
-        public static MethodInfo StartsWith => __startsWith;
-        public static MethodInfo StartsWithWithComparisonType => __startsWithWithComparisonType;
-        public static MethodInfo StartsWithWithIgnoreCaseAndCulture => __startsWithWithIgnoreCaseAndCulture;
-        public static MethodInfo Substring => __substring;
-        public static MethodInfo SubstringWithLength => __substringWithLength;
-        public static MethodInfo ToLower => __toLower;
-        public static MethodInfo ToLowerInvariant => __toLowerInvariant;
-        public static MethodInfo ToLowerWithCulture => __toLowerWithCulture;
-        public static MethodInfo ToUpper => __toUpper;
-        public static MethodInfo ToUpperInvariant => __toUpperInvariant;
-        public static MethodInfo ToUpperWithCulture => __toUpperWithCulture;
-        public static MethodInfo Trim => __trim;
-        public static MethodInfo TrimEnd => __trimEnd;
-        public static MethodInfo TrimStart => __trimStart;
-        public static MethodInfo TrimWithChars => __trimWithChars;
+        public static MethodInfo ContainsMethod => __contains;
+        public static MethodInfo EndsWithMethod => __endsWith;
+        public static MethodInfo EndsWithWithComparisonTypeMethod => __endsWithWithComparisonType;
+        public static MethodInfo EndsWithWithIgnoreCaseAndCultureMethod => __endsWithWithIgnoreCaseAndCulture;
+        public static MethodInfo GetCharsMethod => __getChars;
+        public static MethodInfo IndexOfAnyMethod => __indexOfAny;
+        public static MethodInfo IndexOfAnyWithStartIndexMethod => __indexOfAnyWithStartIndex;
+        public static MethodInfo IndexOfAnyWithStartIndexAndCountMethod => __indexOfAnyWithStartIndexAndCount;
+        public static MethodInfo IndexOfWithCharMethod => __indexOfWithChar;
+        public static MethodInfo IndexOfWithCharAndStartIndexMethod => __indexOfWithCharAndStartIndex;
+        public static MethodInfo IndexOfWithCharAndStartIndexAndCountMethod => __indexOfWithCharAndStartIndexAndCount;
+        public static MethodInfo IndexOfWithStringMethod => __indexOfWithString;
+        public static MethodInfo IndexOfWithStringAndStartIndexMethod => __indexOfWithStringAndStartIndex;
+        public static MethodInfo IndexOfWithStringAndStartIndexAndCountMethod => __indexOfWithStringAndStartIndexAndCount;
+        public static MethodInfo IndexOfWithStringAndComparisonTypeMethod => __indexOfWithStringAndComparisonType;
+        public static MethodInfo IndexOfWithStringAndStartIndexAndComparisonTypeMethod => __indexOfWithStringAndStartIndexAndComparisonType;
+        public static MethodInfo IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod => __indexOfWithStringAndStartIndexAndCountAndComparisonType;
+        public static MethodInfo IsNullOrEmptyMethod => __isNullOrEmpty;
+        public static PropertyInfo LengthProperty => __lengthProperty;
+        public static MethodInfo SplitWithCharsMethod => __splitWithChars;
+        public static MethodInfo SplitWithCharsAndCountMethod => __splitWithCharsAndCount;
+        public static MethodInfo SplitWithCharsAndCountAndOptionsMethod => __splitWithCharsAndCountAndOptions;
+        public static MethodInfo SplitWithCharsAndOptionsMethod => __splitWithCharsAndOptions;
+        public static MethodInfo SplitWithStringsAndCountAndOptionsMethod => __splitWithStringsAndCountAndOptions;
+        public static MethodInfo SplitWithStringsAndOptionsMethod => __splitWithStringsAndOptions;
+        public static MethodInfo StartsWithMethod => __startsWith;
+        public static MethodInfo StartsWithWithComparisonTypeMethod => __startsWithWithComparisonType;
+        public static MethodInfo StartsWithWithIgnoreCaseAndCultureMethod => __startsWithWithIgnoreCaseAndCulture;
+        public static MethodInfo SubstringMethod => __substring;
+        public static MethodInfo SubstringWithLengthMethod => __substringWithLength;
+        public static MethodInfo ToLowerMethod => __toLower;
+        public static MethodInfo ToLowerInvariantMethod => __toLowerInvariant;
+        public static MethodInfo ToLowerWithCultureMethod => __toLowerWithCulture;
+        public static MethodInfo ToUpperMethod => __toUpper;
+        public static MethodInfo ToUpperInvariantMethod => __toUpperInvariant;
+        public static MethodInfo ToUpperWithCultureMethod => __toUpperWithCulture;
+        public static MethodInfo TrimMethod => __trim;
+        public static MethodInfo TrimEndMethod => __trimEnd;
+        public static MethodInfo TrimStartMethod => __trimStart;
+        public static MethodInfo TrimWithCharsMethod => __trimWithChars;
     }
 }

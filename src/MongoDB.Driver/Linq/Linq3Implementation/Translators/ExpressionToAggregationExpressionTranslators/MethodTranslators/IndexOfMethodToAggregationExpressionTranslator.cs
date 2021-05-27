@@ -29,15 +29,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         private static readonly MethodInfo[] __indexOfMethods =
         {
-            StringMethod.IndexOfWithChar,
-            StringMethod.IndexOfWithCharAndStartIndex,
-            StringMethod.IndexOfWithCharAndStartIndexAndCount,
-            StringMethod.IndexOfWithString,
-            StringMethod.IndexOfWithStringAndStartIndex,
-            StringMethod.IndexOfWithStringAndStartIndexAndCount,
-            StringMethod.IndexOfWithStringAndComparisonType,
-            StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-            StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType,
+            StringMemberInfo.IndexOfWithCharMethod,
+            StringMemberInfo.IndexOfWithCharAndStartIndexMethod,
+            StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
+            StringMemberInfo.IndexOfWithStringMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+            StringMemberInfo.IndexOfWithStringAndComparisonTypeMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod,
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValue,
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValueAndStartIndex,
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValueAndStartIndexAndCount
@@ -45,36 +45,36 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
         private static readonly MethodInfo[] __indexOfWithCharMethods =
         {
-            StringMethod.IndexOfWithChar,
-            StringMethod.IndexOfWithCharAndStartIndex,
-            StringMethod.IndexOfWithCharAndStartIndexAndCount
+            StringMemberInfo.IndexOfWithCharMethod,
+            StringMemberInfo.IndexOfWithCharAndStartIndexMethod,
+            StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod
         };
 
         private static readonly MethodInfo[] __indexOfWithStartIndexMethods =
         {
-            StringMethod.IndexOfWithCharAndStartIndex,
-            StringMethod.IndexOfWithCharAndStartIndexAndCount,
-            StringMethod.IndexOfWithStringAndStartIndex,
-            StringMethod.IndexOfWithStringAndStartIndexAndCount,
-            StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-            StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType,
+            StringMemberInfo.IndexOfWithCharAndStartIndexMethod,
+            StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod,
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValueAndStartIndex,
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValueAndStartIndexAndCount
        };
 
         private static readonly MethodInfo[] __indexOfWithCountMethods =
         {
-            StringMethod.IndexOfWithCharAndStartIndexAndCount,
-            StringMethod.IndexOfWithStringAndStartIndexAndCount,
-            StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType,
+            StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod,
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValueAndStartIndexAndCount
         };
 
         private static readonly MethodInfo[] __indexOfWithStringComparisonMethods =
         {
-            StringMethod.IndexOfWithStringAndComparisonType,
-            StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-            StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType
+            StringMemberInfo.IndexOfWithStringAndComparisonTypeMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+            StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod
         };
 
         private static readonly MethodInfo[] __indexOfBytesMethods =

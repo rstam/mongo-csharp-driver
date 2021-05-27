@@ -36,25 +36,25 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
         {
             __startsWithContainsOrEndWithMethods = new[]
             {
-                StringMethod.StartsWith,
-                StringMethod.StartsWithWithComparisonType,
-                StringMethod.StartsWithWithIgnoreCaseAndCulture,
-                StringMethod.Contains,
-                StringMethod.EndsWith,
-                StringMethod.EndsWithWithComparisonType,
-                StringMethod.EndsWithWithIgnoreCaseAndCulture
+                StringMemberInfo.StartsWithMethod,
+                StringMemberInfo.StartsWithWithComparisonTypeMethod,
+                StringMemberInfo.StartsWithWithIgnoreCaseAndCultureMethod,
+                StringMemberInfo.ContainsMethod,
+                StringMemberInfo.EndsWithMethod,
+                StringMemberInfo.EndsWithWithComparisonTypeMethod,
+                StringMemberInfo.EndsWithWithIgnoreCaseAndCultureMethod
             };
 
             __withComparisonTypeMethods = new[]
             {
-                StringMethod.StartsWithWithComparisonType,
-                StringMethod.EndsWithWithComparisonType
+                StringMemberInfo.StartsWithWithComparisonTypeMethod,
+                StringMemberInfo.EndsWithWithComparisonTypeMethod
             };
 
             __withIgnoreCaseAndCultureMethods = new[]
             {
-                StringMethod.StartsWithWithIgnoreCaseAndCulture,
-                StringMethod.EndsWithWithIgnoreCaseAndCulture
+                StringMemberInfo.StartsWithWithIgnoreCaseAndCultureMethod,
+                StringMemberInfo.EndsWithWithIgnoreCaseAndCultureMethod
             };
         }
 

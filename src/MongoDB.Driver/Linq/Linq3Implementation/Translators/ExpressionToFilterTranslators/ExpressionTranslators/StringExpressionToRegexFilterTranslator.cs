@@ -47,90 +47,90 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
         {
             __indexOfAnyMethods = new[]
             {
-                StringMethod.IndexOfAny,
-                StringMethod.IndexOfAnyWithStartIndex,
-                StringMethod.IndexOfAnyWithStartIndexAndCount,
+                StringMemberInfo.IndexOfAnyMethod,
+                StringMemberInfo.IndexOfAnyWithStartIndexMethod,
+                StringMemberInfo.IndexOfAnyWithStartIndexAndCountMethod,
             };
 
             __indexOfMethods = new[]
             {
-                StringMethod.IndexOfAny,
-                StringMethod.IndexOfAnyWithStartIndex,
-                StringMethod.IndexOfAnyWithStartIndexAndCount,
-                StringMethod.IndexOfWithChar,
-                StringMethod.IndexOfWithCharAndStartIndex,
-                StringMethod.IndexOfWithCharAndStartIndexAndCount,
-                StringMethod.IndexOfWithString,
-                StringMethod.IndexOfWithStringAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndex,
-                StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndexAndCount,
-                StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType
+                StringMemberInfo.IndexOfAnyMethod,
+                StringMemberInfo.IndexOfAnyWithStartIndexMethod,
+                StringMemberInfo.IndexOfAnyWithStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithCharMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringMethod,
+                StringMemberInfo.IndexOfWithStringAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod
             };
 
             __indexOfWithCharMethods = new[]
             {
-                StringMethod.IndexOfWithChar,
-                StringMethod.IndexOfWithCharAndStartIndex,
-                StringMethod.IndexOfWithCharAndStartIndexAndCount,
+                StringMemberInfo.IndexOfWithCharMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
             };
 
             __indexOfWithComparisonTypeMethods = new[]
             {
-                StringMethod.IndexOfWithStringAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType
+                StringMemberInfo.IndexOfWithStringAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod
             };
 
             __indexOfWithCountMethods = new[]
             {
-                StringMethod.IndexOfAnyWithStartIndexAndCount,
-                StringMethod.IndexOfWithCharAndStartIndexAndCount,
-                StringMethod.IndexOfWithStringAndStartIndexAndCount,
-                StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType
+                StringMemberInfo.IndexOfAnyWithStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod
             };
 
             __indexOfWithStartIndexMethods = new[]
             {
-                StringMethod.IndexOfAnyWithStartIndex,
-                StringMethod.IndexOfAnyWithStartIndexAndCount,
-                StringMethod.IndexOfWithCharAndStartIndex,
-                StringMethod.IndexOfWithCharAndStartIndexAndCount,
-                StringMethod.IndexOfWithStringAndStartIndex,
-                StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndexAndCount,
-                StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType
+                StringMemberInfo.IndexOfAnyWithStartIndexMethod,
+                StringMemberInfo.IndexOfAnyWithStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexMethod,
+                StringMemberInfo.IndexOfWithCharAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod
             };
 
             __indexOfWithStringMethods = new[]
             {
-                StringMethod.IndexOfWithString,
-                StringMethod.IndexOfWithStringAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndex,
-                StringMethod.IndexOfWithStringAndStartIndexAndComparisonType,
-                StringMethod.IndexOfWithStringAndStartIndexAndCount,
-                StringMethod.IndexOfWithStringAndStartIndexAndCountAndComparisonType
+                StringMemberInfo.IndexOfWithStringMethod,
+                StringMemberInfo.IndexOfWithStringAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndComparisonTypeMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountMethod,
+                StringMemberInfo.IndexOfWithStringAndStartIndexAndCountAndComparisonTypeMethod
             };
 
             __modifierMethods = new[]
             {
-                StringMethod.ToLower,
-                StringMethod.ToUpper,
-                StringMethod.Trim,
-                StringMethod.TrimEnd,
-                StringMethod.TrimStart,
-                StringMethod.TrimWithChars
+                StringMemberInfo.ToLowerMethod,
+                StringMemberInfo.ToUpperMethod,
+                StringMemberInfo.TrimMethod,
+                StringMemberInfo.TrimEndMethod,
+                StringMemberInfo.TrimStartMethod,
+                StringMemberInfo.TrimWithCharsMethod
             };
 
             __translatableMethods = new[]
             {
-                StringMethod.Contains,
-                StringMethod.EndsWith,
-                StringMethod.EndsWithWithComparisonType,
-                StringMethod.EndsWithWithIgnoreCaseAndCulture,
-                StringMethod.StartsWith,
-                StringMethod.StartsWithWithComparisonType,
-                StringMethod.StartsWithWithIgnoreCaseAndCulture
+                StringMemberInfo.ContainsMethod,
+                StringMemberInfo.EndsWithMethod,
+                StringMemberInfo.EndsWithWithComparisonTypeMethod,
+                StringMemberInfo.EndsWithWithIgnoreCaseAndCultureMethod,
+                StringMemberInfo.StartsWithMethod,
+                StringMemberInfo.StartsWithWithComparisonTypeMethod,
+                StringMemberInfo.StartsWithWithIgnoreCaseAndCultureMethod
             };
         }
 
@@ -262,7 +262,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             var method = trimExpression.Method;
             var arguments = trimExpression.Arguments;
 
-            if (method.Is(StringMethod.Trim))
+            if (method.Is(StringMemberInfo.TrimMethod))
             {
                 return null;
             }
@@ -289,7 +289,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 leftUnaryExpression.Operand is MethodCallExpression leftMethodCallExpression)
             {
                 var method = leftMethodCallExpression.Method;
-                if (method.Is(StringMethod.GetChars))
+                if (method.Is(StringMemberInfo.GetCharsMethod))
                 {
                     return true;
                 }
@@ -323,7 +323,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             return
                 leftExpression is MemberExpression leftMemberExpression &&
                 leftMemberExpression.Member is PropertyInfo propertyInfo &&
-                propertyInfo.Is(StringProperty.Length);
+                propertyInfo.Is(StringMemberInfo.LengthProperty);
         }
 
         private static Modifiers TranslateComparisonType(Modifiers modifiers, Expression expression, Expression comparisonTypeExpression)
@@ -422,11 +422,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
 
             var (field, modifiers) = TranslateField(context, expression.Object);
             var value = arguments[0].GetConstantValue<string>(containingExpression: expression);
-            if (method.IsOneOf(StringMethod.StartsWithWithComparisonType, StringMethod.EndsWithWithComparisonType))
+            if (method.IsOneOf(StringMemberInfo.StartsWithWithComparisonTypeMethod, StringMemberInfo.EndsWithWithComparisonTypeMethod))
             {
                 modifiers = TranslateComparisonType(modifiers, expression, arguments[1]);
             }
-            if (method.IsOneOf(StringMethod.StartsWithWithIgnoreCaseAndCulture, StringMethod.EndsWithWithIgnoreCaseAndCulture))
+            if (method.IsOneOf(StringMemberInfo.StartsWithWithIgnoreCaseAndCultureMethod, StringMemberInfo.EndsWithWithIgnoreCaseAndCultureMethod))
             {
                 modifiers = TranslateIgnoreCase(modifiers, expression, arguments[1]);
                 modifiers = TranslateCulture(modifiers, expression, arguments[2]);

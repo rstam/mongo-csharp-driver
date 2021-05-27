@@ -28,41 +28,41 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         private static readonly MethodInfo[] __splitMethods = new[]
         {
-            StringMethod.SplitWithChars,
-            StringMethod.SplitWithCharsAndCount,
-            StringMethod.SplitWithCharsAndCountAndOptions,
-            StringMethod.SplitWithCharsAndOptions,
-            StringMethod.SplitWithStringsAndCountAndOptions,
-            StringMethod.SplitWithStringsAndOptions
+            StringMemberInfo.SplitWithCharsMethod,
+            StringMemberInfo.SplitWithCharsAndCountMethod,
+            StringMemberInfo.SplitWithCharsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithCharsAndOptionsMethod,
+            StringMemberInfo.SplitWithStringsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithStringsAndOptionsMethod
         };
 
         private static readonly MethodInfo[] __splitWithCharsMethods = new[]
         {
-            StringMethod.SplitWithChars,
-            StringMethod.SplitWithCharsAndCount,
-            StringMethod.SplitWithCharsAndCountAndOptions,
-            StringMethod.SplitWithCharsAndOptions
+            StringMemberInfo.SplitWithCharsMethod,
+            StringMemberInfo.SplitWithCharsAndCountMethod,
+            StringMemberInfo.SplitWithCharsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithCharsAndOptionsMethod
         };
 
         private static readonly MethodInfo[] __splitWithCountMethods = new[]
         {
-            StringMethod.SplitWithCharsAndCount,
-            StringMethod.SplitWithCharsAndCountAndOptions,
-            StringMethod.SplitWithStringsAndCountAndOptions,
+            StringMemberInfo.SplitWithCharsAndCountMethod,
+            StringMemberInfo.SplitWithCharsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithStringsAndCountAndOptionsMethod,
         };
 
         private static readonly MethodInfo[] __splitWithOptionsMethods = new[]
        {
-            StringMethod.SplitWithCharsAndCountAndOptions,
-            StringMethod.SplitWithCharsAndOptions,
-            StringMethod.SplitWithStringsAndCountAndOptions,
-            StringMethod.SplitWithStringsAndOptions
+            StringMemberInfo.SplitWithCharsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithCharsAndOptionsMethod,
+            StringMemberInfo.SplitWithStringsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithStringsAndOptionsMethod
         };
 
         private static readonly MethodInfo[] __splitWithStringsMethods = new[]
         {
-            StringMethod.SplitWithStringsAndCountAndOptions,
-            StringMethod.SplitWithStringsAndOptions
+            StringMemberInfo.SplitWithStringsAndCountAndOptionsMethod,
+            StringMemberInfo.SplitWithStringsAndOptionsMethod
         };
 
         public static AggregationExpression Translate(TranslationContext context, MethodCallExpression expression)

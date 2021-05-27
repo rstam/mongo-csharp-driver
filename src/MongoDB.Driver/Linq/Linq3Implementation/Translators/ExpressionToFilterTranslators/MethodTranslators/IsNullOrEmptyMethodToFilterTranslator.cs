@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.Is(StringMethod.IsNullOrEmpty))
+            if (method.Is(StringMemberInfo.IsNullOrEmptyMethod))
             {
                 var fieldExpression = arguments[0];
                 var field = ExpressionToFilterFieldTranslator.Translate(context, fieldExpression);

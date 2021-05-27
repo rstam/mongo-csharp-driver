@@ -40,7 +40,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var method = getCharsExpression.Method;
             var arguments = getCharsExpression.Arguments;
 
-            if (method.Is(StringMethod.GetChars))
+            if (method.Is(StringMemberInfo.GetCharsMethod))
             {
                 var comparisonOperator = GetComparisonOperator(expression);
                 var objectExpression = getCharsExpression.Object;
@@ -67,7 +67,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 unaryExpression.NodeType == ExpressionType.Convert &&
                 unaryExpression.Type == typeof(int) &&
                 unaryExpression.Operand is MethodCallExpression operandMethodCallExpression &&
-                operandMethodCallExpression.Method.Is(StringMethod.GetChars))
+                operandMethodCallExpression.Method.Is(StringMemberInfo.GetCharsMethod))
             {
                 getCharsExpression = operandMethodCallExpression;
                 return true;

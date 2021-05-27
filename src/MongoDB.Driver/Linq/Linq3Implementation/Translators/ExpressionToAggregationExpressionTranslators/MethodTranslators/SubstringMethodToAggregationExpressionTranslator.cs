@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.IsOneOf(StringMethod.Substring, StringMethod.SubstringWithLength))
+            if (method.IsOneOf(StringMemberInfo.SubstringMethod, StringMemberInfo.SubstringWithLengthMethod))
             {
                 var stringExpression = expression.Object;
                 var startIndexExpression = arguments[0];

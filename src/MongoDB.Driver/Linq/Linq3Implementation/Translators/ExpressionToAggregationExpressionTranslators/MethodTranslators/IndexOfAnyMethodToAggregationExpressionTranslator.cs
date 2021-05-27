@@ -30,9 +30,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         private static readonly MethodInfo[] __indexOfAnyMethods =
         {
-            StringMethod.IndexOfAny,
-            StringMethod.IndexOfAnyWithStartIndex,
-            StringMethod.IndexOfAnyWithStartIndexAndCount,
+            StringMemberInfo.IndexOfAnyMethod,
+            StringMemberInfo.IndexOfAnyWithStartIndexMethod,
+            StringMemberInfo.IndexOfAnyWithStartIndexAndCountMethod,
        };
 
         public static AggregationExpression Translate(TranslationContext context, MethodCallExpression expression)

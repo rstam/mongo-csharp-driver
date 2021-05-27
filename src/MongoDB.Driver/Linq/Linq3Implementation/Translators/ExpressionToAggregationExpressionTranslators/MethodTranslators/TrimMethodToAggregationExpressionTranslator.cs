@@ -31,10 +31,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
         {
             __trimMethods = new[]
             {
-                StringMethod.Trim,
-                StringMethod.TrimEnd,
-                StringMethod.TrimStart,
-                StringMethod.TrimWithChars
+                StringMemberInfo.TrimMethod,
+                StringMemberInfo.TrimEndMethod,
+                StringMemberInfo.TrimStartMethod,
+                StringMemberInfo.TrimWithCharsMethod
             };
         }
 
