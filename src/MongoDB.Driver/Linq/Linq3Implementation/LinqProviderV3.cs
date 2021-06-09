@@ -19,7 +19,6 @@ using System.Linq.Expressions;
 using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Linq;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators;
@@ -61,7 +60,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             IBsonSerializerRegistry serializerRegistry,
             ExpressionTranslationOptions translationOptions)
         {
-            throw new NotImplementedException();
+            // TODO: implement using LINQ3 instead of falling back to LINQ2
+            return LinqProvider.V2.TranslateExpressionToBucketOutputProjection(valueExpression, outputExpression, documentSerializer, serializerRegistry, translationOptions);
         }
 
         internal override RenderedFieldDefinition TranslateExpressionToField<TDocument>(
@@ -113,7 +113,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             IBsonSerializer<TSource> sourceSerializer,
             IBsonSerializerRegistry serializerRegistry)
         {
-            throw new NotImplementedException();
+            // TODO: implement using LINQ3 instead of falling back to LINQ2
+            return LinqProvider.V2.TranslateExpressionToFindProjection(expression, sourceSerializer, serializerRegistry);
         }
 
         internal override RenderedProjectionDefinition<TOutput> TranslateExpressionToGroupProjection<TInput, TKey, TOutput>(
@@ -123,7 +124,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             IBsonSerializerRegistry serializerRegistry,
             ExpressionTranslationOptions translationOptions)
         {
-            throw new NotImplementedException();
+            // TODO: implement using LINQ3 instead of falling back to LINQ2
+            return LinqProvider.V2.TranslateExpressionToGroupProjection(idExpression, groupExpression, documentSerializer, serializerRegistry, translationOptions);
         }
 
         internal override RenderedProjectionDefinition<TOutput> TranslateExpressionToProjection<TInput, TOutput>(
