@@ -66,7 +66,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests
         [Fact]
         public void TranslateExpressionToBucketOutputProjection_should_return_expected_result()
         {
-#if FALSE // TODO: reenable test
             var subject = LinqProvider.V3;
             Expression<Func<C, int>> valueExpression = c => c.X;
             Expression<Func<IGrouping<int, C>, int>> outputExpression = g => g.Count();
@@ -81,7 +80,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests
             expectedResult.ProjectionSerializer.Should().BeOfType<Int32Serializer>();
             result.Document.Should().Be(expectedResult.Document);
             result.ProjectionSerializer.Should().BeOfType(expectedResult.ProjectionSerializer.GetType());
-#endif
         }
 
         [Fact]
@@ -131,6 +129,45 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests
             var expectedResult = LinqProvider.V2.TranslateExpressionToFilter(expression, documentSerializer, serializerRegistry);
             expectedResult.Should().Be("{ X : 0 }");
             result.Should().Be(expectedResult);
+        }
+
+        [Fact]
+        public void TranslateExpressionToFindProjection_should_return_expected_result()
+        {
+            var subject = LinqProvider.V3;
+            Expression<Func<C, int>> expression = c => c.X;
+            var serializerRegistry = BsonSerializer.SerializerRegistry;
+            var documentSerializer = serializerRegistry.GetSerializer<C>();
+
+            var result = subject.TranslateExpressionToFindProjection(expression, documentSerializer, serializerRegistry);
+
+            var expectedResult = LinqProvider.V2.TranslateExpressionToFindProjection(expression, documentSerializer, serializerRegistry);
+            expectedResult.Document.Should().Be("{ X : 1, _id : 0 }");
+            result.Document.Should().Be(expectedResult.Document);
+            result.ProjectionSerializer.ValueType.Should().Be(typeof(int));
+        }
+
+        [Fact]
+        public void TranslateExpressionToGroupProjection_should_return_expected_result()
+        {
+            WithAnonymousOutputType(g => new { count = g.Count() });
+
+            void WithAnonymousOutputType<TOutput>(Expression<Func<IGrouping<int, C>, TOutput>> groupExpression)
+            {
+                var subject = LinqProvider.V3;
+                Expression<Func<C, int>> idExpression = c => c.X;
+                var serializerRegistry = BsonSerializer.SerializerRegistry;
+                var documentSerializer = serializerRegistry.GetSerializer<C>();
+                var translationOptions = new ExpressionTranslationOptions();
+
+                var result = subject.TranslateExpressionToGroupProjection(idExpression, groupExpression, documentSerializer, serializerRegistry, translationOptions);
+
+                var expectedResult = LinqProvider.V2.TranslateExpressionToGroupProjection(idExpression, groupExpression, documentSerializer, serializerRegistry, translationOptions);
+                expectedResult.Document.Should().Be("{ _id : '$X', count : { $sum : 1 } }");
+                expectedResult.ProjectionSerializer.ValueType.Should().Be(typeof(TOutput));
+                result.Document.Should().Be(expectedResult.Document);
+                result.ProjectionSerializer.ValueType.Should().Be(typeof(TOutput));
+            }
         }
 
         [Fact]
