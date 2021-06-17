@@ -21,10 +21,12 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
 using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
+using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilterTranslators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipelineTranslators;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecutableQueryTranslators
@@ -44,16 +46,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
             if (method.Is(QueryableMethod.All))
             {
                 var sourceExpression = arguments[0];
-                var tsource = sourceExpression.Type.GetGenericArguments()[0];
+                var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
+
                 var predicateLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                var inverseBody = Expression.Not(predicateLambda.Body);
-                var inverseLambda = Expression.Lambda(inverseBody, predicateLambda.Parameters[0]);
-                var inversePredicateExpression = Expression.Quote(inverseLambda);
-                var sourceWithInversePredicateExpression = Expression.Call(QueryableMethod.MakeWhere(tsource), sourceExpression, inversePredicateExpression);
-                var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceWithInversePredicateExpression);
+                var predicateFilter = ExpressionToFilterTranslator.TranslateLambda(context, predicateLambda, parameterSerializer: pipeline.OutputSerializer);
 
                 pipeline = pipeline.AddStages(
                     __outputSerializer,
+                    AstStage.Match(AstFilter.Not(predicateFilter)),
                     AstStage.Limit(1),
                     AstStage.Project(
                         AstProject.ExcludeId(),
@@ -69,15 +69,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
             throw new ExpressionNotSupportedException(expression);
         }
 
-        private class AllFinalizer : IExecutableQueryFinalizer<string, bool>
+        private class AllFinalizer : IExecutableQueryFinalizer<BsonNull, bool>
         {
-            public bool Finalize(IAsyncCursor<string> cursor, CancellationToken cancellationToken)
+            public bool Finalize(IAsyncCursor<BsonNull> cursor, CancellationToken cancellationToken)
             {
                 var output = cursor.ToList(cancellationToken);
                 return !output.Any();
             }
 
-            public async Task<bool> FinalizeAsync(IAsyncCursor<string> cursor, CancellationToken cancellationToken)
+            public async Task<bool> FinalizeAsync(IAsyncCursor<BsonNull> cursor, CancellationToken cancellationToken)
             {
                 var output = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
                 return !output.Any();

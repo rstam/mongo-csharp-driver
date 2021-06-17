@@ -33,6 +33,16 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
     public class MongoQueryableTests : IntegrationTestBase
     {
         [Fact]
+        public void All_with_predicate()
+        {
+            var result = CreateQuery().All(x => x.C.E.F >= 11);
+            result.Should().BeTrue();
+
+            result = CreateQuery().All(x => x.C.E.F == 11);
+            result.Should().BeFalse();
+        }
+
+        [Fact]
         public void Any()
         {
             var result = CreateQuery().Any();
