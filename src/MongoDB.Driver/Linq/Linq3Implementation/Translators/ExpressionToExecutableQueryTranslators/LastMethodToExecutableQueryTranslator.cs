@@ -20,6 +20,7 @@ using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecutableQueryTranslators.Finalizers;
+using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilterTranslators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipelineTranslators;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecutableQueryTranslators
@@ -39,13 +40,17 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
             if (method.IsOneOf(QueryableMethod.Last, QueryableMethod.LastWithPredicate, QueryableMethod.LastOrDefault, QueryableMethod.LastOrDefaultWithPredicate))
             {
                 var sourceExpression = arguments[0];
+                var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
+
                 if (method.IsOneOf(QueryableMethod.LastWithPredicate, QueryableMethod.LastOrDefaultWithPredicate))
                 {
-                    var predicateExpression = arguments[1];
-                    var tsource = sourceExpression.Type.GetGenericArguments()[0];
-                    sourceExpression = Expression.Call(QueryableMethod.MakeWhere(tsource), sourceExpression, predicateExpression);
+                    var predicateLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
+                    var predicateFilter = ExpressionToFilterTranslator.TranslateLambda(context, predicateLambda, parameterSerializer: pipeline.OutputSerializer);
+
+                    pipeline = pipeline.AddStages(
+                        pipeline.OutputSerializer,
+                        AstStage.Match(predicateFilter));
                 }
-                var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
 
                 pipeline = pipeline.AddStages(
                     pipeline.OutputSerializer,
