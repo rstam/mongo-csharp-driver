@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
     internal static class ContainsMethodToExecutableQueryTranslator
     {
         // private static fields
-        private static readonly IExecutableQueryFinalizer<string, bool> __finalizer = new ContainsFinalizer();
+        private static readonly IExecutableQueryFinalizer<BsonNull, bool> __finalizer = new ContainsFinalizer();
         private static readonly IBsonSerializer<BsonNull> __outputSerializer = new WrappedValueSerializer<BsonNull>(BsonNullSerializer.Instance);
 
         // public static methods
@@ -88,15 +88,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
             throw new ExpressionNotSupportedException(expression);
         }
 
-        private class ContainsFinalizer : IExecutableQueryFinalizer<string, bool>
+        private class ContainsFinalizer : IExecutableQueryFinalizer<BsonNull, bool>
         {
-            public bool Finalize(IAsyncCursor<string> cursor, CancellationToken cancellationToken)
+            public bool Finalize(IAsyncCursor<BsonNull> cursor, CancellationToken cancellationToken)
             {
                 var output = cursor.ToList(cancellationToken);
                 return output.Any();
             }
 
-            public async Task<bool> FinalizeAsync(IAsyncCursor<string> cursor, CancellationToken cancellationToken)
+            public async Task<bool> FinalizeAsync(IAsyncCursor<BsonNull> cursor, CancellationToken cancellationToken)
             {
                 var output = await cursor.ToListAsync(cancellationToken).ConfigureAwait(false);
                 return output.Any();
