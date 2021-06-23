@@ -77,19 +77,9 @@ namespace MongoDB.Driver.Core
             if (channelSource.ServerDescription.Type == ServerType.LoadBalanced && cursorId != 0)
             {
                 // The below if-else if workaround, should be reconsidered
-                IChannelHandle getMoreChannel;
-                ICoreSessionHandle getMoreSession;
-                if (channelSource.Session.IsInTransaction)
-                {
-                    getMoreChannel = channel;
-                    getMoreSession = channelSource.Session;
-                }
-                else
-                {
-                    // GetChannel uses forking
-                    getMoreChannel = channelSource.GetChannel(CancellationToken.None); // no need for cancellation token since we already have channel in the source
-                    getMoreSession = channelSource.Session.Fork(); 
-                }
+                var getMoreChannel = channelSource.GetChannel(CancellationToken.None); // no need for cancellation token since we already have channel in the source
+                var getMoreSession = channelSource.Session.Fork();
+
                 return new ChannelChannelSource(
                     channelSource.Server,
                     getMoreChannel,
