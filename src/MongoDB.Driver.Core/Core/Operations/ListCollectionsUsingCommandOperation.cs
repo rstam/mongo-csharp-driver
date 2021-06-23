@@ -31,6 +31,7 @@ namespace MongoDB.Driver.Core.Operations
     public class ListCollectionsUsingCommandOperation : IReadOperation<IAsyncCursor<BsonDocument>>, IExecutableInRetryableReadContext<IAsyncCursor<BsonDocument>>
     {
         // fields
+        private int? _batchSize;
         private BsonDocument _filter;
         private readonly DatabaseNamespace _databaseNamespace;
         private readonly MessageEncoderSettings _messageEncoderSettings;
@@ -52,6 +53,18 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // properties
+        /// <summary>
+        /// Gets or sets the batch size.
+        /// </summary>
+        /// <value>
+        /// The batch size.
+        /// </value>
+        public int? BatchSize
+        {
+            get => _batchSize;
+            set => _batchSize = value;
+        }
+
         /// <summary>
         /// Gets or sets the filter.
         /// </summary>
@@ -118,6 +131,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
+                context.PinConnectionIfRequired();
                 return Execute(context, cancellationToken);
             }
         }
@@ -131,7 +145,7 @@ namespace MongoDB.Driver.Core.Operations
             {
                 var operation = CreateOperation();
                 var result = operation.Execute(context, cancellationToken);
-                return CreateCursor(context.ChannelSource, operation.Command, result);
+                return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
             }
         }
 
@@ -142,6 +156,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = await RetryableReadContext.CreateAsync(binding, _retryRequested, cancellationToken).ConfigureAwait(false))
             {
+                context.PinConnectionIfRequired();
                 return Execute(context, cancellationToken);
             }
         }
@@ -155,7 +170,7 @@ namespace MongoDB.Driver.Core.Operations
             {
                 var operation = CreateOperation();
                 var result = await operation.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
-                return CreateCursor(context.ChannelSource, operation.Command, result);
+                return CreateCursor(context.ChannelSource, context.Channel, operation.Command, result);
             }
         }
 
@@ -166,7 +181,8 @@ namespace MongoDB.Driver.Core.Operations
             {
                 { "listCollections", 1 },
                 { "filter", _filter, _filter != null },
-                { "nameOnly", () => _nameOnly.Value, _nameOnly.HasValue }
+                { "nameOnly", () => _nameOnly.Value, _nameOnly.HasValue },
+                { "cursor", () => new BsonDocument("batchSize", _batchSize.Value), _batchSize.HasValue }
             };
             return new ReadCommandOperation<BsonDocument>(_databaseNamespace, command, BsonDocumentSerializer.Instance, _messageEncoderSettings)
             {
@@ -174,17 +190,18 @@ namespace MongoDB.Driver.Core.Operations
             };
         }
 
-        private IAsyncCursor<BsonDocument> CreateCursor(IChannelSourceHandle channelSource, BsonDocument command, BsonDocument result)
+        private IAsyncCursor<BsonDocument> CreateCursor(IChannelSourceHandle channelSource, IChannelHandle channel, BsonDocument command, BsonDocument result)
         {
-            var getMoreChannelSource = new ServerChannelSource(channelSource.Server, channelSource.Session.Fork());
             var cursorDocument = result["cursor"].AsBsonDocument;
+            var cursorId = cursorDocument["id"].ToInt64();
+            var getMoreChannelSource = ChannelPinningHelper.CreateEffectiveGetMoreChannelSource(channelSource, channel, cursorId);
             var cursor = new AsyncCursor<BsonDocument>(
                 getMoreChannelSource,
                 CollectionNamespace.FromFullName(cursorDocument["ns"].AsString),
                 command,
                 cursorDocument["firstBatch"].AsBsonArray.OfType<BsonDocument>().ToList(),
-                cursorDocument["id"].ToInt64(),
-                0,
+                cursorId,
+                batchSize: _batchSize ?? 0,
                 0,
                 BsonDocumentSerializer.Instance,
                 _messageEncoderSettings);

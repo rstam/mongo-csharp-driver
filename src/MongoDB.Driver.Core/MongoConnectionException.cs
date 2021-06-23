@@ -15,6 +15,7 @@
 
 using System;
 using System.Net.Sockets;
+using MongoDB.Bson;
 #if !NETSTANDARD1_5
 using System.Runtime.Serialization;
 #endif
@@ -34,6 +35,7 @@ namespace MongoDB.Driver
         // fields
         private readonly ConnectionId _connectionId;
         private int? _generation = null;
+        private ObjectId? _serviceId = null;
 
         // constructors
         /// <summary>
@@ -153,6 +155,21 @@ namespace MongoDB.Driver
                 }
 
                 _generation = value;
+            }
+        }
+
+        // TODO temporary property for propagating exception generation to server
+        internal ObjectId? ServiceId
+        {
+            get { return _serviceId; }
+            set
+            {
+                if (_serviceId != null)
+                {
+                    throw new InvalidOperationException("Service Id is already set.");
+                }
+
+                _serviceId = value;
             }
         }
     }

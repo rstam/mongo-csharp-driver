@@ -121,7 +121,7 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
 
             if (expectedEvents != null)
             {
-                //AssertEvents(expectedEvents, _entityMap);
+                AssertEvents(expectedEvents, _entityMap);
             }
             if (outcome != null)
             {
@@ -178,13 +178,13 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations
         private void AssertEvents(BsonArray eventItems, UnifiedEntityMap entityMap)
         {
             var unifiedEventMatcher = new UnifiedEventMatcher(new UnifiedValueMatcher(entityMap));
-            foreach (var eventItem in eventItems)
+            foreach (var eventItem in eventItems.Cast<BsonDocument>())
             {
                 var clientId = eventItem["client"].AsString;
                 var eventCapturer = entityMap.EventCapturers[clientId];
-                var actualEvents = eventCapturer.Events;
+                var eventType = eventItem.GetValue("eventType", defaultValue: "command").AsString;
+                var actualEvents = UnifiedEventMatcher.FilterEventsByType(eventCapturer.Events, eventType);
 
-                unifiedEventMatcher.AssertEventsMatch(actualEvents, eventItem["events"].AsBsonArray);
             }
         }
 

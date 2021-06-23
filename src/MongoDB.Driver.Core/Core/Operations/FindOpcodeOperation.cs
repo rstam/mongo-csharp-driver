@@ -22,6 +22,7 @@ using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Bindings;
+using MongoDB.Driver.Core.Connections;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
@@ -449,6 +450,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = RetryableReadContext.Create(binding, retryRequested: false, cancellationToken))
             {
+                context.PinConnectionIfRequired();
                 return Execute(context, cancellationToken);
             }
         }
@@ -466,7 +468,7 @@ namespace MongoDB.Driver.Core.Operations
                 var wrappedQuery = CreateWrappedQuery(serverDescription.Type, readPreference, out var slaveOk);
 
                 var batch = ExecuteProtocol(context.Channel, wrappedQuery, slaveOk, cancellationToken);
-                return CreateCursor(context.ChannelSource, wrappedQuery, batch);
+                return CreateCursor(context.ChannelSource, context.Channel, wrappedQuery, batch);
             }
         }
 
@@ -477,6 +479,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = await RetryableReadContext.CreateAsync(binding, retryRequested: false, cancellationToken).ConfigureAwait(false))
             {
+                context.PinConnectionIfRequired();
                 return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -494,7 +497,7 @@ namespace MongoDB.Driver.Core.Operations
                 var wrappedQuery = CreateWrappedQuery(serverDescription.Type, readPreference, out var slaveOk);
 
                 var batch = await ExecuteProtocolAsync(context.Channel, wrappedQuery, slaveOk, cancellationToken).ConfigureAwait(false);
-                return CreateCursor(context.ChannelSource, wrappedQuery, batch);
+                return CreateCursor(context.ChannelSource, context.Channel, wrappedQuery, batch);
             }
         }
 
@@ -537,9 +540,10 @@ namespace MongoDB.Driver.Core.Operations
         }
 
         // private methods
-        private IAsyncCursor<TDocument> CreateCursor(IChannelSourceHandle channelSource, BsonDocument query, CursorBatch<TDocument> batch)
+        private IAsyncCursor<TDocument> CreateCursor(IChannelSourceHandle channelSource, IChannelHandle channel, BsonDocument query, CursorBatch<TDocument> batch)
         {
-            var getMoreChannelSource = new ServerChannelSource(channelSource.Server, channelSource.Session.Fork());
+            var getMoreChannelSource = ChannelPinningHelper.CreateEffectiveGetMoreChannelSource(channelSource, channel, batch.CursorId);
+
             return new AsyncCursor<TDocument>(
                 getMoreChannelSource,
                 _collectionNamespace,

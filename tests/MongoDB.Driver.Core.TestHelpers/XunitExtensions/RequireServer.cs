@@ -73,6 +73,16 @@ namespace MongoDB.Driver.Core.TestHelpers.XunitExtensions
             throw new SkipException($"Test skipped because cluster type is {actualClusterType} and not one of ({clusterTypesString}).");
         }
 
+        public RequireServer LoadBalancing(bool enabled)
+        {
+            var isLoadBalancing = CoreTestConfiguration.ConnectionString.LoadBalanced;
+            if (isLoadBalancing == enabled)
+            {
+                return this;
+            }
+            throw new SkipException($"Test skipped because load balancing mode is {(isLoadBalancing ? "on" : "off")}.");
+        }
+
         public RequireServer RunOn(BsonArray requirements)
         {
             var cluster = CoreTestConfiguration.Cluster;

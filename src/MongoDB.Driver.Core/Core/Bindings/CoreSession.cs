@@ -141,6 +141,7 @@ namespace MongoDB.Driver.Core.Bindings
                 {
                     // unpin if retryable error
                     _currentTransaction.PinnedServer = null;
+                    _currentTransaction.UnpinConnection();
 
                     // ignore exception and retry
                 }
@@ -165,6 +166,8 @@ namespace MongoDB.Driver.Core.Bindings
                 // The transaction is aborted.The session MUST be unpinned regardless
                 // of whether the abortTransaction command succeeds or fails
                 _currentTransaction.PinnedServer = null;
+
+                _currentTransaction.UnpinConnection();
             }
         }
 
@@ -190,6 +193,7 @@ namespace MongoDB.Driver.Core.Bindings
                 {
                     // unpin if retryable error
                     _currentTransaction.PinnedServer = null;
+                    _currentTransaction.UnpinConnection();
 
                     // ignore exception and retry
                 }
@@ -214,6 +218,8 @@ namespace MongoDB.Driver.Core.Bindings
                 // The transaction is aborted.The session MUST be unpinned regardless
                 // of whether the abortTransaction command succeeds or fails
                 _currentTransaction.PinnedServer = null;
+
+                _currentTransaction.UnpinConnection();
             }
         }
 
@@ -481,17 +487,19 @@ namespace MongoDB.Driver.Core.Bindings
             {
                 var serverType = connectedDataBearingServer.Type;
 
-                if (serverType == ServerType.Standalone)
+                switch (serverType)
                 {
-                    throw new NotSupportedException("Standalone servers do not support transactions.");
-                }
-                else if (serverType == ServerType.ShardRouter)
-                {
-                    Feature.ShardedTransactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
-                }
-                else
-                {
-                    Feature.Transactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
+                    case ServerType.Standalone:
+                        throw new NotSupportedException("Standalone servers do not support transactions.");
+                    case ServerType.ShardRouter:
+                        Feature.ShardedTransactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
+                        break;
+                    case ServerType.LoadBalanced:
+                        // do nothing, load balancing always supports transactions
+                        break;
+                    default:
+                        Feature.Transactions.ThrowIfNotSupported(connectedDataBearingServer.Version);
+                        break;
                 }
             }
         }

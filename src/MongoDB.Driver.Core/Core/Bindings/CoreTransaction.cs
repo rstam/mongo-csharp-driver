@@ -25,6 +25,7 @@ namespace MongoDB.Driver.Core.Bindings
     {
         // private fields
         private bool _isEmpty;
+        private IChannelHandle _pinnedChannel;
         private IServer _pinnedServer;
         private BsonDocument _recoveryToken;
         private CoreTransactionState _state;
@@ -76,6 +77,20 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         /// <summary>
+        /// Gets or sets the pinned channel.
+        /// </summary>
+        public IChannelHandle PinnedChannel
+        {
+            get => _pinnedChannel;
+            internal set => _pinnedChannel = value;
+        }
+
+        /// <summary>
+        /// Gets whether the channel is pinned.
+        /// </summary>
+        public bool IsConnectionPinned => _pinnedChannel != null && !_pinnedChannel.Connection.IsExpired;
+
+        /// <summary>
         /// Gets the transaction number.
         /// </summary>
         /// <value>
@@ -111,6 +126,13 @@ namespace MongoDB.Driver.Core.Bindings
             {
                 _isEmpty = false;
             }
+        }
+
+        internal void UnpinConnection()
+        {
+            //TODO: lock?
+            _pinnedChannel?.Dispose();
+            _pinnedChannel = null;
         }
     }
 }

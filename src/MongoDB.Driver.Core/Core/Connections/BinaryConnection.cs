@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson.IO;
 using MongoDB.Driver.Core.Compression;
 using MongoDB.Driver.Core.Configuration;
+using MongoDB.Driver.Core.ConnectionPools;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Core.Servers;
@@ -288,7 +289,9 @@ namespace MongoDB.Driver.Core.Connections
                 helper.OpeningConnection();
                 _stream = _streamFactory.CreateStream(_endPoint, cancellationToken);
                 helper.InitializingConnection();
-                _description = _connectionInitializer.InitializeConnection(this, cancellationToken);
+                _description = _connectionInitializer.Handshake(this, cancellationToken);
+                // we always need to have access to description after handshake regardless furher errors
+                _description = _connectionInitializer.ConnectionAuthentication(this, _description, cancellationToken);
                 _sendCompressorType = ChooseSendCompressorTypeIfAny(_description);
 
                 helper.OpenedConnection();
@@ -309,7 +312,9 @@ namespace MongoDB.Driver.Core.Connections
                 helper.OpeningConnection();
                 _stream = await _streamFactory.CreateStreamAsync(_endPoint, cancellationToken).ConfigureAwait(false);
                 helper.InitializingConnection();
-                _description = await _connectionInitializer.InitializeConnectionAsync(this, cancellationToken).ConfigureAwait(false);
+                _description = await _connectionInitializer.HandshakeAsync(this, cancellationToken).ConfigureAwait(false);
+                // we always need to have access to description after handshake regardless furher errors
+                _description = await _connectionInitializer.ConnectionAuthenticationAsync(this, _description, cancellationToken).ConfigureAwait(false);
                 _sendCompressorType = ChooseSendCompressorTypeIfAny(_description);
 
                 helper.OpenedConnection();

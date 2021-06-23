@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
@@ -26,6 +27,35 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations.Matchers
 {
     public class UnifiedEventMatcher
     {
+        #region static
+        private static Dictionary<Type, EventType> __eventsMap = new()
+        {
+            { typeof(CommandStartedEvent), EventType.Command },
+            { typeof(CommandSucceededEvent), EventType.Command },
+            { typeof(CommandFailedEvent), EventType.Command },
+
+            { typeof(ConnectionOpenedEvent), EventType.Cmap },  // connectionReadyEvent
+            { typeof(ConnectionCreatedEvent), EventType.Cmap },
+            { typeof(ConnectionPoolCheckedOutConnectionEvent), EventType.Cmap },
+            { typeof(ConnectionPoolCheckedInConnectionEvent), EventType.Cmap },
+            { typeof(ConnectionClosedEvent), EventType.Cmap },
+            { typeof(ConnectionPoolCheckingOutConnectionFailedEvent), EventType.Cmap },
+            { typeof(ConnectionPoolClearedEvent), EventType.Cmap },
+        };
+
+        public static List<object> FilterEventsByType(List<object> incomeEvents, string eventType)
+        {
+            if (!Enum.TryParse<EventType>(eventType, ignoreCase: true, out var eventTypeEnum))
+            {
+                throw new FormatException($"Cannot parse {nameof(eventType)} enum from {eventType}.");
+            }
+
+            return incomeEvents
+                .Where(e => __eventsMap[e.GetType()] == eventTypeEnum)
+                .ToList();
+        }
+        #endregion
+
         private UnifiedValueMatcher _valueMatcher;
 
         public UnifiedEventMatcher(UnifiedValueMatcher valueMatcher)
@@ -116,6 +146,23 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations.Matchers
                             }
                         }
                         break;
+                    case "connectionReadyEvent":
+                        actualEvent.Should().BeOfType<ConnectionOpenedEvent>();
+                        expectedEventValue.ElementCount.Should().Be(0); // empty document
+                        break;
+                    case "connectionCheckedOutEvent":
+                        actualEvent.Should().BeOfType<ConnectionPoolCheckedOutConnectionEvent>();
+                        expectedEventValue.ElementCount.Should().Be(0); // empty document
+                        break;
+                    case "connectionCheckedInEvent":
+                        actualEvent.Should().BeOfType<ConnectionPoolCheckedInConnectionEvent>();
+                        expectedEventValue.ElementCount.Should().Be(0); // empty document
+                        break;
+                    case "connectionClosedEvent":
+                        var connectionClosedEvent = actualEvent.Should().BeOfType<ConnectionClosedEvent>().Subject;
+                        var reason = expectedEventValue.Single(e => e.Name == "reason").Value;
+                        //connectionClosedEvent.Reason.Should().Be(reason); // not implemented
+                        break;
                     default:
                         throw new FormatException($"Unrecognized event type: '{expectedEventType}'.");
                 }
@@ -164,6 +211,13 @@ namespace MongoDB.Driver.Tests.UnifiedTestOperations.Matchers
             return
                 $"Expected events to be: {expectedEventsDocuments.ToJson(jsonWriterSettings)}{Environment.NewLine}" +
                 $"But found: {actualEventsDocuments.ToJson(jsonWriterSettings)}.";
+        }
+
+        // nested types
+        private enum EventType
+        {
+            Command,
+            Cmap
         }
     }
 }

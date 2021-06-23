@@ -213,6 +213,7 @@ namespace MongoDB.Driver.Core.Operations
             using (EventContext.BeginOperation())
             using (var context = RetryableWriteContext.Create(binding, _retryRequested, cancellationToken))
             {
+                context.PinConnectionIfRequired();
                 EnsureCollationIsSupportedIfAnyRequestHasCollation(context);
                 EnsureHintIsSupportedIfAnyRequestHasHint(context);
                 context.DisableRetriesIfAnyWriteRequestIsNotRetryable(_requests);

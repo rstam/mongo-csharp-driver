@@ -268,6 +268,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
+                context.PinConnectionIfRequired();
                 return Execute(context, cancellationToken);
             }
         }
@@ -293,6 +294,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = await RetryableReadContext.CreateAsync(binding, _retryRequested, cancellationToken).ConfigureAwait(false))
             {
+                context.PinConnectionIfRequired();
                 return await ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -371,23 +373,25 @@ namespace MongoDB.Driver.Core.Operations
         {
             if (result.CursorId.HasValue)
             {
-                return CreateCursorFromCursorResult(channelSource, command, result);
+                return CreateCursorFromCursorResult(channelSource, channel, command, result);
             }
             else
             {
+                // don't need connection pinning
                 return CreateCursorFromInlineResult(command, result);
             }
         }
 
-        private AsyncCursor<TResult> CreateCursorFromCursorResult(IChannelSourceHandle channelSource, BsonDocument command, AggregateResult result)
+        private AsyncCursor<TResult> CreateCursorFromCursorResult(IChannelSourceHandle channelSource, IChannelHandle channel, BsonDocument command, AggregateResult result)
         {
-            var getMoreChannelSource = new ServerChannelSource(channelSource.Server, channelSource.Session.Fork());
+            var cursorId = result.CursorId.GetValueOrDefault(0);
+            var getMoreChannelSource = ChannelPinningHelper.CreateEffectiveGetMoreChannelSource(channelSource, channel, cursorId);
             return new AsyncCursor<TResult>(
                 getMoreChannelSource,
                 result.CollectionNamespace,
                 command,
                 result.Results,
-                result.CursorId.GetValueOrDefault(0),
+                cursorId,
                 result.PostBatchResumeToken,
                 _batchSize,
                 null, // limit
