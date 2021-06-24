@@ -16,6 +16,7 @@
 using System.Threading;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
+using MongoDB.Driver.Core.Operations;
 using MongoDB.Driver.Core.Servers;
 
 namespace MongoDB.Driver.Core
@@ -33,19 +34,21 @@ namespace MongoDB.Driver.Core
         /// <param name="session">The session.</param>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>An effective read binging.</returns>
-        public static IReadBinding CreateEffectiveReadBindings(ICluster cluster, ICoreSessionHandle session, ReadPreference readPreference)
+        public static IReadBindingHandle CreateEffectiveReadBinding(ICluster cluster, ICoreSessionHandle session, ReadPreference readPreference)
         {
             // this is used on collection level to not create WritableServerBinding if a connection is already pinned
             if (session.IsInTransaction && session.CurrentTransaction.IsConnectionPinned)
             {
-                return new ChannelReadWriteBinding(
-                    session.CurrentTransaction.PinnedServer,
-                    session.CurrentTransaction.PinnedChannel,
-                    session.Fork());
+                return
+                    new ReadWriteBindingHandle(
+                        new ChannelReadWriteBinding(
+                        session.CurrentTransaction.PinnedServer,
+                        session.CurrentTransaction.PinnedChannel,
+                        session));
             }
             else
             {
-                return new ReadPreferenceBinding(cluster, readPreference, session.Fork());
+                return new ReadBindingHandle(new ReadPreferenceBinding(cluster, readPreference, session));
             }
         }
 
@@ -56,74 +59,79 @@ namespace MongoDB.Driver.Core
         /// <param name="cluster">The cluster.</param>
         /// <param name="session">The session.</param>
         /// <returns></returns>
-        public static IReadWriteBinding CreateEffectiveReadWriteBindings(ICluster cluster, ICoreSessionHandle session)
+        public static IReadWriteBindingHandle CreateEffectiveReadWriteBinding(ICluster cluster, ICoreSessionHandle session)
         {
             // this is used on collection level to not create WritableServerBinding if a connection is already pinned
             if (session.IsInTransaction && session.CurrentTransaction.IsConnectionPinned)
             {
-                return new ChannelReadWriteBinding(
-                    session.CurrentTransaction.PinnedServer,
-                    session.CurrentTransaction.PinnedChannel,
-                    session.Fork());
+                return
+                    new ReadWriteBindingHandle(
+                        new ChannelReadWriteBinding(
+                        session.CurrentTransaction.PinnedServer,
+                        session.CurrentTransaction.PinnedChannel,
+                        session));
             }
             else
             {
-                return new WritableServerBinding(cluster, session.Fork());
+                return new ReadWriteBindingHandle(new WritableServerBinding(cluster, session));
             }
         }
 
-        internal static IChannelSource CreateEffectiveGetMoreChannelSource(IChannelSourceHandle channelSource, /*should not be here*/IChannelHandle channel, long cursorId)
+        internal static IChannelSourceHandle CreateEffectiveGetMoreChannelSource(IChannelSourceHandle channelSource, IChannelHandle channel, long cursorId)
         {
-            if (channelSource.ServerDescription.Type == ServerType.LoadBalanced && cursorId != 0)
+            if (cursorId == 0)
             {
-                // The below if-else if workaround, should be reconsidered
-                var getMoreChannel = channelSource.GetChannel(CancellationToken.None); // no need for cancellation token since we already have channel in the source
+                return null;
+            }
+
+            if (channelSource.ServerDescription.Type == ServerType.LoadBalanced)
+            {
+                var getMoreChannel = channel.Fork();
                 var getMoreSession = channelSource.Session.Fork();
 
-                return new ChannelChannelSource(
-                    channelSource.Server,
-                    getMoreChannel,
-                    getMoreSession);
+                return
+                    new ChannelSourceHandle(
+                        new ChannelChannelSource(
+                        channelSource.Server,
+                        getMoreChannel,
+                        getMoreSession));
             }
             else
             {
-                return new ServerChannelSource(channelSource.Server, channelSource.Session.Fork());
+                return new ChannelSourceHandle(new ServerChannelSource(channelSource.Server, channelSource.Session.Fork()));
             }
         }
 
-        internal static bool TryCreatePinnedChannelSourceAndPinChannel(
-            IChannelSourceHandle channelSource,
-            IChannelHandle channel,
-            ICoreSessionHandle session,
-            out (IChannelSourceHandle PinnedChannelSource, IChannelHandle Channel) pinnedChannel)
+        internal static bool IsLoadBalanced(IChannelHandle channel)
         {
-            pinnedChannel = default;
-            if (channel.ConnectionDescription.ServiceId.HasValue) // load banced mode
+            return channel.ConnectionDescription.ServiceId.HasValue;
+        }
+
+        internal static (IChannelSourceHandle, IChannelHandle) CreatePinnedChannelSource(RetryableReadContext context)
+        {
+            return CreatePinnedChannelSource(context.ChannelSource.Server, context.Channel.Fork(), context.Binding.Session.Fork());
+        }
+
+        internal static (IChannelSourceHandle, IChannelHandle) CreatePinnedChannelSource(RetryableWriteContext context)
+        {
+            return CreatePinnedChannelSource(context.ChannelSource.Server, context.Channel.Fork(), context.Binding.Session.Fork());
+        }
+
+        private static (IChannelSourceHandle, IChannelHandle) CreatePinnedChannelSource(
+            IServer server,
+            IChannelHandle channel,
+            ICoreSessionHandle session)
+        {
+            var pinnedChannelSource = new ChannelSourceHandle(new ChannelChannelSource(server, channel, session));
+            var pinnedChannel = pinnedChannelSource.GetChannel(CancellationToken.None);
+
+            if (session.IsInTransaction)
             {
-                var server = channelSource.Server;
-                var forkedChannel = channel.Fork(); // channel is valid, but fork it to protect agains disposing in ReplaceChannel
-                var forkedSession = session.Fork(); // ChannelChannelSource.Dispose calls Dispose for Session, so protect it by forking
-
-                var pinnedChannelSource = new ChannelSourceHandle(
-                    new ChannelChannelSource(
-                        server,
-                        forkedChannel, 
-                        forkedSession));
-
-                if (session.IsInTransaction)
-                {
-                    session.CurrentTransaction.PinnedChannel = forkedChannel.Fork(); // protect channel against disposing after current operation
-                    session.CurrentTransaction.PinnedServer = server;
-                }
-
-                pinnedChannel = (pinnedChannelSource, forkedChannel);
-
-                return true;
+                session.CurrentTransaction.PinnedServer = server;
+                session.CurrentTransaction.PinConnection(pinnedChannel.Fork());
             }
-            else
-            {
-                return false;
-            }
+
+            return (pinnedChannelSource, pinnedChannel);
         }
     }
 }

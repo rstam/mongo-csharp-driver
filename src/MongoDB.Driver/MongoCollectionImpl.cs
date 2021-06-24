@@ -1156,14 +1156,12 @@ namespace MongoDB.Driver
                 throw new InvalidOperationException("Read preference in a transaction must be primary.");
             }
 
-            var binding = ChannelPinningHelper.CreateEffectiveReadBindings(_cluster, session.WrappedCoreSession, readPreference);
-            return new ReadBindingHandle(binding);
+            return ChannelPinningHelper.CreateEffectiveReadBinding(_cluster, session.WrappedCoreSession.Fork(), readPreference);
         }
 
         private IWriteBindingHandle CreateReadWriteBinding(IClientSessionHandle session)
         {
-            var binding = ChannelPinningHelper.CreateEffectiveReadWriteBindings(_cluster, session.WrappedCoreSession);
-            return new ReadWriteBindingHandle(binding);
+            return ChannelPinningHelper.CreateEffectiveReadWriteBinding(_cluster, session.WrappedCoreSession.Fork());
         }
 
         private MessageEncoderSettings GetMessageEncoderSettings()

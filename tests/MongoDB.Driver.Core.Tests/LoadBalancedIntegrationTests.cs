@@ -156,7 +156,7 @@ namespace MongoDB.Driver.Core.Tests
 
         private void AssertInsertInTransaction(ICluster cluster, ICoreSessionHandle coreSession, EventCapturer eventCapturer, bool async, bool firstOperation, CancellationToken cancellationToken)
         {
-            using (var binding = ChannelPinningHelper.CreateEffectiveReadWriteBindings(cluster, coreSession))
+            using (var binding = ChannelPinningHelper.CreateEffectiveReadWriteBinding(cluster, coreSession))
             using (var bindingHandle = new ReadWriteBindingHandle(binding))
             {
                 GetCoreSessionReferenceCount(bindingHandle.Session).Should().Be(2);
@@ -233,7 +233,7 @@ namespace MongoDB.Driver.Core.Tests
         private IAsyncCursor<BsonDocument> AssertFindAndCreateCursor(ICluster cluster, ReadPreference readPreference, ICoreSessionHandle coreSession, EventCapturer eventCapturer, bool async, bool isFirstOperation, CancellationToken cancellationToken)
         {
             IAsyncCursor<BsonDocument> asyncCursor;
-            using (var binding = new ReadBindingHandle(ChannelPinningHelper.CreateEffectiveReadBindings(cluster, coreSession, readPreference)))
+            using (var binding = new ReadBindingHandle(ChannelPinningHelper.CreateEffectiveReadBinding(cluster, coreSession, readPreference)))
             {
                 GetCoreSessionReferenceCount(binding.Session).Should().Be(2);
                 using (var context = RetryableReadContext.Create(binding, retryRequested: false, cancellationToken))

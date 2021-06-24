@@ -506,7 +506,7 @@ namespace MongoDB.Driver.Core.Operations
 
         private void DisposeChannelSourceIfNoLongerNeeded()
         {
-            if (_channelSource != null && _cursorId == 0 && !_channelSource.Session.IsInTransaction) // load balanced mode
+            if (_channelSource != null && _cursorId == 0)
             {
                 _channelSource.Dispose();
                 _channelSource = null;

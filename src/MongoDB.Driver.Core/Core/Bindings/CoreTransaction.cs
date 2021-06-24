@@ -79,11 +79,7 @@ namespace MongoDB.Driver.Core.Bindings
         /// <summary>
         /// Gets or sets the pinned channel.
         /// </summary>
-        public IChannelHandle PinnedChannel
-        {
-            get => _pinnedChannel;
-            internal set => _pinnedChannel = value;
-        }
+        public IChannelHandle PinnedChannel => _pinnedChannel;
 
         /// <summary>
         /// Gets whether the channel is pinned.
@@ -119,6 +115,12 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         // internal methods
+        internal void PinConnection(IChannelHandle channel)
+        {
+            _pinnedChannel?.Dispose();
+            _pinnedChannel = channel;
+        }
+
         internal void SetState(CoreTransactionState state)
         {
             _state = state;
@@ -130,8 +132,7 @@ namespace MongoDB.Driver.Core.Bindings
 
         internal void UnpinConnection()
         {
-            //TODO: lock?
-            _pinnedChannel?.Dispose();
+            _pinnedChannel.Dispose();
             _pinnedChannel = null;
         }
     }
