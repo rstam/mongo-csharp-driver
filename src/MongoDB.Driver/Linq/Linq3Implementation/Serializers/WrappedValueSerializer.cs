@@ -34,11 +34,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers
         private readonly IBsonSerializer<TValue> _valueSerializer;
 
         // constructors
-        public WrappedValueSerializer(IBsonSerializer<TValue> valueSerializer)
-            : this("_v", valueSerializer)
-        {
-        }
-
         public WrappedValueSerializer(string fieldName, IBsonSerializer<TValue> valueSerializer)
         {
             _fieldName = Ensure.IsNotNull(fieldName, nameof(fieldName));

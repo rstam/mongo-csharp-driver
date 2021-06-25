@@ -135,7 +135,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     valueExpression = AstExpression.Field("_v");
                 }
 
-                var outputValueType = GetValueType(expression);
+                var outputValueType = expression.GetResultType();
                 var outputValueSerializer = BsonSerializer.LookupSerializer(outputValueType); // TODO: use known serializer
                 var outputWrappedValueSerializer = WrappedValueSerializer.Create(outputValueSerializer);
 
@@ -154,19 +154,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
             }
 
             throw new ExpressionNotSupportedException(expression);
-        }
-
-        private static Type GetValueType(Expression expression)
-        {
-            var expressionType = expression.Type;
-            if (expressionType.IsConstructedGenericType && expressionType.GetGenericTypeDefinition() == typeof (Task<>))
-            {
-                return expressionType.GetGenericArguments()[0];
-            }
-            else
-            {
-                return expressionType;
-            }
         }
     }
 }
