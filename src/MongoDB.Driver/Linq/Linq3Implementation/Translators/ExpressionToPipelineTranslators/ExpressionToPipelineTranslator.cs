@@ -16,7 +16,6 @@
 using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
-using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipelineTranslators
 {
