@@ -37,12 +37,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
         private static readonly MethodInfo[] __anyMethods;
         private static readonly MethodInfo[] __anyWithPredicateMethods;
         private static readonly IExecutableQueryFinalizer<BsonNull, bool> __finalizer = new AnyFinalizer();
-        private static readonly IBsonSerializer<BsonNull> __outputSerializer = new WrappedValueSerializer<BsonNull>(BsonNullSerializer.Instance);
+        private static readonly IBsonSerializer<BsonNull> __outputSerializer = new WrappedValueSerializer<BsonNull>("_v", BsonNullSerializer.Instance);
 
         // static constructors
         static AnyMethodToExecutableQueryTranslator()
         {
-            __anyMethods = new MethodInfo[]
+            __anyMethods = new[]
             {
                 QueryableMethod.Any,
                 QueryableMethod.AnyWithPredicate,
@@ -50,7 +50,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 MongoQueryableMethod.AnyWithPredicateAsync
             };
 
-            __anyWithPredicateMethods = new MethodInfo[]
+            __anyWithPredicateMethods = new[]
             {
                 QueryableMethod.AnyWithPredicate,
                 MongoQueryableMethod.AnyWithPredicateAsync

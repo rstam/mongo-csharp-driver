@@ -86,8 +86,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
 
         public QueryableExecutionModel GetExecutionModel()
         {
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
-            return new QueryableExecutionModel3<TDocument, IAsyncCursor<TOutput>>(executableQuery);
+            throw new NotSupportedException("");
         }
 
         public IAsyncCursor<TOutput> ToCursor(CancellationToken cancellationToken = default)

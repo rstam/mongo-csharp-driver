@@ -14,6 +14,7 @@
 */
 
 using System.Linq.Expressions;
+using System.Reflection;
 using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
@@ -28,8 +29,28 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
     internal static class LastMethodToExecutableQueryTranslator<TOutput>
     {
         // private static fields
+        private static readonly MethodInfo[] __lastMethods;
+        private static readonly MethodInfo[] __lastWithPredicateMethods;
         private static readonly IExecutableQueryFinalizer<TOutput, TOutput> __singleFinalizer = new SingleFinalizer<TOutput>();
         private static readonly IExecutableQueryFinalizer<TOutput, TOutput> __singleOrDefaultFinalizer = new SingleOrDefaultFinalizer<TOutput>();
+
+        // static constructor
+        static LastMethodToExecutableQueryTranslator()
+        {
+            __lastMethods = new[]
+            {
+                QueryableMethod.Last,
+                QueryableMethod.LastWithPredicate,
+                QueryableMethod.LastOrDefault,
+                QueryableMethod.LastOrDefaultWithPredicate
+            };
+
+            __lastWithPredicateMethods = new[]
+            {
+                QueryableMethod.LastWithPredicate,
+                QueryableMethod.LastOrDefaultWithPredicate
+            };
+        }
 
         // public methods
         public static ExecutableQuery<TDocument, TOutput> Translate<TDocument>(MongoQueryProvider<TDocument> provider, TranslationContext context, MethodCallExpression expression)
@@ -37,12 +58,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.IsOneOf(QueryableMethod.Last, QueryableMethod.LastWithPredicate, QueryableMethod.LastOrDefault, QueryableMethod.LastOrDefaultWithPredicate))
+            if (method.IsOneOf(__lastMethods))
             {
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
 
-                if (method.IsOneOf(QueryableMethod.LastWithPredicate, QueryableMethod.LastOrDefaultWithPredicate))
+                if (method.IsOneOf(__lastWithPredicateMethods))
                 {
                     var predicateLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
                     var predicateFilter = ExpressionToFilterTranslator.TranslateLambda(context, predicateLambda, parameterSerializer: pipeline.OutputSerializer);

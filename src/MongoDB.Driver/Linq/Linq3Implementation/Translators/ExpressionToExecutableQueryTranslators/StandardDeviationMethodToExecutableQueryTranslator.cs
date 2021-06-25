@@ -33,7 +33,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
         // private static fields
         private static IExecutableQueryFinalizer<TOutput, TOutput> __singleFinalizer = new SingleFinalizer<TOutput>();
         private static IExecutableQueryFinalizer<TOutput, TOutput> __singleOrDefaultFinalizer = new SingleOrDefaultFinalizer<TOutput>();
-        private static readonly MethodInfo[] __standardDeviationAsyncMethods;
         private static readonly MethodInfo[] __standardDeviationMethods;
         private static readonly MethodInfo[] __standardDeviationNullableMethods;
         private static readonly MethodInfo[] __standardDeviationPopulationMethods;
@@ -123,50 +122,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 MongoQueryableMethod.StandardDeviationSampleSingle,
                 MongoQueryableMethod.StandardDeviationSampleSingleAsync,
                 MongoQueryableMethod.StandardDeviationSampleSingleWithSelector,
-                MongoQueryableMethod.StandardDeviationSampleSingleWithSelectorAsync
-            };
-
-            __standardDeviationAsyncMethods = new[]
-            {
-                MongoQueryableMethod.StandardDeviationPopulationDecimalAsync,
-                MongoQueryableMethod.StandardDeviationPopulationDecimalWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationDoubleAsync,
-                MongoQueryableMethod.StandardDeviationPopulationDoubleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationInt32Async,
-                MongoQueryableMethod.StandardDeviationPopulationInt32WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationInt64Async,
-                MongoQueryableMethod.StandardDeviationPopulationInt64WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableDecimalAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableDecimalWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableDoubleAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableDoubleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableInt32Async,
-                MongoQueryableMethod.StandardDeviationPopulationNullableInt32WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableInt64Async,
-                MongoQueryableMethod.StandardDeviationPopulationNullableInt64WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableSingleAsync,
-                MongoQueryableMethod.StandardDeviationPopulationNullableSingleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationPopulationSingleAsync,
-                MongoQueryableMethod.StandardDeviationPopulationSingleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleDecimalAsync,
-                MongoQueryableMethod.StandardDeviationSampleDecimalWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleDoubleAsync,
-                MongoQueryableMethod.StandardDeviationSampleDoubleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleInt32Async,
-                MongoQueryableMethod.StandardDeviationSampleInt32WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleInt64Async,
-                MongoQueryableMethod.StandardDeviationSampleInt64WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableDecimalAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableDecimalWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableDoubleAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableDoubleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableInt32Async,
-                MongoQueryableMethod.StandardDeviationSampleNullableInt32WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableInt64Async,
-                MongoQueryableMethod.StandardDeviationSampleNullableInt64WithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableSingleAsync,
-                MongoQueryableMethod.StandardDeviationSampleNullableSingleWithSelectorAsync,
-                MongoQueryableMethod.StandardDeviationSampleSingleAsync,
                 MongoQueryableMethod.StandardDeviationSampleSingleWithSelectorAsync
             };
 
@@ -327,7 +282,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 {
                     valueAst = AstExpression.Field("_v");
                 }
-                var outputValueType = method.IsOneOf(__standardDeviationAsyncMethods) ? expression.Type.GetGenericArguments()[0] : expression.Type;
+                var outputValueType = expression.GetResultType();
                 var outputValueSerializer = BsonSerializer.LookupSerializer(outputValueType);
                 var outputWrappedValueSerializer = WrappedValueSerializer.Create(outputValueSerializer);
 

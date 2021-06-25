@@ -55,8 +55,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
 
         public abstract TResult Execute(IClientSessionHandle session, CancellationToken cancellation);
         public abstract Task<TResult> ExecuteAsync(IClientSessionHandle session, CancellationToken cancellation);
-        public abstract ExecutableQuery<TDocument, TResult> WithCollection(IMongoCollection<TDocument> collection);
-        public abstract ExecutableQuery<TDocument, TResult> WithOptions(AggregateOptions options);
     }
 
     internal class ExecutableQuery<TDocument, TOutput, TResult> : ExecutableQuery<TDocument, TResult>
@@ -121,16 +119,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
         public override string ToString()
         {
             return $"{_collection.CollectionNamespace}.Aggregate({_pipeline})";
-        }
-
-        public override ExecutableQuery<TDocument, TResult> WithCollection(IMongoCollection<TDocument> collection)
-        {
-            return new ExecutableQuery<TDocument, TOutput, TResult>(collection, _options, _unoptimizedPipeline, _pipeline, _finalizer);
-        }
-
-        public override ExecutableQuery<TDocument, TResult> WithOptions(AggregateOptions options)
-        {
-            return new ExecutableQuery<TDocument, TOutput, TResult>(_collection, options, _unoptimizedPipeline, _pipeline, _finalizer);
         }
 
         // private methods
