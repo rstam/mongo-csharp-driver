@@ -33,7 +33,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
     {
         // private static fields
         private static readonly IExecutableQueryFinalizer<TOutput, TOutput> __finalizer = new SingleOrDefaultFinalizer<TOutput>();
-        private static readonly MethodInfo[] __sumAsyncMethods;
         private static readonly MethodInfo[] __sumMethods;
         private static readonly MethodInfo[] __sumWithSelectorMethods;
 
@@ -107,30 +106,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 MongoQueryableMethod.SumNullableSingleWithSelectorAsync,
                 MongoQueryableMethod.SumSingleWithSelectorAsync
             };
-
-            __sumAsyncMethods = new[]
-            {
-                MongoQueryableMethod.SumDecimalAsync,
-                MongoQueryableMethod.SumDecimalWithSelectorAsync,
-                MongoQueryableMethod.SumDoubleAsync,
-                MongoQueryableMethod.SumDoubleWithSelectorAsync,
-                MongoQueryableMethod.SumInt32Async,
-                MongoQueryableMethod.SumInt32WithSelectorAsync,
-                MongoQueryableMethod.SumInt64Async,
-                MongoQueryableMethod.SumInt64WithSelectorAsync,
-                MongoQueryableMethod.SumNullableDecimalAsync,
-                MongoQueryableMethod.SumNullableDecimalWithSelectorAsync,
-                MongoQueryableMethod.SumNullableDoubleAsync,
-                MongoQueryableMethod.SumNullableDoubleWithSelectorAsync,
-                MongoQueryableMethod.SumNullableInt32Async,
-                MongoQueryableMethod.SumNullableInt32WithSelectorAsync,
-                MongoQueryableMethod.SumNullableInt64Async,
-                MongoQueryableMethod.SumNullableInt64WithSelectorAsync,
-                MongoQueryableMethod.SumNullableSingleAsync,
-                MongoQueryableMethod.SumNullableSingleWithSelectorAsync,
-                MongoQueryableMethod.SumSingleAsync,
-                MongoQueryableMethod.SumSingleWithSelectorAsync
-            };
         }
 
         // public static methods
@@ -158,7 +133,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     valueAst = AstExpression.Field("_v");
                 }
 
-                var outputValueType = method.IsOneOf(__sumAsyncMethods) ? expression.Type.GetGenericArguments()[0] : expression.Type;
+                var outputValueType = expression.GetResultType();
                 var outputValueSerializer = BsonSerializer.LookupSerializer(outputValueType);
                 var outputWrappedValueSerializer = WrappedValueSerializer.Create(outputValueSerializer);
 

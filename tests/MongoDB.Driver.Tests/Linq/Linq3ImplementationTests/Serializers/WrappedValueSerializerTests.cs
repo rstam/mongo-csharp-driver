@@ -28,8 +28,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers
         {
             var valueSerializer = Mock.Of<IBsonSerializer<int>>();
 
-            var subject = new WrappedValueSerializer<int>(valueSerializer);
+            var subject = new WrappedValueSerializer<int>("_v", valueSerializer);
 
+            subject.FieldName.Should().Be("_v");
             subject.ValueSerializer.Should().BeSameAs(valueSerializer);
             subject.ValueType.Should().BeSameAs(typeof(int));
         }

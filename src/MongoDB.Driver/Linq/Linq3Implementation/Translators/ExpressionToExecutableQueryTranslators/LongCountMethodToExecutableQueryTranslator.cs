@@ -33,7 +33,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
         private static readonly MethodInfo[] __longCountMethods;
         private static readonly MethodInfo[] __longCountWithPredicateMethods;
         private static readonly IExecutableQueryFinalizer<long, long> _finalizer = new SingleOrDefaultFinalizer<long>();
-        private static readonly IBsonSerializer<long> __wrappedInt64Serializer = new WrappedValueSerializer<long>(new Int64Serializer());
+        private static readonly IBsonSerializer<long> __wrappedInt64Serializer = new WrappedValueSerializer<long>("_v", new Int64Serializer());
 
         // static constructor
         static LongCountMethodToExecutableQueryTranslator()

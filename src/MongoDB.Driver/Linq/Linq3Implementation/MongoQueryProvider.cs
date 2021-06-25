@@ -100,7 +100,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
 
         public override QueryableExecutionModel GetExecutionModel(Expression expression)
         {
-            throw new NotImplementedException(); // TODO: does this need to be implemented?
+            throw new NotSupportedException("");
         }
 
         public override object Execute(Expression expression)
