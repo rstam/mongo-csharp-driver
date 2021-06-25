@@ -61,8 +61,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
 
             if (method.IsOneOf(__maxMethods))
             {
-                var sourceExression = arguments[0];
-                var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExression);
+                var sourceExpression = arguments[0];
+                var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
 
                 AstExpression valueAst;

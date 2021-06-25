@@ -40,7 +40,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
                 pipeline = pipeline.AddStages(
                     pipeline.OutputSerializer,
-                    //new BsonDocument("$skip", countValue));
                     AstStage.Skip(count));
 
                 return pipeline;

@@ -31,8 +31,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
     {
         // private static fields
         private static readonly MethodInfo[] __groupByMethods;
-        private static readonly MethodInfo[] __groupByMethodsWithElementSelector;
-        private static readonly MethodInfo[] __groupByMethodsWithResultSelector;
+        private static readonly MethodInfo[] __groupByWithElementSelectorMethods;
+        private static readonly MethodInfo[] __groupByWithResultSelectorMethods;
 
         // static constructor
         static GroupByMethodToPipelineTranslator()
@@ -45,13 +45,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 QueryableMethod.GroupByWithKeySelectorElementSelectorAndResultSelector
             };
 
-            __groupByMethodsWithElementSelector = new[]
+            __groupByWithElementSelectorMethods = new[]
             {
                 QueryableMethod.GroupByWithKeySelectorAndElementSelector,
                 QueryableMethod.GroupByWithKeySelectorElementSelectorAndResultSelector
             };
 
-            __groupByMethodsWithResultSelector = new[]
+            __groupByWithResultSelectorMethods = new[]
             {
                 QueryableMethod.GroupByWithKeySelectorAndResultSelector,
                 QueryableMethod.GroupByWithKeySelectorElementSelectorAndResultSelector
@@ -76,7 +76,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
                 AstExpression elementAst;
                 IBsonSerializer elementSerializer;
-                if (method.IsOneOf(__groupByMethodsWithElementSelector))
+                if (method.IsOneOf(__groupByWithElementSelectorMethods))
                 {
                     var elementLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
                     var elementTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, elementLambda, sourceSerializer, asCurrentSymbol: true);
@@ -105,7 +105,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                         id: keySelectorTranslation.Ast,
                         fields: AstExpression.ComputedField("_elements", AstExpression.Push(elementAst))));
 
-                if (method.IsOneOf(__groupByMethodsWithResultSelector))
+                if (method.IsOneOf(__groupByWithResultSelectorMethods))
                 {
                     var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments.Last());
                     var keyParameter = resultSelectorLambda.Parameters[0];
