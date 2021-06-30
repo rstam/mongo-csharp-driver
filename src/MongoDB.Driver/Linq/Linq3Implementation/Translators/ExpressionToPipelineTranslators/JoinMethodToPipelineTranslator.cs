@@ -49,10 +49,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var (innerCollectionName, innerSerializer) = innerExpression.GetCollectionInfo(containerExpression: expression);
 
                 var outerKeySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
-                var localFieldPath = GetLocalFieldPath(context, outerKeySelectorLambda, wrappedOuterSerializer);
+                var localFieldPath = outerKeySelectorLambda.GetFieldPath(context, wrappedOuterSerializer);
 
                 var innerKeySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[3]);
-                var foreignFieldPath = GetForeignFieldPath(context, innerKeySelectorLambda, innerSerializer);
+                var foreignFieldPath = innerKeySelectorLambda.GetFieldPath(context, innerSerializer);
 
                 var lookupStage = AstStage.Lookup(
                     from: innerCollectionName,
@@ -83,28 +83,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             }
 
             throw new ExpressionNotSupportedException(expression);
-        }
-
-        private static string GetForeignFieldPath(TranslationContext context, LambdaExpression innerKeySelectorLambda, IBsonSerializer innerSerializer)
-        {
-            var innerKeySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, innerKeySelectorLambda, innerSerializer, asCurrentSymbol: true);
-            if (innerKeySelectorTranslation.Ast is AstFieldExpression fieldExpression)
-            {
-                return fieldExpression.Path;
-            }
-
-            throw new ExpressionNotSupportedException(innerKeySelectorLambda);
-        }
-
-        private static string GetLocalFieldPath(TranslationContext context, LambdaExpression outerKeySelectorLambda, IBsonSerializer outerSerializer)
-        {
-            var outerKeySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, outerKeySelectorLambda, outerSerializer, asCurrentSymbol: true);
-            if (outerKeySelectorTranslation.Ast is AstFieldExpression fieldExpression)
-            {
-                return fieldExpression.Path;
-            }
-
-            throw new ExpressionNotSupportedException(outerKeySelectorLambda);
         }
     }
 }

@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -74,29 +75,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var keySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, keySelectorLambda, sourceSerializer, asCurrentSymbol: true);
                 var keySerializer = keySelectorTranslation.Serializer;
 
-                AstExpression elementAst;
-                IBsonSerializer elementSerializer;
-                if (method.IsOneOf(__groupByWithElementSelectorMethods))
-                {
-                    var elementLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
-                    var elementTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, elementLambda, sourceSerializer, asCurrentSymbol: true);
-                    elementAst = elementTranslation.Ast;
-                    elementSerializer = elementTranslation.Serializer;
-                }
-                else
-                {
-                    if (sourceSerializer is IWrappedValueSerializer wrappedSerializer)
-                    {
-                        elementAst = AstExpression.Field("_v");
-                        elementSerializer = wrappedSerializer.ValueSerializer;
-
-                    }
-                    else
-                    {
-                        elementAst = AstExpression.Field("$ROOT");
-                        elementSerializer = sourceSerializer;
-                    }
-                }
+                var (elementAst, elementSerializer) = TranslateElement(context, method, arguments, sourceSerializer);
 
                 var groupingSerializer = IGroupingSerializer.Create(keySerializer, elementSerializer);
                 pipeline = pipeline.AddStages(
@@ -107,24 +86,66 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
                 if (method.IsOneOf(__groupByWithResultSelectorMethods))
                 {
-                    var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments.Last());
-                    var keyParameter = resultSelectorLambda.Parameters[0];
-                    var keySymbol = new Symbol("_id", keySerializer);
-                    var elementsParameter = resultSelectorLambda.Parameters[1];
-                    var elementsSerializer = IEnumerableSerializer.Create(elementSerializer);
-                    var elementsSymbol = new Symbol("_elements", elementsSerializer);
-                    var resultSelectContext = context
-                        .WithSymbol(keyParameter, keySymbol)
-                        .WithSymbol(elementsParameter, elementsSymbol);
-                    var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectContext, resultSelectorLambda.Body);
-                    var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
-                    pipeline = pipeline.AddStages(projectionSerializer, projectStage);
+                    pipeline = TranslateResultSelector(context, pipeline, arguments, keySerializer, elementSerializer);
                 }
 
                 return pipeline;
             }
 
             throw new ExpressionNotSupportedException(expression);
+        }
+
+        private static (AstExpression, IBsonSerializer) TranslateElement(
+            TranslationContext context,
+            MethodInfo method,
+            ReadOnlyCollection<Expression> arguments,
+            IBsonSerializer sourceSerializer)
+        {
+            AstExpression elementAst;
+            IBsonSerializer elementSerializer;
+            if (method.IsOneOf(__groupByWithElementSelectorMethods))
+            {
+                var elementLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
+                var elementTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, elementLambda, sourceSerializer, asCurrentSymbol: true);
+                elementAst = elementTranslation.Ast;
+                elementSerializer = elementTranslation.Serializer;
+            }
+            else
+            {
+                if (sourceSerializer is IWrappedValueSerializer wrappedSerializer)
+                {
+                    elementAst = AstExpression.Field(wrappedSerializer.FieldName);
+                    elementSerializer = wrappedSerializer.ValueSerializer;
+                }
+                else
+                {
+                    elementAst = AstExpression.Field("$ROOT");
+                    elementSerializer = sourceSerializer;
+                }
+            }
+
+            return (elementAst, elementSerializer);
+        }
+
+        private static AstPipeline TranslateResultSelector(
+            TranslationContext context,
+            AstPipeline pipeline,
+            ReadOnlyCollection<Expression> arguments,
+            IBsonSerializer keySerializer,
+            IBsonSerializer elementSerializer)
+        {
+            var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments.Last());
+            var keyParameter = resultSelectorLambda.Parameters[0];
+            var keySymbol = new Symbol("_id", keySerializer);
+            var elementsParameter = resultSelectorLambda.Parameters[1];
+            var elementsSerializer = IEnumerableSerializer.Create(elementSerializer);
+            var elementsSymbol = new Symbol("_elements", elementsSerializer);
+            var resultSelectContext = context
+                .WithSymbol(keyParameter, keySymbol)
+                .WithSymbol(elementsParameter, elementsSymbol);
+            var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectContext, resultSelectorLambda.Body);
+            var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
+            return pipeline.AddStages(projectionSerializer, projectStage);
         }
     }
 }

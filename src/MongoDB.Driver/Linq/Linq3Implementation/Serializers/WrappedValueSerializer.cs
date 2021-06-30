@@ -97,11 +97,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers
 
     internal static class WrappedValueSerializer
     {
-        public static IWrappedValueSerializer Create(IBsonSerializer valueSerializer)
-        {
-            return Create("_v", valueSerializer);
-        }
-
         public static IWrappedValueSerializer Create(string fieldName, IBsonSerializer valueSerializer)
         {
             var valueType = valueSerializer.ValueType;

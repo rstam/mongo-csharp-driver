@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
         // private static methods
         private static AstSortField CreateSortField(TranslationContext context, string methodName, LambdaExpression keySelector, IBsonSerializer parameterSerializer)
         {
-            var fieldPath = GetFieldPath(context, keySelector, parameterSerializer);
+            var fieldPath = keySelector.GetFieldPath(context, parameterSerializer);
             switch (methodName)
             {
                 case "OrderBy":
@@ -77,17 +77,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 default:
                     throw new ArgumentException("Unexpected method name.", nameof(methodName));
             }
-        }
-
-        private static string GetFieldPath(TranslationContext context, LambdaExpression keySelector, IBsonSerializer parameterSerializer)
-        {
-            var keySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, keySelector, parameterSerializer, asCurrentSymbol: true);
-            if (keySelectorTranslation.Ast is AstFieldExpression fieldExpressionAst)
-            {
-                return fieldExpressionAst.Path;
-            }
-
-            throw new ExpressionNotSupportedException(keySelector);
         }
     }
 }
