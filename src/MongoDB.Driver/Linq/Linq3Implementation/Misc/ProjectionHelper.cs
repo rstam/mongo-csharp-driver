@@ -91,7 +91,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 
         private static (AstProjectStage, IBsonSerializer) CreateWrappedValueProjectStage(AggregationExpression expression)
         {
-            var wrappedValueSerializer = WrappedValueSerializer.Create(expression.Serializer);
+            var wrappedValueSerializer = WrappedValueSerializer.Create("_v", expression.Serializer);
             var projectStage =
                 AstStage.Project(
                     AstProject.Set("_v", expression.Ast),

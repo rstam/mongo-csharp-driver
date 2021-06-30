@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System.Collections.ObjectModel;
 using System.Linq.Expressions;
 using System.Reflection;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
@@ -50,76 +51,110 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             {
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
-                var sourceSerializer = pipeline.OutputSerializer;
 
                 if (method.Is(QueryableMethod.SelectMany))
                 {
-                    var selectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                    var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asCurrentSymbol: true);
-                    var resultValueSerializer = ArraySerializerHelper.GetItemSerializer(selectorTranslation.Serializer);
-                    var resultWrappedValueSerializer = WrappedValueSerializer.Create(resultValueSerializer);
-
-                    pipeline = pipeline.AddStages(
-                        resultWrappedValueSerializer,
-                        AstStage.Project(
-                            AstProject.Set("_v", selectorTranslation.Ast),
-                            AstProject.ExcludeId()),
-                        AstStage.Unwind("_v"));
-
-                    return pipeline;
+                    return TranslateSelectMany(context, pipeline, arguments);
                 }
 
                 if (method.Is(QueryableMethod.SelectManyWithCollectionSelectorAndResultSelector))
                 {
-                    var collectionSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                    var collectionSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, collectionSelectorLambda, sourceSerializer, asCurrentSymbol: true);
-                    var collectionItemSerializer = ArraySerializerHelper.GetItemSerializer(collectionSelectorTranslation.Serializer);
-
-                    var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
-                    var resultSelectorSourceParameterExpression = resultSelectorLambda.Parameters[0];
-                    var resultSelectorCollectionItemParameterExpression = resultSelectorLambda.Parameters[1];
-
-                    if (resultSelectorLambda.Body == resultSelectorCollectionItemParameterExpression)
-                    {
-                        // special case identity resultSelector: (x, y) => y
-                        var resultValueSerializer = collectionItemSerializer;
-                        var resultWrappedValueSerializer = WrappedValueSerializer.Create(resultValueSerializer);
-
-                        pipeline = pipeline.AddStages(
-                            resultWrappedValueSerializer,
-                            AstStage.Project(
-                                AstProject.Set("_v", collectionSelectorTranslation.Ast),
-                                AstProject.ExcludeId()),
-                            AstStage.Unwind("_v"));
-                    }
-                    else
-                    {
-                        var resultSelectorSourceParameterSymbol = new Symbol("$" + resultSelectorSourceParameterExpression.Name, sourceSerializer);
-                        var resultSelectorCollectionItemParameterSymbol = new Symbol("$" + resultSelectorCollectionItemParameterExpression.Name, collectionItemSerializer);
-                        var resultSelectorContext = context
-                            .WithSymbolAsCurrent(resultSelectorSourceParameterExpression, resultSelectorSourceParameterSymbol)
-                            .WithSymbol(resultSelectorCollectionItemParameterExpression, resultSelectorCollectionItemParameterSymbol);
-                        var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
-                        var resultValueSerializer = resultSelectorTranslation.Serializer;
-                        var resultWrappedValueSerializer = WrappedValueSerializer.Create(resultValueSerializer);
-                        var resultAst = AstExpression.Map(
-                            input: collectionSelectorTranslation.Ast,
-                            @as: resultSelectorCollectionItemParameterExpression.Name,
-                            @in: resultSelectorTranslation.Ast);
-
-                        pipeline = pipeline.AddStages(
-                            resultWrappedValueSerializer,
-                            AstStage.Project(
-                                AstProject.Set("_v", resultAst),
-                                AstProject.ExcludeId()),
-                            AstStage.Unwind("_v"));
-                    }
-
-                    return pipeline;
+                    return TranslateSelectManyWithCollectionSelectorAndResultSelector(context, pipeline, arguments);
                 }
             }
 
             throw new ExpressionNotSupportedException(expression);
+        }
+
+        private static AstPipeline TranslateSelectMany(
+            TranslationContext context,
+            AstPipeline pipeline,
+            ReadOnlyCollection<Expression> arguments)
+        {
+            var sourceSerializer = pipeline.OutputSerializer;
+            var selectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
+            var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asCurrentSymbol: true);
+            var resultValueSerializer = ArraySerializerHelper.GetItemSerializer(selectorTranslation.Serializer);
+            var resultWrappedValueSerializer = WrappedValueSerializer.Create("_v", resultValueSerializer);
+
+            pipeline = pipeline.AddStages(
+                resultWrappedValueSerializer,
+                AstStage.Project(
+                    AstProject.Set("_v", selectorTranslation.Ast),
+                    AstProject.ExcludeId()),
+                AstStage.Unwind("_v"));
+
+            return pipeline;
+        }
+
+        private static AstPipeline TranslateSelectManyWithCollectionSelectorAndResultSelector(
+            TranslationContext context,
+            AstPipeline pipeline,
+            ReadOnlyCollection<Expression> arguments)
+        {
+            var sourceSerializer = pipeline.OutputSerializer;
+            var collectionSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
+            var collectionSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, collectionSelectorLambda, sourceSerializer, asCurrentSymbol: true);
+
+            var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
+            if (resultSelectorLambda.Body == resultSelectorLambda.Parameters[1])
+            {
+                // special case identity resultSelector: (x, y) => y
+                return TranslateSelectManyWithCollectionSelectorAndIdentityResultSelector(pipeline, collectionSelectorTranslation);
+            }
+            else
+            {
+                return TranslateSelectManyWithCollectionSelectorAndNonIdentityResultSelector(context, pipeline, collectionSelectorTranslation, resultSelectorLambda);
+            }
+        }
+
+        private static AstPipeline TranslateSelectManyWithCollectionSelectorAndIdentityResultSelector(
+            AstPipeline pipeline,
+            AggregationExpression collectionSelectorTranslation)
+        {
+            var collectionItemSerializer = ArraySerializerHelper.GetItemSerializer(collectionSelectorTranslation.Serializer);
+            var resultValueSerializer = collectionItemSerializer;
+            var resultWrappedValueSerializer = WrappedValueSerializer.Create("_v", resultValueSerializer);
+
+            return pipeline.AddStages(
+                resultWrappedValueSerializer,
+                AstStage.Project(
+                    AstProject.Set("_v", collectionSelectorTranslation.Ast),
+                    AstProject.ExcludeId()),
+                AstStage.Unwind("_v"));
+        }
+
+        private static AstPipeline TranslateSelectManyWithCollectionSelectorAndNonIdentityResultSelector(
+            TranslationContext context,
+            AstPipeline pipeline,
+            AggregationExpression collectionSelectorTranslation,
+            LambdaExpression resultSelectorLambda)
+
+        {
+            var sourceSerializer = pipeline.OutputSerializer;
+            var collectionItemSerializer = ArraySerializerHelper.GetItemSerializer(collectionSelectorTranslation.Serializer);
+
+            var resultSelectorSourceParameterExpression = resultSelectorLambda.Parameters[0];
+            var resultSelectorCollectionItemParameterExpression = resultSelectorLambda.Parameters[1];
+            var resultSelectorSourceParameterSymbol = new Symbol("$" + resultSelectorSourceParameterExpression.Name, sourceSerializer);
+            var resultSelectorCollectionItemParameterSymbol = new Symbol("$" + resultSelectorCollectionItemParameterExpression.Name, collectionItemSerializer);
+            var resultSelectorContext = context
+                .WithSymbolAsCurrent(resultSelectorSourceParameterExpression, resultSelectorSourceParameterSymbol)
+                .WithSymbol(resultSelectorCollectionItemParameterExpression, resultSelectorCollectionItemParameterSymbol);
+            var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
+            var resultValueSerializer = resultSelectorTranslation.Serializer;
+            var resultWrappedValueSerializer = WrappedValueSerializer.Create("_v", resultValueSerializer);
+            var resultAst = AstExpression.Map(
+                input: collectionSelectorTranslation.Ast,
+                @as: resultSelectorCollectionItemParameterExpression.Name,
+                @in: resultSelectorTranslation.Ast);
+
+            return pipeline.AddStages(
+                resultWrappedValueSerializer,
+                AstStage.Project(
+                    AstProject.Set("_v", resultAst),
+                    AstProject.ExcludeId()),
+                AstStage.Unwind("_v"));
         }
     }
 }

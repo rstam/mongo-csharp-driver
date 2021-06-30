@@ -57,7 +57,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 else
                 {
                     valueSerializer = pipeline.OutputSerializer;
-                    wrappedValueSerializer = WrappedValueSerializer.Create(valueSerializer);
+                    wrappedValueSerializer = WrappedValueSerializer.Create("_v", valueSerializer);
                     pipeline = pipeline.AddStages(
                         wrappedValueSerializer,
                         AstStage.Project(

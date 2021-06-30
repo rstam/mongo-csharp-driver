@@ -79,7 +79,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     else
                     {
                         valueAst = AstExpression.ComputedDocument(new[] { AstExpression.ComputedField("_v", selectorTranslation.Ast) });
-                        valueSerializer = WrappedValueSerializer.Create(selectorTranslation.Serializer);
+                        valueSerializer = WrappedValueSerializer.Create("_v", selectorTranslation.Serializer);
                     }
                 }
                 else
