@@ -174,14 +174,26 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return fields.Select(field => new AstComputedField(field.name, field.value));
         }
 
-        public static AstExpression Concat(IEnumerable<AstExpression> args)
-        {
-            return new AstNaryExpression(AstNaryOperator.Concat, args);
-        }
-
         public static AstExpression Concat(params AstExpression[] args)
         {
-            return AstExpression.Concat((IEnumerable<AstExpression>)args);
+            if (args.Any(a => a is AstNaryExpression naryExpression && naryExpression.Operator == AstNaryOperator.Concat))
+            {
+                var flattenedArgs = new List<AstExpression>();
+                foreach (var arg in args)
+                {
+                    if (arg is AstNaryExpression naryExpression && naryExpression.Operator == AstNaryOperator.Concat)
+                    {
+                        flattenedArgs.AddRange(naryExpression.Args);
+                    }
+                    else
+                    {
+                        flattenedArgs.Add(arg);
+                    }
+                }
+                return new AstNaryExpression(AstNaryOperator.Concat, flattenedArgs);
+            }
+
+            return new AstNaryExpression(AstNaryOperator.Concat, args);
         }
 
         public static AstExpression ConcatArrays(params AstExpression[] arrays)

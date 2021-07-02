@@ -16,6 +16,8 @@
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
+using MongoDB.Driver.Support;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
 {
@@ -28,31 +30,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 return StringGetCharsComparisonExpressionToAggregationExpressionTranslator.Translate(context, expression, getCharsExpression);
             }
 
-            switch (expression.NodeType)
+            var leftExpression = expression.Left;
+            var rightExpression = expression.Right;
+            if (IsArithmeticExpression(expression))
             {
-                case ExpressionType.Add:
-                    return AddExpressionToAggregationExpressionTranslator.Translate(context, expression);
-
-                case ExpressionType.And:
-                case ExpressionType.AndAlso:
-                    return AndExpressionToAggregationExpressionTranslator.Translate(context, expression);
-
-                case ExpressionType.Divide:
-                    return DivideExpressionToAggregationExpressionTranslator.Translate(context, expression);
-
-                case ExpressionType.Multiply:
-                    return MultiplyExpressionToAggregationExpressionTranslator.Translate(context, expression);
-
-                case ExpressionType.Or:
-                case ExpressionType.OrElse:
-                    return OrExpressionToAggregationExpressionTranslator.Translate(context, expression);
+                leftExpression = ConvertHelper.RemoveWideningConvert(leftExpression);
+                rightExpression = ConvertHelper.RemoveWideningConvert(rightExpression);
             }
 
-            var leftTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, expression.Left);
-            var rightTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, expression.Right);
+            var leftTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, leftExpression);
+            var rightTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, rightExpression);
 
             var ast = expression.NodeType switch
             {
+                ExpressionType.Add => IsStringConcatenationExpression(expression) ?
+                    AstExpression.Concat(leftTranslation.Ast, rightTranslation.Ast) :
+                    AstExpression.Add(leftTranslation.Ast, rightTranslation.Ast),
+                ExpressionType.And => AstExpression.And(leftTranslation.Ast, rightTranslation.Ast),
+                ExpressionType.AndAlso => AstExpression.And(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.Coalesce => AstExpression.IfNull(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.Divide => AstExpression.Divide(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.Equal => AstExpression.Eq(leftTranslation.Ast, rightTranslation.Ast),
@@ -63,6 +58,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 ExpressionType.Modulo => AstExpression.Mod(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.Multiply => AstExpression.Multiply(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.NotEqual => AstExpression.Ne(leftTranslation.Ast, rightTranslation.Ast),
+                ExpressionType.Or => AstExpression.Or(leftTranslation.Ast, rightTranslation.Ast),
+                ExpressionType.OrElse => AstExpression.Or(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.Power => AstExpression.Pow(leftTranslation.Ast, rightTranslation.Ast),
                 ExpressionType.Subtract => AstExpression.Subtract(leftTranslation.Ast, rightTranslation.Ast),
                 _ => throw new ExpressionNotSupportedException(expression)
@@ -70,6 +67,34 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var serializer = BsonSerializer.LookupSerializer(expression.Type); // TODO: get correct serializer
 
             return new AggregationExpression(expression, ast, serializer);
+        }
+
+        private static bool IsArithmeticExpression(BinaryExpression expression)
+        {
+            return expression.Type.IsNumeric() && IsArithmeticOperator(expression.NodeType);
+        }
+
+        private static bool IsArithmeticOperator(ExpressionType nodeType)
+        {
+            return nodeType switch
+            {
+                ExpressionType.Add => true,
+                ExpressionType.Divide => true,
+                ExpressionType.Modulo => true,
+                ExpressionType.Multiply => true,
+                ExpressionType.Power => true,
+                ExpressionType.Subtract => true,
+                _ => false
+            };
+        }
+
+        private static bool IsStringConcatenationExpression(BinaryExpression expression)
+        {
+            return
+                expression.NodeType == ExpressionType.Add &&
+                expression.Type == typeof(string) &&
+                expression.Left.Type == typeof(string) &&
+                expression.Right.Type == typeof(string);
         }
     }
 }
