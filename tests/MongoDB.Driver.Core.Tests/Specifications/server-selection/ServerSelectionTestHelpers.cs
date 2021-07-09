@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Specifications.server_selection
            Mongos = ServerType.ShardRouter,
            Standalone = ServerType.Standalone,
            Unknown = ServerType.Unknown,
-           LoadBalancer = ServerType.LoadBalanced
+           LoadBalancer = ServerType.LoadBalancer
         }
 
         public enum ServerTagTest

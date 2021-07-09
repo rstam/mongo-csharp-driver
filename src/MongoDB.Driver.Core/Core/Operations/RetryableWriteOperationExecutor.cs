@@ -137,7 +137,7 @@ namespace MongoDB.Driver.Core.Operations
         {
             var isMasterResult = connectionDescription.IsMasterResult;
             return
-                isMasterResult.ServerType == ServerType.LoadBalanced ||
+                isMasterResult.ServerType == ServerType.LoadBalancer ||
                 (isMasterResult.LogicalSessionTimeout != null && isMasterResult.ServerType != ServerType.Standalone);
         }
 

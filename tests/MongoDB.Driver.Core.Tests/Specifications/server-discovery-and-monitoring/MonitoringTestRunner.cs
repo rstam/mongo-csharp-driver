@@ -278,7 +278,7 @@ namespace MongoDB.Driver.Specifications.sdam_monitoring
                     actualDescription.Type.Should().Be(ServerType.Standalone);
                     break;
                 case "LoadBalancer":
-                    actualDescription.Type.Should().Be(ServerType.LoadBalanced);
+                    actualDescription.Type.Should().Be(ServerType.LoadBalancer);
                     break;
                 default:
                     actualDescription.Type.Should().Be(ServerType.Unknown);

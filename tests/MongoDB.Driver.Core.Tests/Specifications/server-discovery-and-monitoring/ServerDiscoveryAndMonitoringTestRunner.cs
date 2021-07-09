@@ -287,7 +287,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                 case "LoadBalanced":
                     cluster.Should().BeOfType<LoadBalancedCluster>();
                     cluster.Description.Type.Should().Be(ClusterType.LoadBalanced);
-                    cluster.Description.Servers.Should().ContainSingle(c => c.Type == ServerType.LoadBalanced);
+                    cluster.Description.Servers.Should().ContainSingle(c => c.Type == ServerType.LoadBalancer);
                     break;
                 default:
                     throw new FormatException($"Invalid topology type: \"{expectedType}\".");
@@ -426,7 +426,7 @@ namespace MongoDB.Driver.Specifications.server_discovery_and_monitoring
                     actualDescription.Type.Should().Be(ServerType.Standalone);
                     break;
                 case "LoadBalancer":
-                    actualDescription.Type.Should().Be(ServerType.LoadBalanced);
+                    actualDescription.Type.Should().Be(ServerType.LoadBalancer);
                     break;
                 default:
                     actualDescription.Type.Should().Be(ServerType.Unknown);

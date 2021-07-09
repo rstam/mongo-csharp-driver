@@ -23,16 +23,17 @@ namespace MongoDB.Driver.Core.Operations
 {
     internal static class RetryableReadContextExtensions
     {
-        public static void PinConnectionIfRequired(this RetryableReadContext context)
+        public static void PinConnectionIfRequired(this RetryableReadContext context) // why not a method of RetryableReadContext?
         {
-            if (ChannelPinningHelper.TryCreatePinnedChannelSourceAndPinChannel(
+            if (ChannelPinningHelper.PinChannelSourceAndChannelIfRequired(
                 context.ChannelSource,
                 context.Channel,
                 context.Binding.Session,
+                out var pinnedChannelSource,
                 out var pinnedChannel))
             {
-                context.ReplaceChannelSource(pinnedChannel.PinnedChannelSource);
-                context.ReplaceChannel(pinnedChannel.Channel);
+                context.ReplaceChannelSource(pinnedChannelSource);
+                context.ReplaceChannel(pinnedChannel);
             }
         }
     }

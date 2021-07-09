@@ -288,7 +288,7 @@ namespace MongoDB.Driver.Core.Bindings
                     var version = type switch
                     {
                         ServerType.ShardRouter => Feature.ShardedTransactions.FirstSupportedVersion,
-                        ServerType.LoadBalanced => Feature.LoadBalancedMode.FirstSupportedVersion,
+                        ServerType.LoadBalancer => Feature.LoadBalancedMode.FirstSupportedVersion,
                         _ => Feature.Transactions.FirstSupportedVersion,
                     };
                     return CreateServerDescription(serverId, endPoint, state, type, version);
@@ -468,7 +468,7 @@ namespace MongoDB.Driver.Core.Bindings
                 case 'R': return ServerType.ShardRouter;
                 case 'S': return ServerType.ReplicaSetSecondary;
                 case 'U': return ServerType.Unknown;
-                case 'L': return ServerType.LoadBalanced;
+                case 'L': return ServerType.LoadBalancer;
                 default: throw new ArgumentException($"Invalid ServerType code: \"{code}\".", nameof(code));
             }
         }

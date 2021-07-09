@@ -908,7 +908,7 @@ namespace MongoDB.Driver.Core.Tests
         {
             var readPreference = ReadPreference.Primary;
 
-            var effectiveReadBindings = ChannelPinningHelper.CreateEffectiveReadBinding(cluster, sessionHandle, readPreference);
+            var effectiveReadBindings = ChannelPinningHelper.CreateReadBinding(cluster, sessionHandle, readPreference);
             var retryableReadContext = async
                 ? RetryableReadContext.CreateAsync(effectiveReadBindings, retryRequested: false, CancellationToken.None).GetAwaiter().GetResult()
                 : RetryableReadContext.Create(effectiveReadBindings, retryRequested: false, CancellationToken.None);
@@ -918,7 +918,7 @@ namespace MongoDB.Driver.Core.Tests
 
         private DisposableBindingBundle<IReadWriteBindingHandle, RetryableWriteContext> CreateEffectiveReadWriteBindingsAndRetryableWriteContext(ICluster cluster, ICoreSessionHandle sessionHandle, bool async)
         {
-            var effectiveReadBindings = ChannelPinningHelper.CreateEffectiveReadWriteBinding(cluster, sessionHandle);
+            var effectiveReadBindings = ChannelPinningHelper.CreateReadWriteBinding(cluster, sessionHandle);
             var retryableReadContext = async
                 ? RetryableWriteContext.CreateAsync(effectiveReadBindings, retryRequested: false, CancellationToken.None).GetAwaiter().GetResult()
                 : RetryableWriteContext.Create(effectiveReadBindings, retryRequested: false, CancellationToken.None);

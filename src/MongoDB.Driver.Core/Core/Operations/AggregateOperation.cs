@@ -268,7 +268,7 @@ namespace MongoDB.Driver.Core.Operations
 
             using (var context = RetryableReadContext.Create(binding, _retryRequested, cancellationToken))
             {
-                context.PinConnectionIfRequired();
+                context.PinConnectionIfRequired(); // should this happen in Create?
                 return Execute(context, cancellationToken);
             }
         }
@@ -384,8 +384,8 @@ namespace MongoDB.Driver.Core.Operations
 
         private AsyncCursor<TResult> CreateCursorFromCursorResult(IChannelSourceHandle channelSource, BsonDocument command, AggregateResult result)
         {
-            var cursorId = result.CursorId.GetValueOrDefault(0);
-            var getMoreChannelSource = ChannelPinningHelper.CreateEffectiveGetMoreChannelSource(channelSource, cursorId);
+            var cursorId = result.CursorId.GetValueOrDefault(0); // why OrDefault? isn't it an error if the cursorId is missing?
+            var getMoreChannelSource = ChannelPinningHelper.CreateGetMoreChannelSource(channelSource, cursorId);
             return new AsyncCursor<TResult>(
                 getMoreChannelSource,
                 result.CollectionNamespace,

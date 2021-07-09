@@ -34,7 +34,7 @@ namespace MongoDB.Driver.Core
         /// <param name="session">The session.</param>
         /// <param name="readPreference">The read preference.</param>
         /// <returns>An effective read binging.</returns>
-        public static IReadBindingHandle CreateEffectiveReadBinding(ICluster cluster, ICoreSessionHandle session, ReadPreference readPreference)
+        public static IReadBindingHandle CreateReadBinding(ICluster cluster, ICoreSessionHandle session, ReadPreference readPreference)
         {
             IReadBinding readBinding;
             if (session.IsInTransaction &&
@@ -43,7 +43,7 @@ namespace MongoDB.Driver.Core
             {
                 readBinding = new ChannelReadWriteBinding(
                     session.CurrentTransaction.PinnedServer,
-                    session.CurrentTransaction.NewPinnedChannelHandleIfConfigured(),
+                    session.CurrentTransaction.PinnedChannel.Fork(),
                     session);
             }
             else
@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Core
         /// <param name="cluster">The cluster.</param>
         /// <param name="session">The session.</param>
         /// <returns>An effective read write binging.</returns>
-        public static IReadWriteBindingHandle CreateEffectiveReadWriteBinding(ICluster cluster, ICoreSessionHandle session)
+        public static IReadWriteBindingHandle CreateReadWriteBinding(ICluster cluster, ICoreSessionHandle session)
         {
             IReadWriteBinding readWriteBinding;
             if (session.IsInTransaction &&
@@ -74,7 +74,7 @@ namespace MongoDB.Driver.Core
             {
                 readWriteBinding = new ChannelReadWriteBinding(
                     session.CurrentTransaction.PinnedServer,
-                    session.CurrentTransaction.NewPinnedChannelHandleIfConfigured(),
+                    session.CurrentTransaction.PinnedChannel.Fork(),
                     session);
             }
             else
@@ -90,7 +90,7 @@ namespace MongoDB.Driver.Core
             return new ReadWriteBindingHandle(readWriteBinding);
         }
 
-        internal static IChannelSourceHandle CreateEffectiveGetMoreChannelSource(IChannelSourceHandle channelSource, long cursorId)
+        internal static IChannelSourceHandle CreateGetMoreChannelSource(IChannelSourceHandle channelSource, long cursorId)
         {
             IChannelSource effectiveChannelSource;
             if (IsInLoadBalancedMode(channelSource.ServerDescription) && cursorId != 0)
@@ -111,44 +111,42 @@ namespace MongoDB.Driver.Core
             return new ChannelSourceHandle(effectiveChannelSource);
         }
 
-        internal static bool TryCreatePinnedChannelSourceAndPinChannel(
+        internal static bool PinChannelSourceAndChannelIfRequired(
             IChannelSourceHandle channelSource,
             IChannelHandle channel,
             ICoreSessionHandle session,
-            out (IChannelSourceHandle PinnedChannelSource, IChannelHandle Channel) pinnedChannel)
+            out IChannelSourceHandle pinnedChannelSource,
+            out IChannelHandle pinnedChannel)
         {
-            pinnedChannel = default;
             if (IsInLoadBalancedMode(channel.ConnectionDescription))
             {
                 var server = channelSource.Server;
-                var forkedChannel = channel.Fork();
-                var forkedSession = session.Fork();
 
-                var pinnedChannelSource = new ChannelSourceHandle(
+                pinnedChannelSource = new ChannelSourceHandle(
                     new ChannelChannelSource(
                         server,
-                        forkedChannel,
-                        forkedSession));
+                        channel.Fork(),
+                        session.Fork()));
 
                 if (session.IsInTransaction && !IsConnectionPinned(session.CurrentTransaction))
                 {
-                    session.CurrentTransaction.PinConnection(forkedChannel.Fork());
+                    session.CurrentTransaction.PinConnection(channel.Fork());
                     session.CurrentTransaction.PinnedServer = server;
                 }
 
-                pinnedChannel = (pinnedChannelSource, forkedChannel);
+                pinnedChannel = channel.Fork();
 
                 return true;
             }
-            else
-            {
-                return false;
-            }
+
+            pinnedChannelSource = null;
+            pinnedChannel = null;
+            return false;
         }
 
         // private methods
         private static bool IsInLoadBalancedMode(ConnectionDescription connectionDescription) => connectionDescription?.ServiceId.HasValue ?? false;
-        private static bool IsInLoadBalancedMode(ServerDescription serverDescription) => serverDescription?.Type == ServerType.LoadBalanced;
+        private static bool IsInLoadBalancedMode(ServerDescription serverDescription) => serverDescription?.Type == ServerType.LoadBalancer;
         private static bool IsInLoadBalancedMode(ClusterDescription clusterDescription) => clusterDescription?.Type == ClusterType.LoadBalanced;
         private static bool IsConnectionPinned(CoreTransaction coreTransaction) => coreTransaction?.IsConnectionPinned ?? false;
     }

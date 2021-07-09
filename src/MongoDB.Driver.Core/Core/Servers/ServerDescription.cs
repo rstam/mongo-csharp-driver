@@ -227,7 +227,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <c>true</c> if this server is compatible with the driver; otherwise, <c>false</c>.
         /// </value>
         public bool IsCompatibleWithDriver =>
-            _type == ServerType.LoadBalanced ||
+            _type == ServerType.LoadBalancer ||
             _type == ServerType.Unknown ||
             _wireVersionRange == null ||
             _wireVersionRange.Overlaps(Cluster.SupportedWireVersionRange);
@@ -248,7 +248,7 @@ namespace MongoDB.Driver.Core.Servers
                     case ServerType.ReplicaSetPrimary:
                     case ServerType.ReplicaSetSecondary:
                     case ServerType.ShardRouter:
-                    case ServerType.LoadBalanced:
+                    case ServerType.LoadBalancer:
                         return true;
 
                     default:

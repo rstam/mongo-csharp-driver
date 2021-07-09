@@ -362,7 +362,7 @@ namespace MongoDB.Driver.Core.Servers
 
             channel.Should().BeNull();
             exception.Should().Be(openConnectionException);
-            subject.Description.Type.Should().Be(ServerType.LoadBalanced);
+            subject.Description.Type.Should().Be(ServerType.LoadBalancer);
             subject.Description.ReasonChanged.Should().Be("Initialized");
             subject.Description.State.Should().Be(ServerState.Connected);
 

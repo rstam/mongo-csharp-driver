@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Core.Events
         /// <param name="connectionId">The connection identifier.</param>
         /// <param name="duration">The duration.</param>
         public CommandFailedEvent(string commandName, Exception exception, long? operationId, int requestId, ConnectionId connectionId, TimeSpan duration)
-            : this(commandName, exception, operationId, requestId, connectionId, serviceId: null, duration)
+            : this(commandName, exception, operationId, requestId, connectionId, serviceId: null, duration) // should this overload be removed or deprecated?
         {
         }
 

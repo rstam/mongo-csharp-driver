@@ -72,7 +72,7 @@ namespace MongoDB.Driver.Core.Servers
         /// <summary>
         /// The server is under load balancing.
         /// </summary>
-        LoadBalanced
+        LoadBalancer
     }
 
     /// <summary>
@@ -102,7 +102,7 @@ namespace MongoDB.Driver.Core.Servers
                 case ServerType.ReplicaSetPrimary:
                 case ServerType.ShardRouter:
                 case ServerType.Standalone:
-                case ServerType.LoadBalanced:
+                case ServerType.LoadBalancer:
                     return true;
 
                 default:
@@ -131,7 +131,7 @@ namespace MongoDB.Driver.Core.Servers
                     return ClusterType.Standalone;
                 case ServerType.Unknown:
                     return ClusterType.Unknown;
-                case ServerType.LoadBalanced:
+                case ServerType.LoadBalancer:
                     return ClusterType.LoadBalanced;
                 default:
                     var message = string.Format("Invalid server type: {0}.", serverType);

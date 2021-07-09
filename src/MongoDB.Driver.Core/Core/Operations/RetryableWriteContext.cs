@@ -25,17 +25,18 @@ namespace MongoDB.Driver.Core.Operations
 {
     internal static class RetryableWriteContextExtensions
     {
-        public static void PinConnectionIfRequired(this RetryableWriteContext context)
+        public static void PinConnectionIfRequired(this RetryableWriteContext context) // why not a method of RetryableWriteContext?
         {
             if (context.Binding.Session.IsInTransaction &&
-                ChannelPinningHelper.TryCreatePinnedChannelSourceAndPinChannel(
+                ChannelPinningHelper.PinChannelSourceAndChannelIfRequired(
                 context.ChannelSource,
                 context.Channel,
                 context.Binding.Session,
+                out var pinnedChannelSource,
                 out var pinnedChannel))
             {
-                context.ReplaceChannelSource(pinnedChannel.PinnedChannelSource);
-                context.ReplaceChannel(pinnedChannel.Channel);
+                context.ReplaceChannelSource(pinnedChannelSource);
+                context.ReplaceChannel(pinnedChannel);
             }
         }
     }

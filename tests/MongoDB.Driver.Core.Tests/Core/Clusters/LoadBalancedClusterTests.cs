@@ -499,7 +499,7 @@ namespace MongoDB.Driver.Core.Tests.Core.Clusters
 
             var description = current.With(
                 state: ServerState.Connected,
-                type: ServerType.LoadBalanced);
+                type: ServerType.LoadBalancer);
 
             _mockServerFactory.PublishDescription(description);
         }

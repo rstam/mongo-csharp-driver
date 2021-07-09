@@ -65,6 +65,19 @@ namespace MongoDB.Driver.Core.Bindings
         public CoreTransactionState State => _state;
 
         /// <summary>
+        /// Gets or sets pinned channel for the current transaction.
+        /// Value has meaning if and only if a transaction is in progress.
+        /// </summary>
+        /// <value>
+        /// The pinned channel for the current transaction.
+        /// </value>
+        public IChannelHandle PinnedChannel
+        {
+            get => _pinnedChannel;
+            internal set => _pinnedChannel = value;
+        }
+
+        /// <summary>
         /// Gets or sets pinned server for the current transaction.
         /// Value has meaning if and only if a transaction is in progress.
         /// </summary>
@@ -111,15 +124,7 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         // internal methods
-        internal IChannelHandle NewPinnedChannelHandleIfConfigured()
-        {
-            lock (_lock)
-            {
-                return _pinnedChannel?.Fork();
-            }
-        }
-
-        internal void PinConnection(IChannelHandle channel)
+        internal void PinConnection(IChannelHandle channel) // PinChannel?
         {
             lock (_lock)
             {

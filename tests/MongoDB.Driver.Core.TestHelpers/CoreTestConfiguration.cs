@@ -79,7 +79,7 @@ namespace MongoDB.Driver
             {
                 var server = __cluster.Value.SelectServer(WritableServerSelector.Instance, CancellationToken.None);
                 var description = server.Description;
-                var version = description.Version ?? (description.Type == ServerType.LoadBalanced ? _buildInfo.Value.ServerVersion : null);
+                var version = description.Version ?? (description.Type == ServerType.LoadBalancer ? _buildInfo.Value.ServerVersion : null);
                 if (version == null)
                 {
                     throw new InvalidOperationException("ServerDescription.Version is unexpectedly null.");

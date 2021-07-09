@@ -321,7 +321,7 @@ namespace MongoDB.Driver.Core.Connections
 
                 if (ServiceId != null)
                 {
-                    return ServerType.LoadBalanced; // TODO: change when Service Id will be supported by server
+                    return ServerType.LoadBalancer; // TODO: change when Service Id will be supported by server
                 }
 
                 return ServerType.Standalone;
