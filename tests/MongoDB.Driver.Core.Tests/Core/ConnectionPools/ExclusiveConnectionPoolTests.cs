@@ -283,7 +283,7 @@ namespace MongoDB.Driver.Core.ConnectionPools
         [Theory]
         [ParameterAttributeData]
         internal void AcquireConnection_should_track_checked_out_reasons(
-            [Values(CheckedOutReason.Cursor, CheckedOutReason.Transaction, CheckedOutReason.NotSet)] CheckedOutReason reason,
+            [Values(CheckoutReason.Cursor, CheckoutReason.Transaction)] CheckoutReason reason,
             [Values(1, 3, 5)] int attempts,
             [Values(false, true)] bool async)
         {
@@ -308,14 +308,14 @@ namespace MongoDB.Driver.Core.ConnectionPools
                 {
                     connection = subject.AcquireConnection(CancellationToken.None);
                 }
-                ((ITrackedPinningReason)connection).SetPinningCheckoutReasonIfNotAlreadySet(reason);
+                ((ICheckoutReasonTracker)connection).SetCheckoutReasonIfNotAlreadySet(reason);
                 connections.Add(connection);
 
                 connections.Should().HaveCount(attempt);
-                subject._checkedOutTracker().GetCheckedOutNumber(reason).Should().Be(attempt);
+                subject._checkoutReasonCounter().GetCheckoutsCount(reason).Should().Be(attempt);
                 foreach (var restItem in GetEnumItemsExcept(reason))
                 {
-                    subject._checkedOutTracker().GetCheckedOutNumber(restItem).Should().Be(0);
+                    subject._checkoutReasonCounter().GetCheckoutsCount(restItem).Should().Be(0);
                 }
 
                 _capturedEvents.Next().Should().BeOfType<ConnectionPoolCheckingOutConnectionEvent>();
@@ -331,10 +331,10 @@ namespace MongoDB.Driver.Core.ConnectionPools
             {
                 connections[attempt - 1].Dispose(); // return connection to the pool
 
-                subject._checkedOutTracker().GetCheckedOutNumber(reason).Should().Be(attempts - attempt);
+                subject._checkoutReasonCounter().GetCheckoutsCount(reason).Should().Be(attempts - attempt);
                 foreach (var restItem in GetEnumItemsExcept(reason))
                 {
-                    subject._checkedOutTracker().GetCheckedOutNumber(restItem).Should().Be(0);
+                    subject._checkoutReasonCounter().GetCheckoutsCount(restItem).Should().Be(0);
                 }
 
                 _capturedEvents.Next().Should().BeOfType<ConnectionPoolCheckingInConnectionEvent>();
@@ -342,9 +342,9 @@ namespace MongoDB.Driver.Core.ConnectionPools
             }
             _capturedEvents.Any().Should().BeFalse();
 
-            IEnumerable<CheckedOutReason> GetEnumItemsExcept(CheckedOutReason reason)
+            IEnumerable<CheckoutReason> GetEnumItemsExcept(CheckoutReason reason)
             {
-                foreach (var reasonItem in Enum.GetValues(typeof(CheckedOutReason)).Cast<CheckedOutReason>())
+                foreach (var reasonItem in Enum.GetValues(typeof(CheckoutReason)).Cast<CheckoutReason>())
                 {
                     if (reasonItem == reason)
                     {
@@ -986,7 +986,7 @@ namespace MongoDB.Driver.Core.ConnectionPools
             return (Task)Reflector.Invoke(obj, nameof(MaintainSizeAsync));
         }
 
-        public static CheckedOutTracker _checkedOutTracker(this ExclusiveConnectionPool obj) => (CheckedOutTracker)Reflector.GetFieldValue(obj, nameof(_checkedOutTracker));
+        public static CheckoutReasonCounter _checkoutReasonCounter(this ExclusiveConnectionPool obj) => (CheckoutReasonCounter)Reflector.GetFieldValue(obj, nameof(_checkoutReasonCounter));
 
         public static ServiceStates _serviceStates(this ExclusiveConnectionPool obj)
         {
