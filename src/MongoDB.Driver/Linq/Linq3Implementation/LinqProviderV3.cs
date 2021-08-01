@@ -35,8 +35,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             AggregateOptions options,
             CancellationToken cancellationToken)
         {
-            var queryProvider = new MongoQueryProvider<TDocument>(collection, session, options, cancellationToken);
-            return new MongoQuery<TDocument, TDocument>(queryProvider);
+            return collection.AsQueryable3(session, options, cancellationToken);
         }
 
         public override string ToString() => "V3";

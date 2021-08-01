@@ -15,7 +15,6 @@
 
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators.MethodTranslators;
-using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipelineTranslators;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
 {
@@ -31,8 +30,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 case "Any": return AnyMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Average": return AverageMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Ceiling": return CeilingMethodToAggregationExpressionTranslator.Translate(context, expression);
-                case "Concat": return ConcatMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "CompareTo": return CompareToMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Concat": return ConcatMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Contains": return ContainsMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Distinct": return DistinctMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "ElementAt": return ElementAtMethodToAggregationExpressionTranslator.Translate(context, expression);

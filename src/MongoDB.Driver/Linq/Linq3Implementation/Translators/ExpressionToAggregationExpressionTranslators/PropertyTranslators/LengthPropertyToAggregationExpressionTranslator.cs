@@ -24,6 +24,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         public static AggregationExpression Translate(TranslationContext context, MemberExpression expression)
         {
+            // note: array.Length is not handled here but in ArrayLengthExpressionToAggregationExpressionTranslator
+
             if (IsStringLengthProperty(expression))
             {
                 var stringExpression = expression.Expression;

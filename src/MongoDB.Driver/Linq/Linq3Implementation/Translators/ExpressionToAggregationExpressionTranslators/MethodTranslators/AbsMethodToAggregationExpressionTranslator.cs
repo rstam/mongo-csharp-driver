@@ -27,8 +27,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
         {
             MathMethod.AbsDecimal,
             MathMethod.AbsDouble,
+            MathMethod.AbsInt16,
             MathMethod.AbsInt32,
-            MathMethod.AbsInt64
+            MathMethod.AbsInt64,
+            MathMethod.AbsSByte,
+            MathMethod.AbsSingle
         };
 
         public static AggregationExpression Translate(TranslationContext context, MethodCallExpression expression)

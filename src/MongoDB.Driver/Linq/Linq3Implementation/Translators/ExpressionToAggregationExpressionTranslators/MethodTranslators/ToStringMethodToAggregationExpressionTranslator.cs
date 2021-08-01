@@ -15,7 +15,6 @@
 
 using System;
 using System.Linq.Expressions;
-using System.Reflection;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 

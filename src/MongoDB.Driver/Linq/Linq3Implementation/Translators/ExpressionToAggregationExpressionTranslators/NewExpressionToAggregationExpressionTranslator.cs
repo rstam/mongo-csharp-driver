@@ -55,7 +55,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 computedFields.Add(AstExpression.ComputedField(member.Name, fieldTranslation.Ast));
             }
 
-            var constructorInfo = expression.Type.GetConstructors().Single();
+            var constructorInfo = expression.Constructor;
             var constructorArgumentNames = expression.Members.Select(m => m.Name).ToArray();
             classMap.MapConstructor(constructorInfo, constructorArgumentNames);
             classMap.Freeze();

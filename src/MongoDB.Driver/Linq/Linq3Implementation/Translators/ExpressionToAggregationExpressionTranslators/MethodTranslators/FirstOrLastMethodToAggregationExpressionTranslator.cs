@@ -37,7 +37,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 if (method.IsOneOf(EnumerableMethod.FirstWithPredicate, EnumerableMethod.LastWithPredicate))
                 {
                     var predicateLambda = (LambdaExpression)arguments[1];
-                    var predicateTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, predicateLambda, itemSerializer);
+                    var predicateTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, predicateLambda, itemSerializer, asCurrentSymbol: false);
                     var predicateParameter = predicateLambda.Parameters[0];
                     array = AstExpression.Filter(
                         input: array,

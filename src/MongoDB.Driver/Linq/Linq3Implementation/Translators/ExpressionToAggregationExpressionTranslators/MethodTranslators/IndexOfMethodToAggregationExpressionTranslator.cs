@@ -43,13 +43,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             MongoDBLinqExtensionsMethod.IndexOfBytesWithValueAndStartIndexAndCount
        };
 
-        private static readonly MethodInfo[] __indexOfWithCharMethods =
-        {
-            StringMethod.IndexOfWithChar,
-            StringMethod.IndexOfWithCharAndStartIndex,
-            StringMethod.IndexOfWithCharAndStartIndexAndCount
-        };
-
         private static readonly MethodInfo[] __indexOfWithStartIndexMethods =
         {
             StringMethod.IndexOfWithCharAndStartIndex,

@@ -23,10 +23,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         public static AggregationExpression Translate(TranslationContext context, ConstantExpression expression)
         {
-            var valueSerializer = BsonSerializer.LookupSerializer(expression.Type); // TODO: use known serializer
-            var serializedValue = valueSerializer.ToBsonValue(expression.Value);
-            var ast = AstExpression.Constant(serializedValue);
-            return new AggregationExpression(expression, ast, valueSerializer);
+            if (expression.NodeType == ExpressionType.Constant)
+            {
+                var value = expression.Value;
+                var valueSerializer = BsonSerializer.LookupSerializer(expression.Type); // TODO: use known serializer
+                var serializedValue = valueSerializer.ToBsonValue(value);
+                var ast = AstExpression.Constant(serializedValue);
+                return new AggregationExpression(expression, ast, valueSerializer);
+            }
+
+            throw new ExpressionNotSupportedException(expression);
         }
     }
 }
