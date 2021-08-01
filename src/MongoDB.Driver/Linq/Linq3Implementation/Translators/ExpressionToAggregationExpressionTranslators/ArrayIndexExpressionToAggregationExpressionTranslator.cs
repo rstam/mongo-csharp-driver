@@ -23,13 +23,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         public static AggregationExpression Translate(TranslationContext context, BinaryExpression expression)
         {
-            var arrayExpression = expression.Left;
-            var arrayTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, arrayExpression);
-            var indexExpression = expression.Right;
-            var indexTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, indexExpression);
-            var ast = AstExpression.ArrayElemAt(arrayTranslation.Ast, indexTranslation.Ast);
-            var itemSerializer = ArraySerializerHelper.GetItemSerializer(arrayTranslation.Serializer);
-            return new AggregationExpression(expression, ast, itemSerializer);
+            if (expression.NodeType == ExpressionType.ArrayIndex)
+            {
+                var arrayExpression = expression.Left;
+                var arrayTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, arrayExpression);
+                var indexExpression = expression.Right;
+                var indexTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, indexExpression);
+                var ast = AstExpression.ArrayElemAt(arrayTranslation.Ast, indexTranslation.Ast);
+                var itemSerializer = ArraySerializerHelper.GetItemSerializer(arrayTranslation.Serializer);
+                return new AggregationExpression(expression, ast, itemSerializer);
+            }
+
+            throw new ExpressionNotSupportedException(expression);
         }
     }
 }

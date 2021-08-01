@@ -17,8 +17,6 @@ using System;
 using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
@@ -102,7 +100,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             TranslationContext context,
             LambdaExpression lambdaExpression,
             IBsonSerializer parameterSerializer,
-            bool asCurrentSymbol = false)
+            bool asCurrentSymbol)
         {
             var parameterExpression = lambdaExpression.Parameters.Single();
             if (parameterSerializer.ValueType != parameterExpression.Type)

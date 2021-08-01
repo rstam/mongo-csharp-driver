@@ -38,9 +38,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var containerTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, containerExpression);
             if (!DocumentSerializerHelper.HasFieldInfo(containerTranslation.Serializer, member.Name))
             {
-                switch (member.Name)
+                if (member is PropertyInfo propertyInfo  && propertyInfo.Name == "Length")
                 {
-                    case "Length": return LengthPropertyToAggregationExpressionTranslator.Translate(context, expression);
+                    return LengthPropertyToAggregationExpressionTranslator.Translate(context, expression);
                 }
 
                 if (TryTranslateCollectionCountProperty(expression, containerTranslation, member, out var translatedCount))
@@ -100,8 +100,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     switch (propertyInfo.Name)
                     {
                         case "Day": datePart = AstDatePart.DayOfMonth; break;
-                        case "DayOfYear": datePart = AstDatePart.DayOfYear; break;
                         case "DayOfWeek": datePart = AstDatePart.DayOfWeek; break;
+                        case "DayOfYear": datePart = AstDatePart.DayOfYear; break;
                         case "Hour": datePart = AstDatePart.Hour; break;
                         case "Millisecond": datePart = AstDatePart.Millisecond; break;
                         case "Minute": datePart = AstDatePart.Minute; break;

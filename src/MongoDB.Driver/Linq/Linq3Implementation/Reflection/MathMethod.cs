@@ -23,8 +23,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Reflection
         // private static fields
         private static readonly MethodInfo __absDecimal;
         private static readonly MethodInfo __absDouble;
+        private static readonly MethodInfo __absInt16;
         private static readonly MethodInfo __absInt32;
         private static readonly MethodInfo __absInt64;
+        private static readonly MethodInfo __absSByte;
+        private static readonly MethodInfo __absSingle;
         private static readonly MethodInfo __ceilingWithDecimal;
         private static readonly MethodInfo __ceilingWithDouble;
         private static readonly MethodInfo __exp;
@@ -43,8 +46,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Reflection
         {
             __absDecimal = ReflectionInfo.Method((decimal value) => Math.Abs(value));
             __absDouble = ReflectionInfo.Method((double value) => Math.Abs(value));
+            __absInt16 = ReflectionInfo.Method((short value) => Math.Abs(value));
             __absInt32 = ReflectionInfo.Method((int value) => Math.Abs(value));
             __absInt64 = ReflectionInfo.Method((long value) => Math.Abs(value));
+            __absSByte = ReflectionInfo.Method((sbyte value) => Math.Abs(value));
+            __absSingle = ReflectionInfo.Method((float value) => Math.Abs(value));
             __ceilingWithDecimal = ReflectionInfo.Method((decimal d) => Math.Ceiling(d));
             __ceilingWithDouble = ReflectionInfo.Method((double a) => Math.Ceiling(a));
             __exp = ReflectionInfo.Method((double d) => Math.Exp(d));
@@ -62,8 +68,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Reflection
         // public properties
         public static MethodInfo AbsDecimal => __absDecimal;
         public static MethodInfo AbsDouble => __absDouble;
+        public static MethodInfo AbsInt16 => __absInt16;
         public static MethodInfo AbsInt32 => __absInt32;
         public static MethodInfo AbsInt64 => __absInt64;
+        public static MethodInfo AbsSByte => __absSByte;
+        public static MethodInfo AbsSingle => __absSingle;
         public static MethodInfo CeilingWithDecimal => __ceilingWithDecimal;
         public static MethodInfo CeilingWithDouble => __ceilingWithDouble;
         public static MethodInfo Exp => __exp;

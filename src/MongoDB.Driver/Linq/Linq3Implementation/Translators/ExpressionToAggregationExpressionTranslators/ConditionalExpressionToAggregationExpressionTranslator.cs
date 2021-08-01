@@ -15,7 +15,6 @@
 
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
@@ -24,15 +23,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         public static AggregationExpression Translate(TranslationContext context, ConditionalExpression expression)
         {
-            var testExpression = expression.Test;
-            var testTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, testExpression);
-            var ifTrueExpression = expression.IfTrue;
-            var ifTrueTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, ifTrueExpression);
-            var ifFalseExpression = expression.IfFalse;
-            var ifFalseTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, ifFalseExpression);
-            var ast = AstExpression.Cond(testTranslation.Ast, ifTrueTranslation.Ast, ifFalseTranslation.Ast);
-            var serializer = BsonSerializer.LookupSerializer(expression.Type); // TODO: use known serializer
-            return new AggregationExpression(expression, ast, serializer);
+            if (expression.NodeType == ExpressionType.Conditional)
+            {
+                var testExpression = expression.Test;
+                var testTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, testExpression);
+                var ifTrueExpression = expression.IfTrue;
+                var ifTrueTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, ifTrueExpression);
+                var ifFalseExpression = expression.IfFalse;
+                var ifFalseTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, ifFalseExpression);
+                var ast = AstExpression.Cond(testTranslation.Ast, ifTrueTranslation.Ast, ifFalseTranslation.Ast);
+                var serializer = BsonSerializer.LookupSerializer(expression.Type); // TODO: use known serializer
+                return new AggregationExpression(expression, ast, serializer);
+            }
+
+            throw new ExpressionNotSupportedException(expression);
         }
     }
 }

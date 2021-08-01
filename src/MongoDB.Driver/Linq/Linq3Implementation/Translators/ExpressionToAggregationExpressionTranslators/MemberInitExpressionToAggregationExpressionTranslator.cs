@@ -50,7 +50,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     var member = memberAssignment.Member;
                     if (!(documentSerializer.TryGetMemberSerializationInfo(member.Name, out var memberSerializationInfo)))
                     {
-                        goto notSupported;
+                        throw new ExpressionNotSupportedException(expression);
                     }
                     var elementName = memberSerializationInfo.ElementName;
                     var valueExpression = memberAssignment.Expression;
@@ -63,7 +63,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 return new AggregationExpression(expression, ast, serializer);
             }
 
-        notSupported:
             throw new ExpressionNotSupportedException(expression);
         }
 

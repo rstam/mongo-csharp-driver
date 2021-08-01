@@ -25,7 +25,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             switch (expression.NodeType)
             {
                 case ExpressionType.Convert:
-                    return ConvertUnaryExpressionToAggregationExpressionTranslator.Translate(context, expression);
+                    return ConvertExpressionToAggregationExpressionTranslator.Translate(context, expression);
 
                 case ExpressionType.Not:
                     var operandTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, expression.Operand);
