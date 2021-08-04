@@ -405,7 +405,7 @@ namespace MongoDB.Driver
             }
         }
 
- 		/// <summary.
+        /// <summary>
         /// Gets or sets the LINQ provider.
         /// </summary>
         public LinqProvider LinqProvider
