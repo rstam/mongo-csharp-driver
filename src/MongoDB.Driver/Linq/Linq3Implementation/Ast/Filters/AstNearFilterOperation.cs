@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -38,6 +39,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public override AstNodeType NodeType => AstNodeType.NearFilterOperation;
         public BsonValue MaxDistance => _maxDistance;
         public BsonValue MinDistance => _minDistance;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitNearFilterOperation(this);
+        }
 
         public override BsonValue Render()
         {

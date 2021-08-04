@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -29,7 +30,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             AstExpression array,
             AstExpression value,
             AstExpression start = null,
-            AstExpression end = null )
+            AstExpression end = null)
         {
             _array = Ensure.IsNotNull(array, nameof(array));
             _value = Ensure.IsNotNull(value, nameof(value));
@@ -42,6 +43,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.IndexOfArrayExpression;
         public AstExpression Start => _start;
         public AstExpression Value => _value;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitIndexOfArrayExpression(this);
+        }
 
         public override BsonValue Render()
         {
@@ -56,6 +62,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
 
             return new BsonDocument("$indexOfArray", args);
+        }
+
+        public AstIndexOfArrayExpression Update(
+            AstExpression array,
+            AstExpression value,
+            AstExpression start,
+            AstExpression end)
+        {
+            if (array == _array && value == _value && start == _start && end == _end)
+            {
+                return this;
+            }
+
+            return new AstIndexOfArrayExpression(array, value, start, end);
         }
     }
 }

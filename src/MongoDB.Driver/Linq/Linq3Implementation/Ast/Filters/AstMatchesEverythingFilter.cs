@@ -14,12 +14,18 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
     internal sealed class AstMatchesEverythingFilter : AstFilter
     {
         public override AstNodeType NodeType => AstNodeType.MatchesEverythingFilter;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitMatchesEverythingFilter(this);
+        }
 
         public override BsonValue Render()
         {

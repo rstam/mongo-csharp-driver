@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -30,9 +31,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstFilter Filter => _filter;
         public override AstNodeType NodeType => AstNodeType.MatchStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitMatchStage(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$match", _filter.Render());
+        }
+
+        public AstMatchStage Update(AstFilter filter)
+        {
+            if (filter == _filter)
+            {
+                return this;
+            }
+
+            return new AstMatchStage(filter);
         }
     }
 }

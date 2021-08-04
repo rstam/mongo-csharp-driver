@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -28,7 +30,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public AstNaryExpression(AstNaryOperator @operator, IEnumerable<AstExpression> args)
         {
             _operator = @operator;
-            _args = Ensure.IsNotNull(args, nameof(args)).ToList().AsReadOnly();
+            _args = Ensure.IsNotNull(args, nameof(args)).AsReadOnlyList();
         }
 
         public AstNaryExpression(AstNaryOperator @operator, params AstExpression[] args)
@@ -40,9 +42,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.NaryExpression;
         public AstNaryOperator Operator => _operator;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitNaryExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument(_operator.Render(), new BsonArray(_args.Select(e => e.Render())));
+        }
+
+        public AstNaryExpression Update(IEnumerable<AstExpression> args)
+        {
+            if (args == _args)
+            {
+                return this;
+            }
+
+            return new AstNaryExpression(_operator, args);
         }
     }
 }

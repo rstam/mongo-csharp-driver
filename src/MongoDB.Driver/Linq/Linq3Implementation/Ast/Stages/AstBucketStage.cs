@@ -16,6 +16,8 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -35,9 +37,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             IEnumerable<AstComputedField> output = null)
         {
             _groupBy = Ensure.IsNotNull(groupBy, nameof(groupBy));
-            _boundaries = Ensure.IsNotNull(boundaries, nameof(boundaries)).ToList().AsReadOnly();
+            _boundaries = Ensure.IsNotNull(boundaries, nameof(boundaries)).AsReadOnlyList();
             _default = @default; // can be null
-            _output = output?.ToList().AsReadOnly(); // can be null
+            _output = output?.AsReadOnlyList(); // can be null
         }
 
         public IReadOnlyList<BsonValue> Boundaries => _boundaries;
@@ -45,6 +47,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstExpression GroupBy => _groupBy;
         public override AstNodeType NodeType => AstNodeType.BucketStage;
         public IReadOnlyList<AstComputedField> Output => _output;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitBucketStage(this);
+        }
 
         public override BsonValue Render()
         {
@@ -55,10 +62,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
                         { "groupBy", _groupBy.Render() },
                         { "boundaries", new BsonArray(_boundaries) },
                         { "default", _default, _default != null },
-                        { "output", () => new BsonDocument(_output.Select(f => f.Render())), _output != null }
+                        { "output", () => new BsonDocument(_output.Select(f => f.RenderAsElement())), _output != null }
                     }
                 }
             };
+        }
+
+        public AstBucketStage Update(
+            AstExpression groupBy,
+            IEnumerable<AstComputedField> output)
+        {
+            if (groupBy == _groupBy && output == _output)
+            {
+                return this;
+            }
+
+            return new AstBucketStage(groupBy, _boundaries, _default, output);
         }
     }
 }

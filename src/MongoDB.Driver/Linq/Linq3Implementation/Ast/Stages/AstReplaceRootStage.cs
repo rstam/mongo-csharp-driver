@@ -16,6 +16,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -31,9 +32,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstExpression Expression => _expression;
         public override AstNodeType NodeType => AstNodeType.ReplaceRootStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitReplaceRootStage(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$replaceRoot", new BsonDocument("newRoot", _expression.Render()));
+        }
+
+        public AstReplaceRootStage Update(AstExpression expression)
+        {
+            if (expression == _expression)
+            {
+                return this;
+            }
+
+            return new AstReplaceRootStage(expression);
         }
     }
 }

@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -36,6 +37,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.CondExpression;
         public AstExpression Then => _then;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitCondExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
@@ -48,6 +54,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     }
                 }
             };
+        }
+
+        public AstCondExpression Update(AstExpression @if, AstExpression then, AstExpression @else)
+        {
+            if (@if == _if && then == _then && @else == _else)
+            {
+                return this;
+            }
+
+            return new AstCondExpression(@if, then, @else);
         }
     }
 }

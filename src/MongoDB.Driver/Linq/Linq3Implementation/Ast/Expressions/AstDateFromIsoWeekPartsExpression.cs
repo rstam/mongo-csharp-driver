@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -59,6 +60,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public AstExpression Second => _second;
         public AstExpression Timezone => _timezone;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitDateFromIsoWeekPartsExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
@@ -76,6 +82,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     }
                 }
             };
+        }
+
+        public AstDateFromIsoWeekPartsExpression Update(
+            AstExpression isoWeekYear,
+            AstExpression isoWeek,
+            AstExpression isoDayOfWeek,
+            AstExpression hour,
+            AstExpression minute,
+            AstExpression second,
+            AstExpression millisecond,
+            AstExpression timezone)
+        {
+            if (isoWeekYear == _isoWeekYear && isoWeek == _isoWeek && isoDayOfWeek == _isoDayOfWeek && hour == _hour && minute == _minute && second == _second && millisecond == _millisecond && timezone == _timezone)
+            {
+                return this;
+            }
+
+            return new AstDateFromIsoWeekPartsExpression(isoWeekYear, isoWeek, isoDayOfWeek, hour, minute, second, millisecond, timezone);
         }
     }
 }

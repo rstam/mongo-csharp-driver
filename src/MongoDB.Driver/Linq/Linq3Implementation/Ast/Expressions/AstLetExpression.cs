@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -29,7 +31,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             IEnumerable<AstVar> vars,
             AstExpression @in)
         {
-            _vars = Ensure.IsNotNull(vars, nameof(vars)).ToList().AsReadOnly();
+            _vars = Ensure.IsNotNull(vars, nameof(vars)).AsReadOnlyList();
             _in = Ensure.IsNotNull(@in, nameof(@in));
         }
 
@@ -37,17 +39,34 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.LetExpression;
         public IReadOnlyList<AstVar> Vars => _vars;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitLetExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
             {
                 { "$let", new BsonDocument
                     {
-                        { "vars", new BsonDocument(_vars.Select(v => v.Render())) },
+                        { "vars", new BsonDocument(_vars.Select(v => v.RenderAsElement())) },
                         { "in", _in.Render() }
                     }
                 }
             };
+        }
+
+        public AstLetExpression Update(
+            IEnumerable<AstVar> vars,
+            AstExpression @in)
+        {
+            if (vars == _vars && @in == _in)
+            {
+                return this;
+            }
+
+            return new AstLetExpression(vars, @in);
         }
     }
 }

@@ -16,6 +16,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -32,9 +33,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public override AstNodeType NodeType => AstNodeType.ExprFilter;
         public override bool UsesExpr => true;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitExprFilter(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$expr", _expression.Render());
+        }
+
+        public AstExprFilter Update(AstExpression expression)
+        {
+            if (expression == _expression)
+            {
+                return this;
+            }
+
+            return new AstExprFilter(expression);
         }
     }
 }

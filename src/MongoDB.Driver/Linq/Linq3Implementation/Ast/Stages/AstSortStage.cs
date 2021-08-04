@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -42,7 +44,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstSortOrder Order => _order;
         public string Path => _path;
 
-        public BsonElement Render()
+        public BsonElement RenderAsElement()
         {
             return new BsonElement(_path, _order.Render());
         }
@@ -82,11 +84,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstSortStage(IEnumerable<AstSortField> fields)
         {
-            _fields = Ensure.IsNotNull(fields, nameof(fields)).ToList().AsReadOnly();
+            _fields = Ensure.IsNotNull(fields, nameof(fields)).AsReadOnlyList();
         }
 
         public IReadOnlyList<AstSortField> Fields => _fields;
         public override AstNodeType NodeType => AstNodeType.SortStage;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitSortStage(this);
+        }
 
         public AstSortStage AddSortField(AstSortField field)
         {
@@ -96,7 +103,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public override BsonValue Render()
         {
-            return new BsonDocument("$sort", new BsonDocument(_fields.Select(f => f.Render())));
+            return new BsonDocument("$sort", new BsonDocument(_fields.Select(f => f.RenderAsElement())));
         }
     }
 }

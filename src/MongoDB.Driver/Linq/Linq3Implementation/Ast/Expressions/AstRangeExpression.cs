@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -39,6 +40,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public AstExpression Start => _start;
         public AstExpression Step => _step;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitRangeExpression(this);
+        }
+
         public override BsonValue Render()
         {
             var args = new BsonArray { _start.Render(), _end.Render() };
@@ -48,6 +54,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
  
             return new BsonDocument("$range", args);
+        }
+
+        public AstRangeExpression Update(
+            AstExpression start,
+            AstExpression end,
+            AstExpression step)
+        {
+            if (start == _start && end == _end && step == _step)
+            {
+                return this;
+            }
+
+            return new AstRangeExpression(start, end, step);
         }
     }
 }

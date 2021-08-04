@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -66,6 +67,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public BsonDocument Query => _query;
         public bool? Spherical => _spherical;
         public bool? UniqueDocs => _uniqueDocs;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitGeoNearStage(this);
+        }
 
         public override BsonValue Render()
         {

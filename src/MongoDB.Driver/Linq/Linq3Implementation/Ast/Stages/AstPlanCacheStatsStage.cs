@@ -14,12 +14,18 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
     internal sealed class AstPlanCacheStatsStage : AstStage
     {
         public override AstNodeType NodeType => AstNodeType.PlanCacheStatsStage;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitPlanCacheStatsStage(this);
+        }
 
         public override BsonValue Render()
         {

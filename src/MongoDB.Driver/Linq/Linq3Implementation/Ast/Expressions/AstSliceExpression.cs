@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 using System;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
@@ -48,6 +49,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.SliceExpression;
         public AstExpression Position => _position;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitSliceExpression(this);
+        }
+
         public override BsonValue Render()
         {
             var args =
@@ -56,6 +62,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     new BsonArray { _array.Render(), _position.Render(), _n.Render() };
 
             return new BsonDocument("$slice", args);
+        }
+
+        public AstSliceExpression Update(
+            AstExpression array,
+            AstExpression position,
+            AstExpression n)
+        {
+            if (array == _array && position == _position && n == _n)
+            {
+                return this;
+            }
+
+            return new AstSliceExpression(array, position, n);
         }
     }
 }

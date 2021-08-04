@@ -16,10 +16,11 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
-    internal sealed class AstVar
+    internal sealed class AstVar : AstNode
     {
         private readonly string _name;
         private readonly AstExpression _value;
@@ -31,9 +32,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         }
 
         public string Name => _name;
+        public override AstNodeType NodeType => AstNodeType.Var;
         public AstExpression Value => _value;
 
-        public BsonElement Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitVar(this);
+        }
+
+        public override BsonValue Render()
+        {
+            return new BsonDocument(RenderAsElement());
+        }
+
+        public BsonElement RenderAsElement()
         {
             return new BsonElement(_name, _value.Render());
         }
@@ -41,6 +53,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         public override string ToString()
         {
             return $"\"{_name}\" : {_value.Render().ToJson()}";
+        }
+
+        public AstVar Update(AstExpression value)
+        {
+            if (value == _value)
+            {
+                return this;
+            }
+
+            return new AstVar(_name, value);
         }
     }
 }

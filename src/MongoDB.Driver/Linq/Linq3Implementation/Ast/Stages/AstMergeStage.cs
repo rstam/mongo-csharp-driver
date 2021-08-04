@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,8 +58,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         {
             _intoDatabase = intoDatabase;
             _intoCollection = Ensure.IsNotNull(intoCollection, nameof(intoCollection));
-            _on = on?.ToList().AsReadOnly();
-            _let = let?.ToList().AsReadOnly();
+            _on = on?.AsReadOnlyList();
+            _let = let?.AsReadOnlyList();
             _whenMatched = whenMatched;
             _whenNotMatched = whenNotMatched;
         }
@@ -69,6 +71,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public IReadOnlyList<string> On => _on;
         public AstMergeStageWhenMatched? WhenMatched => _whenMatched;
         public AstMergeStageWhenNotMatched? WhenNotMatched => _whenNotMatched;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitMergeStage(this);
+        }
 
         public override BsonValue Render()
         {
@@ -86,6 +93,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             };
         }
 
+        public AstMergeStage Update(IEnumerable<AstVar> let)
+        {
+            if (let == _let)
+            {
+                return this;
+            }
+
+            return new AstMergeStage(_intoDatabase, _intoCollection, _on, let, _whenMatched, _whenNotMatched);
+        }
+
         private BsonValue RenderInto()
         {
             return 
@@ -96,7 +113,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         private BsonDocument RenderLet()
         {
-            return new BsonDocument(_let.Select(l => l.Render()));
+            return new BsonDocument(_let.Select(l => l.RenderAsElement()));
         }
 
         private BsonValue RenderOn()

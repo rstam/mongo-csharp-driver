@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -38,6 +39,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public override AstNodeType NodeType => AstNodeType.UnwindStage;
         public string Path => _path;
         public bool? PreserveNullAndEmptyArrays => _preserveNullAndEmptyArrays;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitUnwindStage(this);
+        }
 
         public override BsonValue Render()
         {

@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -35,6 +36,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public BsonValue Radius => _radius;
         public BsonValue X => _x;
         public BsonValue Y => _y;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitGeoWithinCenterSphereFilterOperation(this);
+        }
 
         public override BsonValue Render()
         {

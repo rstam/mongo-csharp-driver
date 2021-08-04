@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,15 +28,30 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstComputedDocumentExpression(IEnumerable<AstComputedField> fields)
         {
-            _fields = Ensure.IsNotNull(fields, nameof(fields)).ToList().AsReadOnly();
+            _fields = Ensure.IsNotNull(fields, nameof(fields)).AsReadOnlyList();
         }
 
         public IReadOnlyList<AstComputedField> Fields => _fields;
         public override AstNodeType NodeType => AstNodeType.ComputedDocumentExpression;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitComputedDocumentExpression(this);
+        }
+
         public override BsonValue Render()
         {
-            return new BsonDocument(_fields.Select(f => f.Render()));
+            return new BsonDocument(_fields.Select(f => f.RenderAsElement()));
+        }
+
+        public AstComputedDocumentExpression Update(IEnumerable<AstComputedField> fields)
+        {
+            if (fields != _fields)
+            {
+                return this;
+            }
+
+            return new AstComputedDocumentExpression(fields);
         }
     }
 }

@@ -16,6 +16,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -33,6 +34,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public string Path => _path;
         public override AstNodeType NodeType => AstNodeType.FilterField;
         public IBsonSerializer Serializer => _serializer;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitFilterField(this);
+        }
 
         public AstFilterField SubField(string subFieldName, IBsonSerializer subFieldSerializer)
         {

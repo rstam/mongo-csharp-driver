@@ -16,6 +16,8 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -37,7 +39,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             _groupBy = Ensure.IsNotNull(groupBy, nameof(groupBy));
             _buckets = Ensure.IsGreaterThanZero(buckets, nameof(buckets));
             _granularity = granularity; // can be null
-            _output = output?.ToList().AsReadOnly(); // can be null
+            _output = output?.AsReadOnlyList(); // can be null
         }
 
         public int Buckets => _buckets;
@@ -45,6 +47,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstExpression GroupBy => _groupBy;
         public override AstNodeType NodeType => AstNodeType.BucketAutoStage;
         public IReadOnlyList<AstComputedField> Output => _output;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitBucketAutoStage(this);
+        }
 
         public override BsonValue Render()
         {
@@ -54,11 +61,23 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
                     {
                         { "groupBy", _groupBy.Render() },
                         { "buckets", _buckets },
-                        { "output", () => new BsonDocument(_output.Select(f => f.Render())), _output != null },
+                        { "output", () => new BsonDocument(_output.Select(f => f.RenderAsElement())), _output != null },
                         { "granularity", _granularity, _granularity != null }
                     }
                 }
             };
+        }
+
+        public AstBucketAutoStage Update(
+            AstExpression groupBy,
+            IEnumerable<AstComputedField> output)
+        {
+            if (groupBy == _groupBy && output == _output)
+            {
+                return this;
+            }
+
+            return new AstBucketAutoStage(groupBy, _buckets, _granularity, output);
         }
     }
 }

@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -29,6 +30,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public new long Limit => _limit;
         public override AstNodeType NodeType => AstNodeType.LimitStage;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitLimitStage(this);
+        }
 
         public override BsonValue Render()
         {

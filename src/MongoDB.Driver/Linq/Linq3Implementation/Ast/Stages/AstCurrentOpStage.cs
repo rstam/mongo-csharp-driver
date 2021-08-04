@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,6 +51,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public bool? IdleSessions => _idleSessions;
         public bool? LocalOps => _localOps;
         public override AstNodeType NodeType => AstNodeType.CurrentOpStage;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitCurrentOpStage(this);
+        }
 
         public override BsonValue Render()
         {

@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -36,9 +37,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.BinaryExpression;
         public AstBinaryOperator Operator => _operator;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitBinaryExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument(_operator.Render(), new BsonArray { _arg1.Render(), _arg2.Render() });
+        }
+
+        public AstBinaryExpression Update(AstExpression arg1, AstExpression arg2)
+        {
+            if (arg1 == _arg1 && arg2 == _arg2)
+            {
+                return this;
+            }
+
+            return new AstBinaryExpression(_operator, arg1, arg2);
         }
     }
 }

@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -28,6 +29,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public override AstNodeType NodeType => AstNodeType.ConstantExpression;
         public BsonValue Value => _value;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitConstantExpression(this);
+        }
 
         public override BsonValue Render()
         {

@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -43,6 +44,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public AstExpression String => _string;
         public AstExpression Value => _value;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitIndexOfBytesExpression(this);
+        }
+
         public override BsonValue Render()
         {
             var args = new BsonArray { _string.Render(), _value.Render() };
@@ -56,6 +62,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
 
             return new BsonDocument("$indexOfBytes", args);
+        }
+
+        public AstIndexOfBytesExpression Update(
+            AstExpression @string,
+            AstExpression value,
+            AstExpression start,
+            AstExpression end)
+        {
+            if (@string == _string && value == _value && start == _start && end == _end)
+            {
+                return this;
+            }
+
+            return new AstIndexOfBytesExpression(@string, value, start, end);
         }
     }
 }

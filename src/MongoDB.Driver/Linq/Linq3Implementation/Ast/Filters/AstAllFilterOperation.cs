@@ -17,6 +17,8 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -26,11 +28,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 
         public AstAllFilterOperation(IEnumerable<BsonValue> values)
         {
-            _values = Ensure.IsNotNull(values, nameof(values)).ToList().AsReadOnly();
+            _values = Ensure.IsNotNull(values, nameof(values)).AsReadOnlyList();
         }
 
         public override AstNodeType NodeType => AstNodeType.AllFilterOperation;
         public IReadOnlyList<BsonValue> Values => _values;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitAllFilterOperation(this);
+        }
 
         public override BsonValue Render()
         {

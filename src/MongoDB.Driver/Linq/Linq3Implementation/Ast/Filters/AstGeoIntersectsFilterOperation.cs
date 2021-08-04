@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -29,6 +30,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 
         public BsonDocument Geometry => _geometry;
         public override AstNodeType NodeType => AstNodeType.GeoIntersectsFilterOperation;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitGeoIntersectsFilterOperation(this);
+        }
 
         public override BsonValue Render()
         {

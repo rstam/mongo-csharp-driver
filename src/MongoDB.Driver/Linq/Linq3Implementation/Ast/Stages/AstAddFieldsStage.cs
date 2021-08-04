@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,15 +28,30 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstAddFieldsStage(IEnumerable<AstComputedField> fields)
         {
-            _fields = Ensure.IsNotNull(fields, nameof(fields)).ToList().AsReadOnly();
+            _fields = Ensure.IsNotNull(fields, nameof(fields)).AsReadOnlyList();
         }
 
         public IReadOnlyList<AstComputedField> Fields => _fields;
         public override AstNodeType NodeType => AstNodeType.AddFieldsStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitAddFieldsStage(this);
+        }
+
         public override BsonValue Render()
         {
-            return new BsonDocument("$addFields", new BsonDocument(_fields.Select(f => f.Render())));
+            return new BsonDocument("$addFields", new BsonDocument(_fields.Select(f => f.RenderAsElement())));
+        }
+
+        public AstAddFieldsStage Update(IEnumerable<AstComputedField> newFields)
+        {
+            if (newFields == _fields)
+            {
+                return this;
+            }
+
+            return new AstAddFieldsStage(newFields);
         }
     }
 }

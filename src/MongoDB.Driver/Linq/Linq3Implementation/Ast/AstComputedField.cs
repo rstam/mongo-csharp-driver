@@ -16,10 +16,11 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
-    internal sealed class AstComputedField
+    internal sealed class AstComputedField : AstNode
     {
         private readonly string _path;
         private readonly AstExpression _value;
@@ -30,10 +31,21 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
             _value = Ensure.IsNotNull(value, nameof(value));
         }
 
+        public override AstNodeType NodeType => AstNodeType.ComputedField;
         public string Path => _path;
         public AstExpression Value => _value;
 
-        public BsonElement Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitComputedField(this);
+        }
+
+        public override BsonValue Render()
+        {
+            return new BsonDocument(RenderAsElement());
+        }
+
+        public BsonElement RenderAsElement()
         {
             return new BsonElement(_path, _value.Render());
         }
@@ -41,6 +53,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         public override string ToString()
         {
             return $"\"{_path}\" : {_value.Render().ToJson()}";
+        }
+
+        public AstComputedField Update(AstExpression value)
+        {
+            if (value == _value)
+            {
+                return this;
+            }
+
+            return new AstComputedField(_path, value);
         }
     }
 }

@@ -17,6 +17,8 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -26,7 +28,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 
         public AstNorFilter(IEnumerable<AstFilter> filters)
         {
-            _filters = Ensure.IsNotNull(filters, nameof(filters)).ToList().AsReadOnly();
+            _filters = Ensure.IsNotNull(filters, nameof(filters)).AsReadOnlyList();
             Ensure.That(_filters.Count > 0, "filter cannot be empty.", nameof(filters));
             Ensure.That(!_filters.Contains(null), "filters cannot contain null.", nameof(filters));
         }
@@ -35,9 +37,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public override AstNodeType NodeType => AstNodeType.NorFilter;
         public override bool UsesExpr => _filters.Any(f => f.UsesExpr);
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitNorFilter(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$nor", new BsonArray(_filters.Select(a => a.Render())));
+        }
+
+        public AstNorFilter Update(IEnumerable<AstFilter> filters)
+        {
+            if (filters == _filters)
+            {
+                return this;
+            }
+
+            return new AstNorFilter(filters);
         }
     }
 }

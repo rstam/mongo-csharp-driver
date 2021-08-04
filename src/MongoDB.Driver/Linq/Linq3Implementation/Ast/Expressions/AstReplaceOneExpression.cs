@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -39,6 +40,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.ReplaceOneExpression;
         public AstExpression Replacement => _replacement;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitReplaceOneExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
@@ -51,6 +57,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     }
                 }
             };
+        }
+
+        public AstReplaceOneExpression Update(
+            AstExpression input,
+            AstExpression find,
+            AstExpression replacement)
+        {
+            if (input == _input && find == _find && replacement == _replacement)
+            {
+                return this;
+            }
+
+            return new AstReplaceOneExpression(input, find, replacement);
         }
     }
 }

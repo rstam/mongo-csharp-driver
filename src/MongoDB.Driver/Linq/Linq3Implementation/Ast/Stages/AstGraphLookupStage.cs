@@ -17,6 +17,7 @@ using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -61,6 +62,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstFilter RestrictSearchWithMatch => _restrictSearchWithMatch;
         public AstExpression StartWith => _startWith;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitGraphLookupStage(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
@@ -78,6 +84,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
                     }
                 }
             };
+        }
+
+        public AstGraphLookupStage Update(
+            AstExpression startWith,
+            AstFilter restrictSearchWithMatch)
+        {
+            if (startWith == _startWith && restrictSearchWithMatch == _restrictSearchWithMatch)
+            {
+                return this;
+            }
+
+            return new AstGraphLookupStage(_from, startWith, _connectFromField, _connectToField, _as, _maxDepth, _depthField, restrictSearchWithMatch);
         }
     }
 }

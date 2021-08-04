@@ -15,14 +15,21 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
-    internal abstract class AstLookupStageMatch
+    internal abstract class AstLookupStageMatch : AstNode
     {
-        public abstract IEnumerable<BsonElement> Render();
+        public override BsonValue Render()
+        {
+            return new BsonDocument(RenderAsElements());
+        }
+
+        public abstract IEnumerable<BsonElement> RenderAsElements();
     }
 
     internal sealed class AstLookupStageEqualityMatch : AstLookupStageMatch
@@ -38,8 +45,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public string ForeignField => _foreignField;
         public string LocalField => _localField;
+        public override AstNodeType NodeType => AstNodeType.LookupStageEqualityMatch;
 
-        public override IEnumerable<BsonElement> Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitLookupStageEqualityMatch(this);
+        }
+
+        public override IEnumerable<BsonElement> RenderAsElements()
         {
             return new BsonDocument
             {
@@ -57,16 +70,35 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstLookupStageUncorrelatedMatch(AstPipeline pipeline, IEnumerable<AstComputedField> let)
         {
             _pipeline = Ensure.IsNotNull(pipeline, nameof(pipeline));
-            _let = let?.ToList().AsReadOnly();
+            _let = let?.AsReadOnlyList();
         }
 
-        public override IEnumerable<BsonElement> Render()
+        public IReadOnlyList<AstComputedField> Let => _let;
+        public override AstNodeType NodeType => AstNodeType.LookupStageUncorrelatedMatch;
+        public AstPipeline Pipeline => _pipeline;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitLookupStageUncorrelatedMatch(this);
+        }
+
+        public override IEnumerable<BsonElement> RenderAsElements()
         {
             return new BsonDocument
             {
-                { "let", () => new BsonDocument(_let.Select(l => l.Render())), _let != null },
+                { "let", () => new BsonDocument(_let.Select(l => l.RenderAsElement())), _let != null },
                 { "pipeline", _pipeline.Render() }
             };
+        }
+
+        public AstLookupStageUncorrelatedMatch Update(AstPipeline pipeline, IEnumerable<AstComputedField> let)
+        {
+            if (pipeline == _pipeline && let == _let)
+            {
+                return this;
+            }
+
+            return new AstLookupStageUncorrelatedMatch(pipeline, let);
         }
     }
 
@@ -88,16 +120,31 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public new AstLookupStageMatch Match => _match;
         public override AstNodeType NodeType => AstNodeType.LookupStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitLookupStage(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
             {
                 { "$lookup", new BsonDocument()
                     .Add("from", _from)
-                    .AddRange(_match.Render())
+                    .AddRange(_match.RenderAsElements())
                     .Add("as", _as)
                 }
             };
+        }
+
+        public AstLookupStage Update(AstLookupStageMatch match)
+        {
+            if (match == _match)
+            {
+                return this;
+            }
+
+            return new AstLookupStage(_from, match, _as);
         }
     }
 }

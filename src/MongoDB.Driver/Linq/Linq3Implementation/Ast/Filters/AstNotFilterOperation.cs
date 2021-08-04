@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -30,9 +31,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public override AstNodeType NodeType => AstNodeType.NotFilterOperation;
         public AstFilterOperation Operation => _operation;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitNotFilterOperation(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$not", _operation.Render());
+        }
+
+        public AstNotFilterOperation Update(AstFilterOperation operation)
+        {
+            if (operation == _operation)
+            {
+                return this;
+            }
+
+            return new AstNotFilterOperation(operation);
         }
     }
 }

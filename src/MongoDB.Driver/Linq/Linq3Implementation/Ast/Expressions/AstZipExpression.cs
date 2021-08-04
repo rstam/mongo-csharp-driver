@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -31,7 +33,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             bool? useLongestLength = null,
             AstExpression defaults = null)
         {
-            _inputs = Ensure.IsNotNull(inputs, nameof(inputs)).ToList().AsReadOnly();
+            _inputs = Ensure.IsNotNull(inputs, nameof(inputs)).AsReadOnlyList();
             _useLongestLength = useLongestLength;
             _defaults = defaults;
         }
@@ -40,6 +42,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public IReadOnlyList<AstExpression> Inputs => _inputs;
         public override AstNodeType NodeType => AstNodeType.ZipExpression;
         public bool? UseLongestLength => _useLongestLength;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitZipExpression(this);
+        }
 
         public override BsonValue Render()
         {
@@ -53,6 +60,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     }
                 }
             };
+        }
+
+        public AstZipExpression Update(
+            IEnumerable<AstExpression> inputs,
+            AstExpression defaults)
+        {
+            if (inputs == _inputs && defaults == _defaults)
+            {
+                return this;
+            }
+
+            return new AstZipExpression(inputs, _useLongestLength, defaults);
         }
     }
 }

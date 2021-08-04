@@ -16,6 +16,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -31,9 +32,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstExpression Expression => _expression;
         public override AstNodeType NodeType => AstNodeType.SortStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitSortByCountStage(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$sortByCount", _expression.Render());
+        }
+
+        public AstSortByCountStage Update(AstExpression expression)
+        {
+            if (expression == _expression)
+            {
+                return this;
+            }
+
+            return new AstSortByCountStage(expression);
         }
     }
 }

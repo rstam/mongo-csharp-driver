@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -33,9 +34,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public override AstNodeType NodeType => AstNodeType.UnaryExpression;
         public AstUnaryOperator Operator => _operator;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitUnaryExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument(_operator.Render(), RenderArg());
+        }
+
+        public AstUnaryExpression Update(AstExpression arg)
+        {
+            if (arg == _arg)
+            {
+                return this;
+            }
+
+            return new AstUnaryExpression(_operator, arg);
         }
 
         private BsonValue RenderArg()

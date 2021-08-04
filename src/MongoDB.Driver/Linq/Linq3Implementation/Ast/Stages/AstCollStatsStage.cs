@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -93,6 +94,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public override AstNodeType NodeType => AstNodeType.CollStatsStage;
         public AstCollStatsStageQueryExecStats QueryExecStats => _queryExecStats;
         public AstCollStatsStageStorageStats StorageStats => _storageStats;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitCollStatsStage(this);
+        }
 
         public override BsonValue Render()
         {

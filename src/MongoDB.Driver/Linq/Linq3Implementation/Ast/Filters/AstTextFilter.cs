@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -42,6 +43,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public string Language => _language;
         public override AstNodeType NodeType => AstNodeType.TextFilter;
         public string Search => _search;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitTextFilter(this);
+        }
 
         public override BsonValue Render()
         {

@@ -13,17 +13,17 @@
 * limitations under the License.
 */
 
-using MongoDB.Bson;
-using MongoDB.Driver.Core.Misc;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
-    internal sealed class AstFacetStageFacet
+    internal sealed class AstFacetStageFacet : AstNode
     {
         private readonly string _outputField;
         private readonly AstPipeline _pipeline;
@@ -34,12 +34,33 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             _pipeline = Ensure.IsNotNull(pipeline, nameof(pipeline));
         }
 
+        public override AstNodeType NodeType => AstNodeType.FacetStageFacet;
         public string OutputField => _outputField;
         public AstPipeline Pipeline => _pipeline;
 
-        public BsonElement Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitFacetStageFacet(this);
+        }
+
+        public override BsonValue Render()
+        {
+            return new BsonDocument(RenderAsElement());
+        }
+
+        public BsonElement RenderAsElement()
         {
             return new BsonElement(_outputField, _pipeline.Render());
+        }
+
+        public AstFacetStageFacet Update(AstPipeline pipeline)
+        {
+            if (pipeline == _pipeline)
+            {
+                return this;
+            }
+
+            return new AstFacetStageFacet(_outputField, pipeline);
         }
     }
 
@@ -49,15 +70,30 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstFacetStage(IEnumerable<AstFacetStageFacet> facets)
         {
-            _facets = Ensure.IsNotNull(facets, nameof(facets)).ToList().AsReadOnly();
+            _facets = Ensure.IsNotNull(facets, nameof(facets)).AsReadOnlyList();
         }
 
         public IReadOnlyList<AstFacetStageFacet> Facets => _facets;
         public override AstNodeType NodeType => AstNodeType.FacetStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitFacetStage(this);
+        }
+
         public override BsonValue Render()
         {
-            return new BsonDocument("$facet", new BsonDocument(_facets.Select(f => f.Render())));
+            return new BsonDocument("$facet", new BsonDocument(_facets.Select(f => f.RenderAsElement())));
+        }
+
+        public AstFacetStage Update(IEnumerable<AstFacetStageFacet> facets)
+        {
+            if (facets == _facets)
+            {
+                return this;
+            }
+
+            return new AstFacetStage(facets);
         }
     }
 }

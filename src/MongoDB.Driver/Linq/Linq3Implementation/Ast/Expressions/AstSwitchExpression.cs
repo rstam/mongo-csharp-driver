@@ -15,12 +15,14 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
-    internal sealed class AstSwitchExpressionBranch
+    internal sealed class AstSwitchExpressionBranch : AstNode
     {
         private readonly AstExpression _case;
         private readonly AstExpression _then;
@@ -32,11 +34,27 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         }
 
         public AstExpression Case => _case;
+        public override AstNodeType NodeType => AstNodeType.SwitchExpressionBranch;
         public AstExpression Then => _then;
 
-        public BsonDocument Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitSwitchExpressionBranch(this);
+        }
+
+        public override BsonValue Render()
         {
             return new BsonDocument { { "case", _case.Render() }, { "then", _then.Render() } };
+        }
+
+        public AstSwitchExpressionBranch Update(AstExpression @case, AstExpression then)
+        {
+            if (@case == _case && then == _then)
+            {
+                return this;
+            }
+
+            return new AstSwitchExpressionBranch(@case, then);
         }
     }
 
@@ -49,11 +67,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             IEnumerable<AstSwitchExpressionBranch> branches,
             AstExpression @default = null)
         {
-            _branches = Ensure.IsNotNull(branches, nameof(branches)).ToList().AsReadOnly();
+            _branches = Ensure.IsNotNull(branches, nameof(branches)).AsReadOnlyList();
             _default = @default;
         }
 
+        public IReadOnlyList<AstSwitchExpressionBranch> Branches => _branches;
+        public AstExpression Default => _default;
         public override AstNodeType NodeType => AstNodeType.SwitchExpression;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitSwitchExpression(this);
+        }
 
         public override BsonValue Render()
         {
@@ -66,6 +91,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     }
                 }
             };
+        }
+
+        public AstSwitchExpression Update(
+            IEnumerable<AstSwitchExpressionBranch> branches,
+            AstExpression @default)
+        {
+            if (branches == _branches && @default == _default)
+            {
+                return this;
+            }
+
+            return new AstSwitchExpression(branches, @default);
         }
     }
 }

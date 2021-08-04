@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,7 +28,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstAndExpression(IEnumerable<AstExpression> args)
         {
-            _args = Ensure.IsNotNull(args, nameof(args)).ToList().AsReadOnly();
+            _args = Ensure.IsNotNull(args, nameof(args)).AsReadOnlyList();
             Ensure.That(_args.Count > 0, "args cannot be empty.", nameof(args));
             Ensure.That(!_args.Contains(null), "args cannot contain null.", nameof(args));
         }
@@ -34,9 +36,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public IReadOnlyList<AstExpression> Args => _args;
         public override AstNodeType NodeType => AstNodeType.AndExpression;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitAndExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$and", new BsonArray(_args.Select(a => a.Render())));
+        }
+
+        public AstAndExpression Update(IEnumerable<AstExpression> args)
+        {
+            if (args == _args)
+            {
+                return this;
+            }
+
+            return new AstAndExpression(args);
         }
     }
 }

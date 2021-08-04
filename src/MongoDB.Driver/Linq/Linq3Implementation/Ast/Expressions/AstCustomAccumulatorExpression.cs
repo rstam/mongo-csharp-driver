@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -41,9 +43,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         {
             _lang = Ensure.IsNotNullOrEmpty(lang, nameof(lang));
             _init = Ensure.IsNotNullOrEmpty(init, nameof(init));
-            _initArgs = initArgs?.ToList().AsReadOnly();
+            _initArgs = initArgs?.AsReadOnlyList();
             _accumulate = Ensure.IsNotNullOrEmpty(accumulate, nameof(accumulate));
-            _accumulateArgs = Ensure.IsNotNull(accumulateArgs, nameof(accumulateArgs)).ToList().AsReadOnly();
+            _accumulateArgs = Ensure.IsNotNull(accumulateArgs, nameof(accumulateArgs)).AsReadOnlyList();
             _merge = Ensure.IsNotNullOrEmpty(merge, nameof(merge));
             _finalize = finalize;
         }
@@ -56,6 +58,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public string Lang => _lang;
         public string Merge => _merge;
         public override AstNodeType NodeType => AstNodeType.CustomAccumulatorExpression;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitCustomAccumulatorExpression(this);
+        }
 
         public override BsonValue Render()
         {
@@ -73,6 +80,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                     }
                 }
             };
+        }
+
+        public AstCustomAccumulatorExpression Update(
+            IEnumerable<AstExpression> initArgs,
+            IEnumerable<AstExpression> accumulateArgs)
+        {
+            if (initArgs == _initArgs && accumulateArgs == _accumulateArgs)
+            {
+                return this;
+            }
+
+            return new AstCustomAccumulatorExpression(_lang, _init, initArgs, _accumulate, accumulateArgs, _merge, _finalize);
         }
     }
 }

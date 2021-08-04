@@ -17,6 +17,8 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -36,13 +38,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 
         public AstPipeline(IEnumerable<AstStage> stages, IBsonSerializer outputSerializer)
         {
-            _stages = Ensure.IsNotNull(stages, nameof(stages)).ToList().AsReadOnly();
+            _stages = Ensure.IsNotNull(stages, nameof(stages)).AsReadOnlyList();
             _outputSerializer = Ensure.IsNotNull(outputSerializer, nameof(outputSerializer));
         }
 
         public override AstNodeType NodeType => AstNodeType.Pipeline;
         public IBsonSerializer OutputSerializer => _outputSerializer;
         public IReadOnlyList<AstStage> Stages => _stages;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitPipeline(this);
+        }
 
         public AstPipeline AddStages(
             IBsonSerializer newOutputSerializer,
@@ -63,6 +70,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         {
             var stages = _stages.Take(_stages.Count - 1).Concat(new[] { newLastStage });
             return new AstPipeline(stages, newOutputSerializer);
+        }
+
+        public AstPipeline Update(IEnumerable<AstStage> stages)
+        {
+            if (stages == _stages)
+            {
+                return this;
+            }
+
+            return new AstPipeline(stages, _outputSerializer);
         }
     }
 }

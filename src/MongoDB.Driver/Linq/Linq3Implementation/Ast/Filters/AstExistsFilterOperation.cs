@@ -14,6 +14,7 @@
 */
 
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -28,6 +29,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 
         public bool Exists => _exists;
         public override AstNodeType NodeType => AstNodeType.ExistsFilterOperation;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitExistsFilterOperation(this);
+        }
 
         public override BsonValue Render()
         {

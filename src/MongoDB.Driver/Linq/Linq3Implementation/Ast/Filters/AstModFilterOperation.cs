@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -32,6 +33,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public BsonValue Divisor => _divisor;
         public override AstNodeType NodeType => AstNodeType.ModFilterOperation;
         public BsonValue Remainder => _remainder;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitModFilterOperation(this);
+        }
 
         public override BsonValue Render()
         {

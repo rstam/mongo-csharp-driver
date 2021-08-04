@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
@@ -33,9 +34,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public override AstNodeType NodeType => AstNodeType.UnionWithStage;
         public AstPipeline Pipeline => _pipeline;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitUnionWithStage(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument("$unionWith", RenderWith());
+        }
+
+        public AstUnionWithStage Update(AstPipeline pipeline)
+        {
+            if (pipeline == _pipeline)
+            {
+                return this;
+            }
+
+            return new AstUnionWithStage(_collection, pipeline);
         }
 
         private BsonValue RenderWith()

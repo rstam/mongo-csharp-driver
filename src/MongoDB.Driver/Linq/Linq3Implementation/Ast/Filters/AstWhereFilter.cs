@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 {
@@ -29,6 +30,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
 
         public BsonJavaScript Code => _code;
         public override AstNodeType NodeType => AstNodeType.WhereFilter;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitWhereFilter(this);
+        }
 
         public override BsonValue Render()
         {

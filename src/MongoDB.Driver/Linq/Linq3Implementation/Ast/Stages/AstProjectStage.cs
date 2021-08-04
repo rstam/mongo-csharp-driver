@@ -16,6 +16,8 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -44,9 +46,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         }
     }
 
-    internal abstract class AstProjectStageSpecification
+    internal abstract class AstProjectStageSpecification : AstNode
     {
-        public abstract BsonElement Render();
+        public override BsonValue Render()
+        {
+            return new BsonDocument(RenderAsElement());
+        }
+
+        public abstract BsonElement RenderAsElement();
     }
 
     internal sealed class AstProjectStageExcludeFieldSpecification : AstProjectStageSpecification
@@ -58,9 +65,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             _path = Ensure.IsNotNullOrEmpty(path, nameof(path));
         }
 
+        public override AstNodeType NodeType => AstNodeType.ProjectStageExcludeFieldSpecification;
         public string Path => _path;
 
-        public override BsonElement Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitProjectStageExcludeFieldSpecification(this);
+        }
+
+        public override BsonElement RenderAsElement()
         {
             return new BsonElement(_path, 0);
         }
@@ -75,9 +88,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             _path = Ensure.IsNotNullOrEmpty(path, nameof(path));
         }
 
+        public override AstNodeType NodeType => AstNodeType.ProjectStageIncludeFieldSpecification;
         public string Path => _path;
 
-        public override BsonElement Render()
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitProjectStageIncludeFieldSpecification(this);
+        }
+
+        public override BsonElement RenderAsElement()
         {
             return new BsonElement(_path, 1);
         }
@@ -94,9 +113,28 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             _value = Ensure.IsNotNull(value, nameof(value));
         }
 
-        public override BsonElement Render()
+        public override AstNodeType NodeType => AstNodeType.ProjectStageSetFieldSpecification;
+        public string Path => _path;
+        public AstExpression Value => _value;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitProjectStageSetFieldSpecification(this);
+        }
+
+        public override BsonElement RenderAsElement()
         {
             return new BsonElement(_path, _value.Render());
+        }
+
+        public AstProjectStageSetFieldSpecification Update(AstExpression value)
+        {
+            if (value == _value)
+            {
+                return this;
+            }
+
+            return new AstProjectStageSetFieldSpecification(_path, value);
         }
     }
 
@@ -106,15 +144,30 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstProjectStage(IEnumerable<AstProjectStageSpecification> specifications)
         {
-            _specifications = Ensure.IsNotNull(specifications, nameof(specifications)).ToList().AsReadOnly();
+            _specifications = Ensure.IsNotNull(specifications, nameof(specifications)).AsReadOnlyList();
         }
 
         public override AstNodeType NodeType => AstNodeType.ProjectStage;
         public IReadOnlyList<AstProjectStageSpecification> Specifications => _specifications;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitProjectStage(this);
+        }
+
         public override BsonValue Render()
         {
-            return new BsonDocument("$project", new BsonDocument(_specifications.Select(s => s.Render())));
+            return new BsonDocument("$project", new BsonDocument(_specifications.Select(s => s.RenderAsElement())));
+        }
+
+        public AstProjectStage Update(IEnumerable<AstProjectStageSpecification> specifications)
+        {
+            if (specifications == _specifications)
+            {
+                return this;
+            }
+
+            return new AstProjectStage(specifications);
         }
     }
 }

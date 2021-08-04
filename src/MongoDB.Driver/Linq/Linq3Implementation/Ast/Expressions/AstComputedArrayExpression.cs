@@ -15,6 +15,8 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -26,15 +28,30 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstComputedArrayExpression(IEnumerable<AstExpression> items)
         {
-            _items = Ensure.IsNotNull(items, nameof(items)).ToList().AsReadOnly();
+            _items = Ensure.IsNotNull(items, nameof(items)).AsReadOnlyList();
         }
 
         public IReadOnlyList<AstExpression> Items => _items;
         public override AstNodeType NodeType => AstNodeType.ComputedArrayExpression;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitComputedArrayExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonArray(_items.Select(item => item.Render()));
+        }
+
+        public AstComputedArrayExpression Update(IEnumerable<AstExpression> items)
+        {
+            if (items != _items)
+            {
+                return this;
+            }
+
+            return new AstComputedArrayExpression(items);
         }
     }
 }

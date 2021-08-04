@@ -15,6 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -39,12 +40,29 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public AstDatePart Part => _part;
         public AstExpression Timezone => _timezone;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitDatePartExpression(this);
+        }
+
         public override BsonValue Render()
         {
             return new BsonDocument
             {
                 { _part.Render(), RenderArgs() }
             };
+        }
+
+        public AstDatePartExpression Update(
+            AstExpression date,
+            AstExpression timezone)
+        {
+            if (date == _date && timezone == _timezone)
+            {
+                return this;
+            }
+
+            return new AstDatePartExpression(_part, date, timezone);
         }
 
         private BsonValue RenderArgs()

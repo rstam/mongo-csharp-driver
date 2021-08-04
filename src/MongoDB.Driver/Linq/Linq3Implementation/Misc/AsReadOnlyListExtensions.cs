@@ -13,23 +13,21 @@
 * limitations under the License.
 */
 
-using MongoDB.Bson;
-using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using System.Collections.Generic;
+using System.Linq;
 
-namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
+namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 {
-    internal sealed class AstIndexStatsStage : AstStage
+    internal static class AsReadOnlyListExtensions
     {
-        public override AstNodeType NodeType => AstNodeType.IndexStatsStage;
-
-        public override AstNode Accept(AstNodeVisitor visitor)
+        public static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T> list)
         {
-            return visitor.VisitIndexStatsStage(this);
+            return (list as IReadOnlyList<T>) ?? list.ToList().AsReadOnly();
         }
 
-        public override BsonValue Render()
+        public static IReadOnlyList<T> AsReadOnlyList<T>(this IReadOnlyList<T> list)
         {
-            return new BsonDocument("$indexStats", new BsonDocument());
+            return list;
         }
     }
 }

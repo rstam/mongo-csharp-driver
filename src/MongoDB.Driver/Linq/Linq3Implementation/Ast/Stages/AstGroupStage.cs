@@ -16,6 +16,8 @@
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -31,7 +33,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             IEnumerable<AstComputedField> fields)
         {
             _id = Ensure.IsNotNull(id, nameof(id));
-            _fields = Ensure.IsNotNull(fields, nameof(fields)).ToList().AsReadOnly();
+            _fields = Ensure.IsNotNull(fields, nameof(fields)).AsReadOnlyList();
             Ensure.That(!_fields.Any(f => f.Path == "_id"), "An accumulator field of a $group stage cannot be named \"_id\".", nameof(fields));
         }
 
@@ -39,9 +41,26 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public AstExpression Id => _id;
         public override AstNodeType NodeType => AstNodeType.GroupStage;
 
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitGroupStage(this);
+        }
+
         public override BsonValue Render()
         {
-            return new BsonDocument("$group", new BsonDocument("_id", _id.Render()).AddRange(_fields.Select(f => f.Render())));
+            return new BsonDocument("$group", new BsonDocument("_id", _id.Render()).AddRange(_fields.Select(f => f.RenderAsElement())));
+        }
+
+        public AstGroupStage Update(
+            AstExpression id,
+            IEnumerable<AstComputedField> fields)
+        {
+            if (id == _id && fields == _fields)
+            {
+                return this;
+            }
+
+            return new AstGroupStage(id, fields);
         }
     }
 }

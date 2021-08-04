@@ -21,6 +21,8 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
@@ -33,13 +35,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
             IEnumerable<AstFindProjectionField> fields,
             IBsonSerializer<TProjection> projectionSerializer)
         {
-            _fields = Ensure.IsNotNull(fields, nameof(fields)).ToList().AsReadOnly();
+            _fields = Ensure.IsNotNull(fields, nameof(fields)).AsReadOnlyList();
             _projectionSerializer = Ensure.IsNotNull(projectionSerializer, nameof(projectionSerializer));
         }
 
         public IReadOnlyList<AstFindProjectionField> Fields => _fields;
         public override AstNodeType NodeType => AstNodeType.FindProjection;
         public IBsonSerializer<TProjection> ProjectionSerializer => _projectionSerializer;
+
+        public override AstNode Accept(AstNodeVisitor visitor)
+        {
+            return visitor.VisitFindProjection(this);
+        }
 
         public override BsonValue Render()
         {

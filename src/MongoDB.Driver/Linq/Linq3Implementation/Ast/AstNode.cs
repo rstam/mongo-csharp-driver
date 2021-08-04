@@ -15,12 +15,15 @@
 
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
     internal abstract class AstNode
     {
         public abstract AstNodeType NodeType { get; }
+
+        public abstract AstNode Accept(AstNodeVisitor visitor);
 
         public abstract BsonValue Render();
 
