@@ -39,7 +39,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     {
                         // use the same AST but with a new nullable serializer
                         var nullableSerializerType = typeof(NullableSerializer<>).MakeGenericType(valueType);
-                        Type valueSerializerType = typeof(IBsonSerializer<>).MakeGenericType(valueType);
+                        var valueSerializerType = typeof(IBsonSerializer<>).MakeGenericType(valueType);
                         var constructorInfo = nullableSerializerType.GetConstructor(new[] { valueSerializerType });
                         var nullableSerializer = (IBsonSerializer)constructorInfo.Invoke(new[] { operandTranslation.Serializer });
                         return new AggregationExpression(expression, operandTranslation.Ast, nullableSerializer);
