@@ -37,7 +37,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 if (method.IsOneOf(EnumerableMethod.FirstWithPredicate, EnumerableMethod.LastWithPredicate))
                 {
                     var predicateLambda = (LambdaExpression)arguments[1];
-                    var predicateTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, predicateLambda, itemSerializer, asCurrentSymbol: false);
+                    var predicateTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, predicateLambda, itemSerializer, asRoot: false);
                     var predicateParameter = predicateLambda.Parameters[0];
                     array = AstExpression.Filter(
                         input: array,
@@ -45,8 +45,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                         @as: predicateParameter.Name);
                 }
 
-                var index = method.Name == "First" ? 0 : -1;
-                var ast = AstExpression.ArrayElemAt(array, index);
+                var ast = method.Name == "First" ? AstExpression.First(array) : AstExpression.Last(array);
                 return new AggregationExpression(expression, ast, itemSerializer);
             }
 

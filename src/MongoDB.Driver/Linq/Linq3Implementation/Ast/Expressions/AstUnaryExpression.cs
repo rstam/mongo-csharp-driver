@@ -41,6 +41,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public override BsonValue Render()
         {
+            // $first and $last are only supported on server versions >= 5.0
+            if (_operator == AstUnaryOperator.First || _operator == AstUnaryOperator.Last)
+            {
+                var index = _operator == AstUnaryOperator.First ? 0 : -1;
+                return new BsonDocument("$arrayElemAt", new BsonArray { _arg.Render(), index });
+            }
+
             return new BsonDocument(_operator.Render(), RenderArg());
         }
 
