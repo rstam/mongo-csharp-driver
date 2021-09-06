@@ -13,87 +13,96 @@
 * limitations under the License.
 */
 
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 {
-    internal class SymbolTable : IEnumerable<KeyValuePair<ParameterExpression, Symbol>>
+    internal class SymbolTable
     {
         // private fields
-        private Symbol _current;
-        private readonly Dictionary<ParameterExpression, Symbol> _symbols;
+        private readonly IReadOnlyList<Symbol> _symbols;
 
         // constructors
         public SymbolTable()
         {
-            _symbols = new Dictionary<ParameterExpression, Symbol>();
+            _symbols = Enumerable.Empty<Symbol>().AsReadOnlyList();
         }
 
-        public SymbolTable(ParameterExpression parameter, Symbol symbol)
+        public SymbolTable(Symbol symbol)
         {
-            Ensure.IsNotNull(parameter, nameof(parameter));
             Ensure.IsNotNull(symbol, nameof(symbol));
-            _symbols = new Dictionary<ParameterExpression, Symbol>() { { parameter, symbol } };
+            _symbols = new[] { symbol }.AsReadOnlyList();
         }
 
-        public SymbolTable(SymbolTable other)
-            : this()
+        public SymbolTable(IEnumerable<Symbol> symbols)
         {
-            Ensure.IsNotNull(other, nameof(other));
-            _current = other.Current;
-            _symbols = new Dictionary<ParameterExpression, Symbol>(other._symbols);
+            Ensure.IsNotNullAndDoesNotContainAnyNulls(symbols, nameof(symbols));
+            Ensure.That(symbols.Where(s => s.IsCurrent).Count() <= 1, "Only one symbol can be the current symbol.", nameof(symbols));
+            _symbols = symbols.AsReadOnlyList();
         }
 
         // public properties
-        public Symbol Current => _current;
+        public IReadOnlyList<Symbol> Symbols => _symbols;
 
         // public methods
-        public IEnumerator<KeyValuePair<ParameterExpression, Symbol>> GetEnumerator()
-        {
-            return _symbols.GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
         public override string ToString()
         {
-            return $"{{ Current : {_current}, Symbols : [{string.Join(", ", _symbols.Values)}] }}";
+            return $"{{ Symbols : [{string.Join(", ", _symbols)}] }}";
         }
 
         public bool TryGetSymbol(ParameterExpression parameter, out Symbol symbol)
         {
-            return _symbols.TryGetValue(parameter, out symbol);
-        }
-
-        public SymbolTable WithSymbol(ParameterExpression parameter, Symbol symbol)
-        {
-            var newSymbolTable = new SymbolTable(this);
-            newSymbolTable._symbols.Add(parameter, symbol);
-            return newSymbolTable;
-        }
-
-        public SymbolTable WithSymbolAsCurrent(ParameterExpression parameter, Symbol symbol)
-        {
-            var newSymbolTable = new SymbolTable(this);
-            newSymbolTable._symbols.Add(parameter, symbol);
-            newSymbolTable._current = symbol;
-            return newSymbolTable;
-        }
-
-        public SymbolTable WithSymbols(params (ParameterExpression, Symbol)[] symbols)
-        {
-            var newSymbolTable = new SymbolTable(this);
-            foreach (var (parameter, symbol) in symbols)
+            foreach (var s in _symbols)
             {
-                newSymbolTable._symbols.Add(parameter, symbol);
+                if (s.Parameter == parameter)
+                {
+                    symbol = s;
+                    return true;
+                }
             }
-            return newSymbolTable;
+
+            symbol = null;
+            return false;
+        }
+
+        public SymbolTable WithSymbol(Symbol newSymbol)
+        {
+            Ensure.IsNotNull(newSymbol, nameof(newSymbol));
+
+            var symbols = new List<Symbol>(capacity: _symbols.Count + 1);
+            if (newSymbol.IsCurrent)
+            {
+                symbols.AddRange(_symbols.Select(s => s.AsNotCurrent()));
+            }
+            else
+            {
+                symbols.AddRange(_symbols);
+            }
+            symbols.Add(newSymbol);
+
+            return new SymbolTable(symbols);
+        }
+
+        public SymbolTable WithSymbols(params Symbol[] newSymbols)
+        {
+            Ensure.IsNotNullAndDoesNotContainAnyNulls(newSymbols, nameof(newSymbols));
+            Ensure.That(newSymbols.Where(s => s.IsCurrent).Count() <= 1, "Only one symbol can be the current symbol.", nameof(newSymbols));
+
+            var symbols = new List<Symbol>(capacity: _symbols.Count + newSymbols.Length);
+            if (newSymbols.Any(s => s.IsCurrent))
+            {
+                symbols.AddRange(_symbols.Select(s => s.AsNotCurrent()));
+            }
+            else
+            {
+                symbols.AddRange(_symbols);
+            }
+            symbols.AddRange(newSymbols);
+
+            return new SymbolTable(symbols);
         }
     }
 }
