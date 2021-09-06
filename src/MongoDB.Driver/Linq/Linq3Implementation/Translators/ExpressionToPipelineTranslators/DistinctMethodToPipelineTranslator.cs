@@ -35,11 +35,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             {
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
+                var rootVar = AstExpression.Var("ROOT", isCurrent: true);
 
                 pipeline = pipeline.AddStages(
                     pipeline.OutputSerializer,
-                    AstStage.Group(AstExpression.Field("$ROOT"), Enumerable.Empty<AstComputedField>()),
-                    AstStage.ReplaceRoot(AstExpression.Field("_id")));
+                    AstStage.Group(rootVar, Enumerable.Empty<AstComputedField>()),
+                    AstStage.ReplaceRoot(AstExpression.GetField(rootVar, "_id")));
 
                 return pipeline;
             }

@@ -21,13 +21,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
     internal sealed class AstMapExpression : AstExpression
     {
-        private readonly string _as;
+        private readonly AstVarExpression _as;
         private readonly AstExpression _in;
         private readonly AstExpression _input;
 
         public AstMapExpression(
             AstExpression input,
-            string @as,
+            AstVarExpression @as,
             AstExpression @in)
         {
             _input = Ensure.IsNotNull(input, nameof(input));
@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             _in = Ensure.IsNotNull(@in, nameof(@in));
         }
 
-        public string As => _as;
+        public AstVarExpression As => _as;
         public new AstExpression In => _in;
         public AstExpression Input => _input;
         public override AstNodeType NodeType => AstNodeType.MapExpression;
@@ -47,12 +47,26 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public override BsonValue Render()
         {
+            var renderedInput = _input.Render();
+            if (renderedInput is BsonString inputPath && inputPath.Value.StartsWith("$"))
+            {
+                var renderedIn = _in.Render();
+                if (renderedIn is BsonString inPath && inPath.Value.StartsWith("$"))
+                {
+                    var prefix = $"$${_as.Name}.";
+                    if (inPath.Value.StartsWith(prefix))
+                    {
+                        return inputPath + "." + inPath.Value.Substring(prefix.Length);
+                    }
+                }
+            }
+
             return new BsonDocument
             {
                 { "$map", new BsonDocument
                     {
                         { "input", _input.Render() },
-                        { "as", _as, _as != null },
+                        { "as", _as.Name, _as != null },
                         { "in", _in.Render() }
                     }
                 }
@@ -61,14 +75,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstMapExpression Update(
             AstExpression input,
+            AstVarExpression @as,
             AstExpression @in)
         {
-            if (input == _input && @in == _in)
+            if (input == _input && @as != _as && @in == _in)
             {
                 return this;
             }
 
-            return new AstMapExpression(input, _as, @in);
+            return new AstMapExpression(input, @as, @in);
         }
     }
 }

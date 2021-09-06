@@ -113,7 +113,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 {
                     ast = AstExpression.Filter(
                         input: ast,
-                        cond: AstExpression.Ne(AstExpression.Field("$item"), ""),
+                        cond: AstExpression.Ne(AstExpression.Var("item"), ""),
                         @as: "item");
                 }
 

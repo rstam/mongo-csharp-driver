@@ -40,7 +40,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             {
                 var sourceTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, sourceExpression);
                 var key = keyExpression.GetConstantValue<string>(containingExpression: expression);
-                var ast = AstExpression.SubField(sourceTranslation.Ast, key); // TODO: verify that dictionary is using Document representation
+                var ast = AstExpression.GetField(sourceTranslation.Ast, key); // TODO: verify that dictionary is using Document representation
                 var valueSerializer = GetDictionaryValueSerializer(sourceTranslation.Serializer);
                 return new AggregationExpression(expression, ast, valueSerializer);
             }

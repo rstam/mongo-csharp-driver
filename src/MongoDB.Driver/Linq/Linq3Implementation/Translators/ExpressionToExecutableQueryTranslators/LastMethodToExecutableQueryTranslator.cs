@@ -77,7 +77,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     pipeline.OutputSerializer,
                     AstStage.Group(
                         id: BsonNull.Value,
-                        fields: AstExpression.ComputedField("_last", AstExpression.Last(AstExpression.Field("$ROOT")))));
+                        fields: AstExpression.ComputedField("_last", AstExpression.Last(AstExpression.Var("ROOT")))));
 
                 var finalizer = method.Name == "LastOrDefault" ? __singleOrDefaultFinalizer : __singleFinalizer;
 

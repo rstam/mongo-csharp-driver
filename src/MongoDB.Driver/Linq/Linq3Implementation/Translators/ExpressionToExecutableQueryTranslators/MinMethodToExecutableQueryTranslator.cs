@@ -64,13 +64,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
+                var root = AstExpression.Var("ROOT", isCurrent: true);
 
                 AstExpression valueAst;
                 IBsonSerializer valueSerializer;
                 if (method.IsOneOf(__minWithSelectorMethods))
                 {
                     var selectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                    var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asCurrentSymbol: true);
+                    var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asRoot: true);
                     if (selectorTranslation.Serializer is IBsonDocumentSerializer)
                     {
                         valueAst = selectorTranslation.Ast;
@@ -84,7 +85,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 }
                 else
                 {
-                    valueAst = AstExpression.Field("$ROOT");
+                    valueAst = root;
                     valueSerializer = pipeline.OutputSerializer;
                 }
 
@@ -93,7 +94,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     AstStage.Group(
                         id: BsonNull.Value,
                         fields: AstExpression.ComputedField("_min", AstExpression.Min(valueAst))),
-                    AstStage.ReplaceRoot(AstExpression.Field("_min")));
+                    AstStage.ReplaceRoot(AstExpression.GetField(root, "_min")));
 
                 return ExecutableQuery.Create(
                     provider.Collection,

@@ -50,7 +50,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         ExprFilter,
         FacetStage,
         FacetStageFacet,
-        FieldExpression,
         FieldOperationFilter,
         FilterExpression,
         FilterField,
@@ -62,6 +61,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         GeoWithinCenterFilterOperation,
         GeoWithinCenterSphereFilterOperation,
         GeoWithinFilterOperation,
+        GetFieldExpression,
         GraphLookupStage,
         GroupStage,
         IndexOfArrayExpression,
@@ -126,7 +126,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         UnionWithStage,
         UnsetStage,
         UnwindStage,
-        Var,
+        VarBinding,
+        VarExpression,
         WhereFilter,
         ZipExpression
     }

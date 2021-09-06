@@ -69,29 +69,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers
 
         public bool TryGetItemSerializationInfo(out BsonSerializationInfo serializationInfo)
         {
-            if (_valueSerializer is IBsonArraySerializer arraySerializer)
-            {
-                return arraySerializer.TryGetItemSerializationInfo(out serializationInfo);
-            }
-
-            serializationInfo = null;
-            return false;
+            throw new InvalidOperationException();
         }
 
         public bool TryGetMemberSerializationInfo(string memberName, out BsonSerializationInfo serializationInfo)
         {
-            if (_valueSerializer is IBsonDocumentSerializer documentSerializer)
-            {
-                if (documentSerializer.TryGetMemberSerializationInfo(memberName, out serializationInfo))
-                {
-                    var wrappedElementName = $"{_fieldName}.{serializationInfo.ElementName}";
-                    serializationInfo = new BsonSerializationInfo(wrappedElementName, serializationInfo.Serializer, serializationInfo.NominalType);
-                    return true;
-                }
-            }
-
-            serializationInfo = null;
-            return false;
+            throw new InvalidOperationException();
         }
     }
 

@@ -121,18 +121,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
+                var root = AstExpression.Var("ROOT", isCurrent: true);
 
                 AstExpression valueExpression;
                 if (method.IsOneOf(__averageWithSelectorMethods))
                 {
                     var selectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                    var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asCurrentSymbol: true);
+                    var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asRoot: true);
                     valueExpression = selectorTranslation.Ast;
                 }
                 else
                 {
                     Ensure.That(sourceSerializer is IWrappedValueSerializer, "Expected sourceSerializer to be an IWrappedValueSerializer.", nameof(sourceSerializer));
-                    valueExpression = AstExpression.Field("_v");
+                    valueExpression = AstExpression.GetField(root, "_v");
                 }
 
                 var outputValueType = expression.GetResultType();

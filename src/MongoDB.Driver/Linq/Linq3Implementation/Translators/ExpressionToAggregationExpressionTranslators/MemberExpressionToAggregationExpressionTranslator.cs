@@ -24,6 +24,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators.PropertyTranslators;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
@@ -36,6 +37,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var member = expression.Member;
 
             var containerTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, containerExpression);
+            if (containerTranslation.Serializer is IWrappedValueSerializer wrappedValueSerializer)
+            {
+                var unwrappedValueAst = AstExpression.GetField(containerTranslation.Ast, wrappedValueSerializer.FieldName);
+                containerTranslation = new AggregationExpression(expression, unwrappedValueAst, wrappedValueSerializer.ValueSerializer);
+            }
+
             if (!DocumentSerializerHelper.HasFieldInfo(containerTranslation.Serializer, member.Name))
             {
                 if (member is PropertyInfo propertyInfo  && propertyInfo.Name == "Length")
@@ -55,7 +62,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             }
 
             var fieldInfo = DocumentSerializerHelper.GetFieldInfo(containerTranslation.Serializer, member.Name);
-            var ast = AstExpression.SubField(containerTranslation.Ast, fieldInfo.ElementName);
+            var ast = AstExpression.GetField(containerTranslation.Ast, fieldInfo.ElementName);
             return new AggregationExpression(expression, ast, fieldInfo.Serializer);
         }
 

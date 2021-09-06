@@ -25,10 +25,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
     {
         public static string GetFieldPath(this LambdaExpression fieldSelectorLambda, TranslationContext context, IBsonSerializer parameterSerializer)
         {
-            var fieldSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, fieldSelectorLambda, parameterSerializer, asCurrentSymbol: true);
-            if (fieldSelectorTranslation.Ast is AstFieldExpression fieldExpression)
+            var fieldSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, fieldSelectorLambda, parameterSerializer, asRoot: true);
+            if (fieldSelectorTranslation.Ast is AstGetFieldExpression getFieldExpression)
             {
-                return fieldExpression.Path;
+                var renderedFieldSelector = getFieldExpression.Render();
+                if (renderedFieldSelector.IsString)
+                {
+                    var path = renderedFieldSelector.AsString;
+                    if (path.Length >= 2 && path[0] == '$' && path[1] != '$')
+                    {
+                        return path.Substring(1);
+                    }
+                }
             }
 
             throw new ExpressionNotSupportedException(fieldSelectorLambda);
