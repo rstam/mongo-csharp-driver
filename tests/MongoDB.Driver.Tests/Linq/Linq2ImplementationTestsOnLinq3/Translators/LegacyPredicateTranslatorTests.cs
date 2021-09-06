@@ -1183,9 +1183,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3.Translators
 
             var parameter = expression.Parameters.Single();
             var serializer = BsonSerializer.LookupSerializer<TDocument>();
-            var symbol = new Symbol(parameter.Name, serializer);
-            var symbolTable = new SymbolTable().WithSymbolAsCurrent(parameter, symbol);
-            var context = new TranslationContext(symbolTable);
+            var context = new TranslationContext();
+            var symbol = context.CreateFilterSymbol(parameter, serializer, isCurrent: true);
+            context = context.WithSymbol(symbol);
             var filterAst = ExpressionToFilterTranslator.Translate(context, expression.Body);
             var renderedFilter = (BsonDocument)filterAst.Render();
             renderedFilter.Should().Be(expectedFilter);

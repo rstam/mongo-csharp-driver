@@ -70,13 +70,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 {
                     var selectorLambda = (LambdaExpression)arguments[1];
                     var selectorParameter = selectorLambda.Parameters[0];
-                    var selectorSymbol = new Symbol("$" + selectorParameter.Name, sourceItemSerializer);
-                    var selectorContext = context.WithSymbol(selectorParameter, selectorSymbol);
+                    var selectorSymbol = context.CreateExpressionSymbol(selectorParameter, sourceItemSerializer);
+                    var selectorContext = context.WithSymbol(selectorSymbol);
                     var selectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(selectorContext, selectorLambda.Body);
                     ast = AstExpression.Sum(
                         AstExpression.Map(
                             input: sourceTranslation.Ast,
-                            @as: selectorParameter.Name,
+                            @as: selectorSymbol.Var,
                             @in: selectorTranslation.Ast));
                     serializer = selectorTranslation.Serializer;
                 }

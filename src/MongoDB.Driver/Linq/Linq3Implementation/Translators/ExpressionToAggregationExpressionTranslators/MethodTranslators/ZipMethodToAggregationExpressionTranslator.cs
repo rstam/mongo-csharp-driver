@@ -39,16 +39,17 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var resultSelectorParameters = resultSelectorLambda.Parameters;
                 var resultSelectorParameter1 = resultSelectorParameters[0];
                 var resultSelectorParameter2 = resultSelectorParameters[1];
-                var resultSelectorSymbol1 = new Symbol("$" + resultSelectorParameter1.Name, BsonSerializer.LookupSerializer(resultSelectorParameter1.Type));
-                var resultSelectorSymbol2 = new Symbol("$" + resultSelectorParameter2.Name, BsonSerializer.LookupSerializer(resultSelectorParameter2.Type));
-                var resultSelectorContext = context.WithSymbols((resultSelectorParameter1, resultSelectorSymbol1), (resultSelectorParameter2, resultSelectorSymbol2));
+                var resultSelectorSymbol1 = context.CreateExpressionSymbol(resultSelectorParameter1, BsonSerializer.LookupSerializer(resultSelectorParameter1.Type));
+                var resultSelectorSymbol2 = context.CreateExpressionSymbol(resultSelectorParameter2, BsonSerializer.LookupSerializer(resultSelectorParameter2.Type));
+                var resultSelectorContext = context.WithSymbols(resultSelectorSymbol1, resultSelectorSymbol2);
                 var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
+                var @as = AstExpression.Var("z__");
                 var ast = AstExpression.Map(
                     input: AstExpression.Zip(new[] { firstTranslation.Ast, secondTranslation.Ast }),
-                    @as: "z__",
+                    @as: @as,
                     @in: AstExpression.Let(
-                        AstExpression.Var(resultSelectorParameter1.Name, AstExpression.ArrayElemAt(AstExpression.Field("$z__"), 0)),
-                        AstExpression.Var(resultSelectorParameter2.Name, AstExpression.ArrayElemAt(AstExpression.Field("$z__"), 1)),
+                        AstExpression.VarBinding(resultSelectorParameter1.Name, AstExpression.ArrayElemAt(@as, 0)),
+                        AstExpression.VarBinding(resultSelectorParameter2.Name, AstExpression.ArrayElemAt(@as, 1)),
                         @in: resultSelectorTranslation.Ast));
                 var serializer = IEnumerableSerializer.Create(resultSelectorTranslation.Serializer);
                 return new AggregationExpression(expression, ast, serializer);

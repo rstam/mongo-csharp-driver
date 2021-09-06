@@ -88,7 +88,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var enumerableFieldName = wrappedEnumerableSerializer.EnumerableFieldName;
                 var enumerableElementSerializer = wrappedEnumerableSerializer.EnumerableElementSerializer;
                 var enumerableSerializer = IEnumerableSerializer.Create(enumerableElementSerializer);
-                var ast = AstExpression.SubField(aggregateExpression.Ast, enumerableFieldName);
+                var ast = AstExpression.GetField(aggregateExpression.Ast, enumerableFieldName);
 
                 return new AggregationExpression(aggregateExpression.Expression, ast, enumerableSerializer);
             }
@@ -100,15 +100,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             TranslationContext context,
             LambdaExpression lambdaExpression,
             IBsonSerializer parameterSerializer,
-            bool asCurrentSymbol)
+            bool asRoot)
         {
             var parameterExpression = lambdaExpression.Parameters.Single();
             if (parameterSerializer.ValueType != parameterExpression.Type)
             {
                 throw new ArgumentException($"ValueType '{parameterSerializer.ValueType.FullName}' of parameterSerializer does not match parameter type '{parameterExpression.Type.FullName}'.", nameof(parameterSerializer));
             }
-            var parameterSymbol = new Symbol('$' + parameterExpression.Name, parameterSerializer);
-            var lambdaContext = asCurrentSymbol ? context.WithSymbolAsCurrent(parameterExpression, parameterSymbol) : context.WithSymbol(parameterExpression, parameterSymbol);
+            var varName = asRoot ? "ROOT" : parameterExpression.Name;
+            var parameterSymbol = context.CreateExpressionSymbol(parameterExpression, varName, parameterSerializer, isCurrent: asRoot);
+            var lambdaContext = context.WithSymbol(parameterSymbol);
             return Translate(lambdaContext, lambdaExpression.Body);
         }
     }

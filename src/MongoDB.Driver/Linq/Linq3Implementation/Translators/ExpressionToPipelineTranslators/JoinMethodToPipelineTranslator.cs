@@ -41,7 +41,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var outerSerializer = pipeline.OutputSerializer;
 
                 var wrapOuterStage = AstStage.Project(
-                    AstProject.Set("_outer", AstExpression.Field("$ROOT")),
+                    AstProject.Set("_outer", AstExpression.Var("ROOT")),
                     AstProject.ExcludeId());
                 var wrappedOuterSerializer = WrappedValueSerializer.Create("_outer", outerSerializer);
 
@@ -62,13 +62,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var unwindStage = AstStage.Unwind("_inner");
 
                 var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[4]);
+                var root = AstExpression.Var("ROOT", isCurrent: true);
                 var outerParameter = resultSelectorLambda.Parameters[0];
-                var outerSymbol = new Symbol("_outer", outerSerializer);
+                var outerField = AstExpression.GetField(root, "_outer");
+                var outerSymbol = context.CreateExpressionSymbol(outerParameter, "_outer", outerField, outerSerializer);
                 var innerParameter = resultSelectorLambda.Parameters[1];
-                var innerSymbol = new Symbol("_inner", innerSerializer);
+                var innerField = AstExpression.GetField(root, "_inner");
+                var innerSymbol = context.CreateExpressionSymbol(innerParameter, "_inner", innerField, innerSerializer);
                 var resultSelectorContext = context
-                    .WithSymbol(outerParameter, outerSymbol)
-                    .WithSymbol(innerParameter, innerSymbol);
+                    .WithSymbol(outerSymbol)
+                    .WithSymbol(innerSymbol);
                 var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
                 var (projectStage, newOutputSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
 

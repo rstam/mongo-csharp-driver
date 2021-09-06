@@ -73,7 +73,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
         {
             var sourceSerializer = pipeline.OutputSerializer;
             var selectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-            var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asCurrentSymbol: true);
+            var selectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, selectorLambda, sourceSerializer, asRoot: true);
             var resultValueSerializer = ArraySerializerHelper.GetItemSerializer(selectorTranslation.Serializer);
             var resultWrappedValueSerializer = WrappedValueSerializer.Create("_v", resultValueSerializer);
 
@@ -94,7 +94,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
         {
             var sourceSerializer = pipeline.OutputSerializer;
             var collectionSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-            var collectionSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, collectionSelectorLambda, sourceSerializer, asCurrentSymbol: true);
+            var collectionSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, collectionSelectorLambda, sourceSerializer, asRoot: true);
 
             var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
             if (resultSelectorLambda.Body == resultSelectorLambda.Parameters[1])
@@ -136,17 +136,17 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
             var resultSelectorSourceParameterExpression = resultSelectorLambda.Parameters[0];
             var resultSelectorCollectionItemParameterExpression = resultSelectorLambda.Parameters[1];
-            var resultSelectorSourceParameterSymbol = new Symbol("$" + resultSelectorSourceParameterExpression.Name, sourceSerializer);
-            var resultSelectorCollectionItemParameterSymbol = new Symbol("$" + resultSelectorCollectionItemParameterExpression.Name, collectionItemSerializer);
+            var resultSelectorSourceParameterSymbol = context.CreateExpressionSymbol(resultSelectorSourceParameterExpression, sourceSerializer, isCurrent: true);
+            var resultSelectorCollectionItemParameterSymbol = context.CreateExpressionSymbol(resultSelectorCollectionItemParameterExpression, collectionItemSerializer);
             var resultSelectorContext = context
-                .WithSymbolAsCurrent(resultSelectorSourceParameterExpression, resultSelectorSourceParameterSymbol)
-                .WithSymbol(resultSelectorCollectionItemParameterExpression, resultSelectorCollectionItemParameterSymbol);
+                .WithSymbol(resultSelectorSourceParameterSymbol)
+                .WithSymbol(resultSelectorCollectionItemParameterSymbol);
             var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
             var resultValueSerializer = resultSelectorTranslation.Serializer;
             var resultWrappedValueSerializer = WrappedValueSerializer.Create("_v", resultValueSerializer);
             var resultAst = AstExpression.Map(
                 input: collectionSelectorTranslation.Ast,
-                @as: resultSelectorCollectionItemParameterExpression.Name,
+                @as: resultSelectorCollectionItemParameterSymbol.Var,
                 @in: resultSelectorTranslation.Ast);
 
             return pipeline.AddStages(

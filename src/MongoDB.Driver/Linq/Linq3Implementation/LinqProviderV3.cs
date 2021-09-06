@@ -47,7 +47,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             ExpressionTranslationOptions translationOptions)
         {
             var context = new TranslationContext();
-            var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, sourceSerializer, asCurrentSymbol: true);
+            var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, sourceSerializer, asRoot: true);
 
             return translation.Ast.Render();
         }
@@ -69,9 +69,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             IBsonSerializerRegistry serializerRegistry)
         {
             var parameter = expression.Parameters.Single();
-            var symbol = new Symbol(parameter.Name, documentSerializer);
-            var symbolTable = new SymbolTable().WithSymbolAsCurrent(parameter, symbol);
-            var context = new TranslationContext(symbolTable);
+            var context = new TranslationContext();
+            var symbol = context.CreateFilterSymbol(parameter, documentSerializer, isCurrent: true);
+            context = context.WithSymbol(symbol);
             var field = ExpressionToFilterFieldTranslator.Translate(context, expression.Body);
 
             return new RenderedFieldDefinition(field.Path, field.Serializer);
@@ -84,9 +84,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             bool allowScalarValueForArrayField)
         {
             var parameter = expression.Parameters.Single();
-            var symbol = new Symbol(parameter.Name, documentSerializer);
-            var symbolTable = new SymbolTable().WithSymbolAsCurrent(parameter, symbol);
-            var context = new TranslationContext(symbolTable);
+            var context = new TranslationContext();
+            var symbol = context.CreateFilterSymbol(parameter, documentSerializer, isCurrent: true);
+            context = context.WithSymbol(symbol);
             var field = ExpressionToFilterFieldTranslator.Translate(context, expression.Body);
 
             var underlyingSerializer = field.Serializer;
@@ -134,7 +134,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             ExpressionTranslationOptions translationOptions)
         {
             var context = new TranslationContext();
-            var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, inputSerializer, asCurrentSymbol: true);
+            var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, inputSerializer, asRoot: true);
             var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(translation);
             var renderedProjection = projectStage.Render().AsBsonDocument["$project"].AsBsonDocument;
 

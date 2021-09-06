@@ -35,11 +35,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var selectorLambda = (LambdaExpression)arguments[1];
                 var selectorParameter = selectorLambda.Parameters[0];
                 var selectorParameterSerializer = ArraySerializerHelper.GetItemSerializer(sourceTranslation.Serializer);
-                var selectorContext = context.WithSymbol(selectorParameter, new Symbol("$" + selectorParameter.Name, selectorParameterSerializer));
+                var selectorParameterSymbol = context.CreateExpressionSymbol(selectorParameter, selectorParameterSerializer);
+                var selectorContext = context.WithSymbol(selectorParameterSymbol);
                 var translatedSelector = ExpressionToAggregationExpressionTranslator.Translate(selectorContext, selectorLambda.Body);
                 var ast = AstExpression.Map(
                     sourceTranslation.Ast,
-                    selectorParameter.Name,
+                    selectorParameterSymbol.Var,
                     translatedSelector.Ast);
                 var serializer = IEnumerableSerializer.Create(translatedSelector.Serializer);
                 return new AggregationExpression(expression, ast, serializer);

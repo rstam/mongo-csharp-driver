@@ -72,7 +72,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var sourceSerializer = pipeline.OutputSerializer;
 
                 var keySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                var keySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, keySelectorLambda, sourceSerializer, asCurrentSymbol: true);
+                var keySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, keySelectorLambda, sourceSerializer, asRoot: true);
                 var keySerializer = keySelectorTranslation.Serializer;
 
                 var (elementAst, elementSerializer) = TranslateElement(context, method, arguments, sourceSerializer);
@@ -106,20 +106,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             if (method.IsOneOf(__groupByWithElementSelectorMethods))
             {
                 var elementLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
-                var elementTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, elementLambda, sourceSerializer, asCurrentSymbol: true);
+                var elementTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, elementLambda, sourceSerializer, asRoot: true);
                 elementAst = elementTranslation.Ast;
                 elementSerializer = elementTranslation.Serializer;
             }
             else
             {
+                var rootVar = AstExpression.Var("ROOT", isCurrent: true);
+
                 if (sourceSerializer is IWrappedValueSerializer wrappedSerializer)
                 {
-                    elementAst = AstExpression.Field(wrappedSerializer.FieldName);
+                    elementAst = AstExpression.GetField(rootVar, wrappedSerializer.FieldName);
                     elementSerializer = wrappedSerializer.ValueSerializer;
                 }
                 else
                 {
-                    elementAst = AstExpression.Field("$ROOT");
+                    elementAst = rootVar;
                     elementSerializer = sourceSerializer;
                 }
             }
@@ -135,14 +137,17 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             IBsonSerializer elementSerializer)
         {
             var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments.Last());
+            var root = AstExpression.Var("ROOT", isCurrent: true);
             var keyParameter = resultSelectorLambda.Parameters[0];
-            var keySymbol = new Symbol("_id", keySerializer);
+            var keyField = AstExpression.GetField(root, "_id");
+            var keySymbol = context.CreateExpressionSymbol(keyParameter, "_id", keyField, keySerializer);
             var elementsParameter = resultSelectorLambda.Parameters[1];
+            var elementsField = AstExpression.GetField(root, "_elements");
             var elementsSerializer = IEnumerableSerializer.Create(elementSerializer);
-            var elementsSymbol = new Symbol("_elements", elementsSerializer);
+            var elementsSymbol = context.CreateExpressionSymbol(elementsParameter, "_elements", elementsField, elementsSerializer);
             var resultSelectContext = context
-                .WithSymbol(keyParameter, keySymbol)
-                .WithSymbol(elementsParameter, elementsSymbol);
+                .WithSymbol(keySymbol)
+                .WithSymbol(elementsSymbol);
             var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectContext, resultSelectorLambda.Body);
             var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
             return pipeline.AddStages(projectionSerializer, projectStage);
