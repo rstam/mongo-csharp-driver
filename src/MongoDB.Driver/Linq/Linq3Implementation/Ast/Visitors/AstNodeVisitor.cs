@@ -284,11 +284,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
             return node.Update(VisitAndConvert(node.Pipeline));
         }
 
-        public virtual AstNode VisitFieldExpression(AstFieldExpression node)
-        {
-            return node;
-        }
-
         public virtual AstNode VisitFieldOperationFilter(AstFieldOperationFilter node)
         {
             return node.Update(VisitAndConvert(node.Field), VisitAndConvert(node.Operation));
@@ -342,6 +337,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
         public virtual AstNode VisitGeoWithinFilterOperation(AstGeoWithinFilterOperation node)
         {
             return node;
+        }
+
+        public virtual AstNode VisitGetFieldExpression(AstGetFieldExpression node)
+        {
+            return node.Update(VisitAndConvert(node.Input), VisitAndConvert(node.FieldName));
         }
 
         public virtual AstNode VisitGraphLookupStage(AstGraphLookupStage node)
@@ -426,7 +426,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
 
         public virtual AstNode VisitMapExpression(AstMapExpression node)
         {
-            return node.Update(VisitAndConvert(node.Input), VisitAndConvert(node.In));
+            return node.Update(VisitAndConvert(node.Input), VisitAndConvert(node.As), VisitAndConvert(node.In));
         }
 
         public virtual AstNode VisitMatchesEverythingFilter(AstMatchesEverythingFilter node)
@@ -664,9 +664,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
             return node;
         }
 
-        public virtual AstNode VisitVar(AstVar node)
+        public virtual AstNode VisitVarBinding(AstVarBinding node)
         {
             return node.Update(VisitAndConvert(node.Value));
+        }
+
+        public virtual AstNode VisitVarExpression(AstVarExpression node)
+        {
+            return node;
         }
 
         public virtual AstNode VisitWhereFilter(AstWhereFilter node)

@@ -23,6 +23,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
     internal abstract class AstExpression : AstNode
     {
+        #region static
         // public implicit conversions
         public static implicit operator AstExpression(BsonValue value)
         {
@@ -283,19 +284,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Exp, arg);
         }
 
-        public static AstExpression Field(string path)
-        {
-            return new AstFieldExpression(path);
-        }
-
         public static AstExpression Filter(AstExpression input, AstExpression cond, string @as)
         {
             return new AstFilterExpression(input, cond, @as);
         }
 
+        public static AstExpression First(AstExpression array)
+        {
+            return new AstUnaryExpression(AstUnaryOperator.First, array);
+        }
+
         public static AstExpression Floor(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Floor, arg);
+        }
+
+        public static AstExpression GetField(AstExpression input, AstExpression fieldName)
+        {
+            return new AstGetFieldExpression(input, fieldName);
         }
 
         public static AstExpression Gt(AstExpression arg1, AstExpression arg2)
@@ -333,7 +339,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Last, array);
         }
 
-        public static AstExpression Let(AstVar var, AstExpression @in)
+        public static AstExpression Let(AstVarBinding var, AstExpression @in)
         {
             if (var == null)
             {
@@ -345,7 +351,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
         }
 
-        public static AstExpression Let(AstVar var1, AstVar var2, AstExpression @in)
+        public static AstExpression Let(AstVarBinding var1, AstVarBinding var2, AstExpression @in)
         {
             if (var1 == null && var2 == null)
             {
@@ -353,14 +359,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
             else
             {
-                var vars = new List<AstVar>(2);
+                var vars = new List<AstVarBinding>(2);
                 if (var1 != null) { vars.Add(var1); }
                 if (var2 != null) { vars.Add(var2); }
                 return AstExpression.Let(vars, @in);
             }
         }
 
-        public static AstExpression Let(AstVar var1, AstVar var2, AstVar var3, AstExpression @in)
+        public static AstExpression Let(AstVarBinding var1, AstVarBinding var2, AstVarBinding var3, AstExpression @in)
         {
             if (var1 == null && var2 == null && var3 == null)
             {
@@ -368,7 +374,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
             else
             {
-                var vars = new List<AstVar>(2);
+                var vars = new List<AstVarBinding>(2);
                 if (var1 != null) { vars.Add(var1); }
                 if (var2 != null) { vars.Add(var2); }
                 if (var3 != null) { vars.Add(var3); }
@@ -376,7 +382,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
         }
 
-        public static AstExpression Let(IEnumerable<AstVar> vars, AstExpression @in)
+        public static AstExpression Let(IEnumerable<AstVarBinding> vars, AstExpression @in)
         {
             return new AstLetExpression(vars, @in);
         }
@@ -416,15 +422,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstLTrimExpression(input, chars);
         }
 
-        public static AstExpression Map(AstExpression input, string @as, AstExpression @in)
+        public static AstExpression Map(AstExpression input, AstVarExpression @as, AstExpression @in)
         {
-            var prefix = "$" + @as + ".";
-            if (input is AstFieldExpression inputField && @in is AstFieldExpression inField && inField.Path.StartsWith(prefix))
-            {
-                var subFieldName = inField.Path.Substring(prefix.Length);
-                return AstExpression.SubField(inputField, subFieldName);
-            }
-
             return new AstMapExpression(input, @as, @in);
         }
 
@@ -632,21 +631,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.StrLenCP, arg);
         }
 
-        public static AstExpression SubField(AstExpression expression, string subFieldName)
-        {
-            Ensure.IsNotNull(expression, nameof(expression));
-            Ensure.IsNotNull(subFieldName, nameof(subFieldName));
-
-            if (expression is AstFieldExpression fieldExpression)
-            {
-                return fieldExpression.SubField(subFieldName);
-            }
-            else
-            {
-                return AstExpression.Let(AstExpression.Var("this", expression), AstExpression.Field($"$this.{subFieldName}"));
-            }
-        }
-
         public static AstExpression Substr(AstTernaryOperator substrOperator, AstExpression arg, AstExpression index, AstExpression count)
         {
             return substrOperator switch
@@ -714,7 +698,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Trunc, arg);
         }
 
-        public static (AstVar, AstExpression) UseVarIfNotSimple(string name, AstExpression expression)
+        public static AstExpression Unary(AstUnaryOperator @operator, AstExpression arg)
+        {
+            return new AstUnaryExpression(@operator, arg);
+        }
+
+        public static (AstVarBinding, AstExpression) UseVarIfNotSimple(string name, AstExpression expression)
         {
             if (IsSimple(expression))
             {
@@ -722,8 +711,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
             else
             {
-                var var = AstExpression.Var(name, expression);
-                var simpleAst = AstExpression.Field("$" + name);
+                var var = AstExpression.VarBinding(name, expression);
+                var simpleAst = AstExpression.Var(name);
                 return (var, simpleAst);
             }
 
@@ -732,13 +721,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                 return
                     expression == null ||
                     expression.NodeType == AstNodeType.ConstantExpression ||
-                    expression.NodeType == AstNodeType.FieldExpression;
+                    expression.CanBeRenderedAsFieldPath();
             }
         }
 
-        public static AstVar Var(string name, AstExpression value)
+        public static AstVarExpression Var(string name, bool isCurrent = false)
         {
-            return new AstVar(name, value);
+            return new AstVarExpression(name, isCurrent);
+        }
+
+        public static AstVarBinding VarBinding(string name, AstExpression value)
+        {
+            return new AstVarBinding(name, value);
         }
 
         public static AstExpression Zip(IEnumerable<AstExpression> inputs, bool? useLongestLength = null, AstExpression defaults = null)
@@ -770,5 +764,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             values = null;
             return false;
         }
+        #endregion static
+
+        // public methods
+        public virtual bool CanBeRenderedAsFieldPath() => false;
     }
 }
