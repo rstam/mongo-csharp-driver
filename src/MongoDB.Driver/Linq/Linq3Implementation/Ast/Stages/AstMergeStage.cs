@@ -43,7 +43,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
     {
         private readonly string _intoCollection;
         private readonly string _intoDatabase;
-        private readonly IReadOnlyList<AstVar> _let;
+        private readonly IReadOnlyList<AstVarBinding> _let;
         private readonly IReadOnlyList<string> _on;
         private readonly AstMergeStageWhenMatched? _whenMatched;
         private readonly AstMergeStageWhenNotMatched? _whenNotMatched;
@@ -52,7 +52,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             string intoDatabase,
             string intoCollection,
             IEnumerable<string> on = null,
-            IEnumerable<AstVar> let = null,
+            IEnumerable<AstVarBinding> let = null,
             AstMergeStageWhenMatched? whenMatched = null,
             AstMergeStageWhenNotMatched? whenNotMatched = null)
         {
@@ -66,7 +66,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public string IntoCollection => _intoCollection;
         public string IntoDatabase => _intoDatabase;
-        public IReadOnlyList<AstVar> Let => _let;
+        public IReadOnlyList<AstVarBinding> Let => _let;
         public override AstNodeType NodeType => AstNodeType.MergeStage;
         public IReadOnlyList<string> On => _on;
         public AstMergeStageWhenMatched? WhenMatched => _whenMatched;
@@ -93,7 +93,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             };
         }
 
-        public AstMergeStage Update(IEnumerable<AstVar> let)
+        public AstMergeStage Update(IEnumerable<AstVarBinding> let)
         {
             if (let == _let)
             {

@@ -25,10 +25,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     internal sealed class AstLetExpression : AstExpression
     {
         private readonly AstExpression _in;
-        private readonly IReadOnlyList<AstVar> _vars;
+        private readonly IReadOnlyList<AstVarBinding> _vars;
 
         public AstLetExpression(
-            IEnumerable<AstVar> vars,
+            IEnumerable<AstVarBinding> vars,
             AstExpression @in)
         {
             _vars = Ensure.IsNotNull(vars, nameof(vars)).AsReadOnlyList();
@@ -37,7 +37,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public new AstExpression In => _in;
         public override AstNodeType NodeType => AstNodeType.LetExpression;
-        public IReadOnlyList<AstVar> Vars => _vars;
+        public IReadOnlyList<AstVarBinding> Vars => _vars;
 
         public override AstNode Accept(AstNodeVisitor visitor)
         {
@@ -58,7 +58,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         }
 
         public AstLetExpression Update(
-            IEnumerable<AstVar> vars,
+            IEnumerable<AstVarBinding> vars,
             AstExpression @in)
         {
             if (vars == _vars && @in == _in)

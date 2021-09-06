@@ -150,7 +150,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             string intoDatabase,
             string intoCollection,
             IEnumerable<string> on = null,
-            IEnumerable<AstVar> let = null,
+            IEnumerable<AstVarBinding> let = null,
             AstMergeStageWhenMatched? whenMatched = null,
             AstMergeStageWhenNotMatched? whenNotMatched = null)
         {

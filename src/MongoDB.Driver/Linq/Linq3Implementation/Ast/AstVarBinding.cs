@@ -20,24 +20,24 @@ using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
-    internal sealed class AstVar : AstNode
+    internal sealed class AstVarBinding : AstNode
     {
         private readonly string _name;
         private readonly AstExpression _value;
 
-        public AstVar(string name, AstExpression value)
+        public AstVarBinding(string name, AstExpression value)
         {
             _name = Ensure.IsNotNull(name, nameof(name));
             _value = Ensure.IsNotNull(value, nameof(value));
         }
 
         public string Name => _name;
-        public override AstNodeType NodeType => AstNodeType.Var;
+        public override AstNodeType NodeType => AstNodeType.VarBinding;
         public AstExpression Value => _value;
 
         public override AstNode Accept(AstNodeVisitor visitor)
         {
-            return visitor.VisitVar(this);
+            return visitor.VisitVarBinding(this);
         }
 
         public override BsonValue Render()
@@ -55,14 +55,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
             return $"\"{_name}\" : {_value.Render().ToJson()}";
         }
 
-        public AstVar Update(AstExpression value)
+        public AstVarBinding Update(AstExpression value)
         {
             if (value == _value)
             {
                 return this;
             }
 
-            return new AstVar(_name, value);
+            return new AstVarBinding(_name, value);
         }
     }
 }
