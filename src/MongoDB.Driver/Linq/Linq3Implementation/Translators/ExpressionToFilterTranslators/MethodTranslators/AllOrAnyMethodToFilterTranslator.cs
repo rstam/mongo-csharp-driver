@@ -53,7 +53,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     var predicateLambda = (LambdaExpression)arguments[1];
                     var parameterExpression = predicateLambda.Parameters.Single();
                     var elementSerializer = ArraySerializerHelper.GetItemSerializer(field.Serializer);
-                    var parameterSymbol = context.CreateFilterSymbol(parameterExpression, "@<elem>", elementSerializer); // @<elem> represents the implied element 
+                    var parameterSymbol = context.CreateSymbol(parameterExpression, "@<elem>", elementSerializer); // @<elem> represents the implied element 
                     var predicateContext = context.WithSingleSymbol(parameterSymbol); // @<elem> is the only symbol visible inside an $elemMatch
                     var predicateFilter = ExpressionToFilterTranslator.Translate(predicateContext, predicateLambda.Body, exprOk: false);
 
@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     var predicateLambda = (LambdaExpression)arguments[1];
                     var parameterExpression = predicateLambda.Parameters.Single();
                     var itemSerializer = ArraySerializerHelper.GetItemSerializer(sourceField.Serializer);
-                    var parameterSymbol = context.CreateFilterSymbol(parameterExpression, "@<elem>", itemSerializer); // @<elem> represents the implied element 
+                    var parameterSymbol = context.CreateSymbol(parameterExpression, "@<elem>", itemSerializer); // @<elem> represents the implied element 
                     var predicateContext = context.WithSingleSymbol(parameterSymbol); // @<elem> is the only symbol visible inside an $elemMatch
                     var whereFilter = ExpressionToFilterTranslator.Translate(predicateContext, predicateLambda.Body, exprOk: false);
                     var combinedFilter = AstFilter.Combine(sourceFilter, whereFilter);

@@ -136,11 +136,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
             var resultSelectorSourceParameterExpression = resultSelectorLambda.Parameters[0];
             var resultSelectorCollectionItemParameterExpression = resultSelectorLambda.Parameters[1];
-            var resultSelectorSourceParameterSymbol = context.CreateExpressionSymbol(resultSelectorSourceParameterExpression, sourceSerializer, isCurrent: true);
-            var resultSelectorCollectionItemParameterSymbol = context.CreateExpressionSymbol(resultSelectorCollectionItemParameterExpression, collectionItemSerializer);
-            var resultSelectorContext = context
-                .WithSymbol(resultSelectorSourceParameterSymbol)
-                .WithSymbol(resultSelectorCollectionItemParameterSymbol);
+            var resultSelectorSourceParameterSymbol = context.CreateSymbol(resultSelectorSourceParameterExpression, sourceSerializer, isCurrent: true);
+            var resultSelectorCollectionItemParameterSymbol = context.CreateSymbol(resultSelectorCollectionItemParameterExpression, collectionItemSerializer);
+            var resultSelectorContext = context.WithSymbols(resultSelectorSourceParameterSymbol, resultSelectorCollectionItemParameterSymbol);
             var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
             var resultValueSerializer = resultSelectorTranslation.Serializer;
             var resultWrappedValueSerializer = WrappedValueSerializer.Create("_v", resultValueSerializer);

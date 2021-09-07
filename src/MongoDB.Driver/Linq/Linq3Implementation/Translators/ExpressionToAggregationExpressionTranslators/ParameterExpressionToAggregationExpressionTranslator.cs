@@ -26,7 +26,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             var symbolTable = context.SymbolTable;
             if (symbolTable.TryGetSymbol(expression, out Symbol symbol))
             {
-                return new AggregationExpression(expression, symbol.Expression, symbol.Serializer);
+                return new AggregationExpression(expression, symbol.Ast, symbol.Serializer);
             }
 
             throw new ExpressionNotSupportedException(expression);

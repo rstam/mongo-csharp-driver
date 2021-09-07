@@ -107,8 +107,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             {
                 throw new ArgumentException($"ValueType '{parameterSerializer.ValueType.FullName}' of parameterSerializer does not match parameter type '{parameterExpression.Type.FullName}'.", nameof(parameterSerializer));
             }
-            var varName = asRoot ? "ROOT" : parameterExpression.Name;
-            var parameterSymbol = context.CreateExpressionSymbol(parameterExpression, varName, parameterSerializer, isCurrent: asRoot);
+            var parameterSymbol =
+                asRoot ?
+                    context.CreateSymbolWithVarName(parameterExpression, varName: "ROOT", parameterSerializer, isCurrent: true) :
+                    context.CreateSymbol(parameterExpression, parameterSerializer, isCurrent: false);
             var lambdaContext = context.WithSymbol(parameterSymbol);
             return Translate(lambdaContext, lambdaExpression.Body);
         }

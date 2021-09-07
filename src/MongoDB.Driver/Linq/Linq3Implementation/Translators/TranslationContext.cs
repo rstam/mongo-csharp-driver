@@ -44,45 +44,39 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators
         public SymbolTable SymbolTable => _symbolTable;
 
         // public methods
-        public Symbol CreateExpressionSymbol(ParameterExpression parameter, IBsonSerializer serializer, bool isCurrent = false)
+        public Symbol CreateSymbol(ParameterExpression parameter, IBsonSerializer serializer, bool isCurrent = false)
         {
             var parameterName = _nameGenerator.GetParameterName(parameter);
-            return CreateExpressionSymbol(parameter, name: parameterName, serializer, isCurrent);
+            return CreateSymbol(parameter, name: parameterName, serializer, isCurrent);
         }
 
-        public Symbol CreateExpressionSymbol(ParameterExpression parameter, string name, IBsonSerializer serializer, bool isCurrent = false)
+        public Symbol CreateSymbol(ParameterExpression parameter, string name, IBsonSerializer serializer, bool isCurrent = false)
         {
             var varName = _nameGenerator.GetVarName(name);
-            return CreateExpressionSymbol(parameter, name, varName, serializer, isCurrent);
+            return CreateSymbol(parameter, name, varName, serializer, isCurrent);
         }
 
-        public Symbol CreateExpressionSymbol(ParameterExpression parameter, string name, string varName, IBsonSerializer serializer, bool isCurrent = false)
+        public Symbol CreateSymbol(ParameterExpression parameter, string name, string varName, IBsonSerializer serializer, bool isCurrent = false)
         {
-            var expression = AstExpression.Var(varName, isCurrent);
-            return CreateExpressionSymbol(parameter, name, expression, serializer, isCurrent);
+            var varAst = AstExpression.Var(varName, isCurrent);
+            return CreateSymbol(parameter, name, varAst, serializer, isCurrent);
         }
 
-        public Symbol CreateExpressionSymbol(ParameterExpression parameter, string name, AstExpression expression, IBsonSerializer serializer, bool isCurrent = false)
-        {
-            return new Symbol(parameter, name, expression, serializer, isCurrent);
-        }
-
-        public Symbol CreateExpressionSymbolWithVarName(ParameterExpression parameter, string varName, IBsonSerializer serializer, bool isCurrent = false)
+        public Symbol CreateSymbol(ParameterExpression parameter, AstExpression ast, IBsonSerializer serializer, bool isCurrent = false)
         {
             var parameterName = _nameGenerator.GetParameterName(parameter);
-            return CreateExpressionSymbol(parameter, name: parameterName, varName, serializer, isCurrent);
+            return CreateSymbol(parameter, name: parameterName, ast, serializer, isCurrent);
         }
 
-        public Symbol CreateFilterSymbol(ParameterExpression parameter, IBsonSerializer serializer, bool isCurrent = false)
+        public Symbol CreateSymbol(ParameterExpression parameter, string name, AstExpression ast, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            return new Symbol(parameter, name, ast, serializer, isCurrent);
+        }
+
+        public Symbol CreateSymbolWithVarName(ParameterExpression parameter, string varName, IBsonSerializer serializer, bool isCurrent = false)
         {
             var parameterName = _nameGenerator.GetParameterName(parameter);
-            return CreateFilterSymbol(parameter, name: parameterName, serializer, isCurrent);
-        }
-
-        public Symbol CreateFilterSymbol(ParameterExpression parameter, string name, IBsonSerializer serializer, bool isCurrent = false)
-        {
-            var rootVar = AstExpression.Var("ROOT", isCurrent);
-            return new Symbol(parameter, name, expression: rootVar, serializer, isCurrent);
+            return CreateSymbol(parameter, name: parameterName, varName, serializer, isCurrent);
         }
 
         public override string ToString()

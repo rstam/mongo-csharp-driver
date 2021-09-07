@@ -140,14 +140,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             var root = AstExpression.Var("ROOT", isCurrent: true);
             var keyParameter = resultSelectorLambda.Parameters[0];
             var keyField = AstExpression.GetField(root, "_id");
-            var keySymbol = context.CreateExpressionSymbol(keyParameter, "_id", keyField, keySerializer);
+            var keySymbol = context.CreateSymbol(keyParameter, keyField, keySerializer);
             var elementsParameter = resultSelectorLambda.Parameters[1];
             var elementsField = AstExpression.GetField(root, "_elements");
             var elementsSerializer = IEnumerableSerializer.Create(elementSerializer);
-            var elementsSymbol = context.CreateExpressionSymbol(elementsParameter, "_elements", elementsField, elementsSerializer);
-            var resultSelectContext = context
-                .WithSymbol(keySymbol)
-                .WithSymbol(elementsSymbol);
+            var elementsSymbol = context.CreateSymbol(elementsParameter, elementsField, elementsSerializer);
+            var resultSelectContext = context.WithSymbols(keySymbol, elementsSymbol);
             var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectContext, resultSelectorLambda.Body);
             var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
             return pipeline.AddStages(projectionSerializer, projectStage);

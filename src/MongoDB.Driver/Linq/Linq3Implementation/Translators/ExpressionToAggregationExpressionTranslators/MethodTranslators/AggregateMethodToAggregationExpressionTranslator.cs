@@ -47,9 +47,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     var funcLambda = (LambdaExpression)arguments[1];
                     var funcParameters = funcLambda.Parameters;
                     var accumulatorParameter = funcParameters[0];
-                    var accumulatorSymbol = context.CreateExpressionSymbolWithVarName(accumulatorParameter, varName: "value", itemSerializer); // note: MQL uses $$value for the accumulator
+                    var accumulatorSymbol = context.CreateSymbolWithVarName(accumulatorParameter, varName: "value", itemSerializer); // note: MQL uses $$value for the accumulator
                     var itemParameter = funcParameters[1];
-                    var itemSymbol = context.CreateExpressionSymbolWithVarName(itemParameter, varName: "this", itemSerializer); // note: MQL uses $$this for the item being processed
+                    var itemSymbol = context.CreateSymbolWithVarName(itemParameter, varName: "this", itemSerializer); // note: MQL uses $$this for the item being processed
                     var funcContext = context.WithSymbols(accumulatorSymbol, itemSymbol);
                     var funcTranslation = ExpressionToAggregationExpressionTranslator.Translate(funcContext, funcLambda.Body);
 
@@ -75,9 +75,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     var funcParameters = funcLambda.Parameters;
                     var accumulatorParameter = funcParameters[0];
                     var accumulatorSerializer = BsonSerializer.LookupSerializer(accumulatorParameter.Type); // TODO: use known serializer
-                    var accumulatorSymbol = context.CreateExpressionSymbolWithVarName(accumulatorParameter, varName: "value", accumulatorSerializer); // note: MQL uses $$value for the accumulator
+                    var accumulatorSymbol = context.CreateSymbolWithVarName(accumulatorParameter, varName: "value", accumulatorSerializer); // note: MQL uses $$value for the accumulator
                     var itemParameter = funcParameters[1];
-                    var itemSymbol = context.CreateExpressionSymbolWithVarName(itemParameter, varName: "this", itemSerializer); // note: MQL uses $$this for the item being processed
+                    var itemSymbol = context.CreateSymbolWithVarName(itemParameter, varName: "this", itemSerializer); // note: MQL uses $$this for the item being processed
                     var funcContext = context.WithSymbols(accumulatorSymbol, itemSymbol);
                     var funcTranslation = ExpressionToAggregationExpressionTranslator.Translate(funcContext, funcLambda.Body);
 
@@ -92,7 +92,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                         var resultSelectorLambda = (LambdaExpression)arguments[3];
                         var resultSelectorParameter = resultSelectorLambda.Parameters[0];
                         var resultSelectorParameterSerializer = BsonSerializer.LookupSerializer(resultSelectorParameter.Type); // TODO: use known serializer
-                        var resultSelectorSymbol = context.CreateExpressionSymbol(resultSelectorParameter, resultSelectorParameterSerializer);
+                        var resultSelectorSymbol = context.CreateSymbol(resultSelectorParameter, resultSelectorParameterSerializer);
                         var resultSelectorContext = context.WithSymbol(resultSelectorSymbol);
                         var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
 

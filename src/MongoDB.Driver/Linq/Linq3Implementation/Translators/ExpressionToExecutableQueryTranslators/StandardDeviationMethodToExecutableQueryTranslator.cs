@@ -269,7 +269,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 var sourceExpression = ConvertHelper.RemoveConvertToMongoQueryable(arguments[0]);
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
-                var root = AstExpression.Var("ROOT", isCurrent: true);
 
                 var stdDevOperator = method.IsOneOf(__standardDeviationPopulationMethods) ? AstUnaryOperator.StdDevPop : AstUnaryOperator.StdDevSamp;
                 AstExpression valueAst;
@@ -281,6 +280,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 }
                 else
                 {
+                    var root = AstExpression.Var("ROOT", isCurrent: true);
                     valueAst = AstExpression.GetField(root, "_v");
                 }
                 var outputValueType = expression.GetResultType();

@@ -23,48 +23,48 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
     internal class Symbol
     {
         // private fields
-        private readonly AstExpression _expression;
+        private readonly AstExpression _ast;
         private readonly bool _isCurrent;
         private readonly string _name;
         private readonly ParameterExpression _parameter;
         private readonly IBsonSerializer _serializer;
 
         // constructors
-        public Symbol(ParameterExpression parameter, string name, AstExpression expression, IBsonSerializer serializer, bool isCurrent)
+        public Symbol(ParameterExpression parameter, string name, AstExpression ast, IBsonSerializer serializer, bool isCurrent)
         {
             _parameter = Ensure.IsNotNull(parameter, nameof(parameter));
             _name = Ensure.IsNotNullOrEmpty(name, nameof(name));
-            _expression = expression; // can be null
+            _ast = Ensure.IsNotNull(ast, nameof(ast));
             _serializer = Ensure.IsNotNull(serializer, nameof(serializer));
             _isCurrent = isCurrent;
         }
 
         // public properties
-        public AstExpression Expression => _expression;
+        public AstExpression Ast => _ast;
         public bool IsCurrent => _isCurrent;
         public string Name => _name;
         public ParameterExpression Parameter => _parameter;
         public IBsonSerializer Serializer => _serializer;
-        public AstVarExpression Var => (AstVarExpression)_expression;
+        public AstVarExpression Var => (AstVarExpression)_ast;
 
         // public methods
         public Symbol AsNotCurrent()
         {
             if (_isCurrent)
             {
-                if (_expression is AstVarExpression varExpression)
+                if (_ast is AstVarExpression varExpression)
                 {
                     return new Symbol(_parameter, _name, varExpression.AsNotCurrent(), _serializer, isCurrent: false);
                 }
                 else
                 {
-                    return new Symbol(_parameter, _name, _expression, _serializer, isCurrent: false);
+                    return new Symbol(_parameter, _name, _ast, _serializer, isCurrent: false);
                 }
             }
 
             return this;
         }
 
-        public override string ToString() => _expression?.Render().AsString ?? _parameter.Name ?? "<noname>";
+        public override string ToString() => _name;
     }
 }

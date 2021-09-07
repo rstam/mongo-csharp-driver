@@ -63,14 +63,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var root = AstExpression.Var("ROOT", isCurrent: true);
                 var outerParameter = resultSelectorLambda.Parameters[0];
                 var outerField = AstExpression.GetField(root, "_outer");
-                var outerSymbol = context.CreateExpressionSymbol(outerParameter, "_outer", outerField, outerSerializer);
+                var outerSymbol = context.CreateSymbol(outerParameter, outerField, outerSerializer);
                 var innerParameter = resultSelectorLambda.Parameters[1];
                 var innerField = AstExpression.GetField(root, "_inner");
                 var ienumerableInnerSerializer = IEnumerableSerializer.Create(innerSerializer);
-                var innerSymbol = context.CreateExpressionSymbol(innerParameter, "_inner", innerField, ienumerableInnerSerializer);
-                var resultSelectorContext = context
-                    .WithSymbol(outerSymbol)
-                    .WithSymbol(innerSymbol);
+                var innerSymbol = context.CreateSymbol(innerParameter, innerField, ienumerableInnerSerializer);
+                var resultSelectorContext = context.WithSymbols(outerSymbol, innerSymbol);
                 var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
                 var (projectStage, newOutputSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
 

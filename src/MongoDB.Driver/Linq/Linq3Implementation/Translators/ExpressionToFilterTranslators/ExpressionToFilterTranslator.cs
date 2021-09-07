@@ -51,7 +51,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
         public static AstFilter TranslateLambda(TranslationContext context, LambdaExpression lambdaExpression, IBsonSerializer parameterSerializer)
         {
             var parameterExpression = lambdaExpression.Parameters.Single();
-            var parameterSymbol = context.CreateFilterSymbol(parameterExpression, parameterSerializer, isCurrent: true);
+            var parameterSymbol = context.CreateSymbol(parameterExpression, parameterSerializer, isCurrent: true);
             var lambdaContext = context.WithSymbol(parameterSymbol);
             return Translate(lambdaContext, lambdaExpression.Body);
         }

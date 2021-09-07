@@ -119,7 +119,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
-                var rootVar = AstExpression.Var("ROOT", isCurrent: true);
 
                 AstExpression valueAst;
                 if (method.IsOneOf(__sumWithSelectorMethods))
@@ -131,6 +130,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 else
                 {
                     Ensure.That(sourceSerializer is IWrappedValueSerializer, "Expected sourceSerializer to be an IWrappedValueSerializer.", nameof(sourceSerializer));
+                    var rootVar = AstExpression.Var("ROOT", isCurrent: true);
                     valueAst = AstExpression.GetField(rootVar, "_v");
                 }
 

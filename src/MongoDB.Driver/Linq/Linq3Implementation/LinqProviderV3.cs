@@ -70,7 +70,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         {
             var parameter = expression.Parameters.Single();
             var context = new TranslationContext();
-            var symbol = context.CreateFilterSymbol(parameter, documentSerializer, isCurrent: true);
+            var symbol = context.CreateSymbol(parameter, documentSerializer, isCurrent: true);
             context = context.WithSymbol(symbol);
             var field = ExpressionToFilterFieldTranslator.Translate(context, expression.Body);
 
@@ -85,7 +85,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         {
             var parameter = expression.Parameters.Single();
             var context = new TranslationContext();
-            var symbol = context.CreateFilterSymbol(parameter, documentSerializer, isCurrent: true);
+            var symbol = context.CreateSymbol(parameter, documentSerializer, isCurrent: true);
             context = context.WithSymbol(symbol);
             var field = ExpressionToFilterFieldTranslator.Translate(context, expression.Body);
 

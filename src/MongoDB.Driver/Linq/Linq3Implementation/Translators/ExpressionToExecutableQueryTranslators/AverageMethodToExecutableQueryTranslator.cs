@@ -121,7 +121,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 var sourceExpression = arguments[0];
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
-                var root = AstExpression.Var("ROOT", isCurrent: true);
 
                 AstExpression valueExpression;
                 if (method.IsOneOf(__averageWithSelectorMethods))
@@ -133,6 +132,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 else
                 {
                     Ensure.That(sourceSerializer is IWrappedValueSerializer, "Expected sourceSerializer to be an IWrappedValueSerializer.", nameof(sourceSerializer));
+                    var root = AstExpression.Var("ROOT", isCurrent: true);
                     valueExpression = AstExpression.GetField(root, "_v");
                 }
 

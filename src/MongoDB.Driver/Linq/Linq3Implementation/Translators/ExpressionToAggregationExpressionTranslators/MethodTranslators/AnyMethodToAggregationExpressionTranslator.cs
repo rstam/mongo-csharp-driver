@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var predicateLambda = (LambdaExpression)arguments[1];
                 var predicateParameter = predicateLambda.Parameters[0];
                 var predicateParameterSerializer = ArraySerializerHelper.GetItemSerializer(sourceTranslation.Serializer);
-                var predicateSymbol = context.CreateExpressionSymbol(predicateParameter, predicateParameterSerializer);
+                var predicateSymbol = context.CreateSymbol(predicateParameter, predicateParameterSerializer);
                 var predicateContext = context.WithSymbol(predicateSymbol);
                 var predicateTranslation = ExpressionToAggregationExpressionTranslator.Translate(predicateContext, predicateLambda.Body);
 
