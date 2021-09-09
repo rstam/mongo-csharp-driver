@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             IEnumerable<AstVarBinding> vars,
             AstExpression @in)
         {
-            _vars = Ensure.IsNotNull(vars, nameof(vars)).AsReadOnlyList();
+            _vars = Ensure.IsNotNullAndDoesNotContainAnyNulls(vars, nameof(vars)).AsReadOnlyList();
             _in = Ensure.IsNotNull(@in, nameof(@in));
         }
 

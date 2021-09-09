@@ -94,9 +94,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             (AstVarBinding, AstExpression) TranslateObject(Expression objectExpression)
             {
                 var stringTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, objectExpression);
-                var stringVar = AstExpression.VarBinding("string", stringTranslation.Ast);
-                var stringAst = AstExpression.Var("string");
-                return (stringVar, stringAst);
+                var stringVar = AstExpression.Var("string");
+                var stringVarBinding = AstExpression.VarBinding(stringVar, stringTranslation.Ast);
+                return (stringVarBinding, stringVar);
             }
 
             string TranslateAnyOf(ReadOnlyCollection<Expression> arguments)

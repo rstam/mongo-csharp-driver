@@ -374,7 +374,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
             else
             {
-                var vars = new List<AstVarBinding>(2);
+                var vars = new List<AstVarBinding>(3);
                 if (var1 != null) { vars.Add(var1); }
                 if (var2 != null) { vars.Add(var2); }
                 if (var3 != null) { vars.Add(var3); }
@@ -706,9 +706,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
             else
             {
-                var var = AstExpression.VarBinding(name, expression);
-                var simpleAst = AstExpression.Var(name);
-                return (var, simpleAst);
+                var var = AstExpression.Var(name);
+                var varBinding = AstExpression.VarBinding(var, expression);
+                return (varBinding, var);
             }
 
             static bool IsSimple(AstExpression expression)
@@ -725,9 +725,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstVarExpression(name, isCurrent);
         }
 
-        public static AstVarBinding VarBinding(string name, AstExpression value)
+        public static AstVarBinding VarBinding(AstVarExpression var, AstExpression value)
         {
-            return new AstVarBinding(name, value);
+            return new AstVarBinding(var, value);
         }
 
         public static AstExpression Zip(IEnumerable<AstExpression> inputs, bool? useLongestLength = null, AstExpression defaults = null)

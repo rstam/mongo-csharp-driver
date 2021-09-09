@@ -666,7 +666,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
 
         public virtual AstNode VisitVarBinding(AstVarBinding node)
         {
-            return node.Update(VisitAndConvert(node.Value));
+            return node.Update(VisitAndConvert(node.Var), VisitAndConvert(node.Value));
         }
 
         public virtual AstNode VisitVarExpression(AstVarExpression node)

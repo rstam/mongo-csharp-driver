@@ -22,18 +22,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
     internal sealed class AstVarBinding : AstNode
     {
-        private readonly string _name;
         private readonly AstExpression _value;
+        private readonly AstVarExpression _var;
 
-        public AstVarBinding(string name, AstExpression value)
+        public AstVarBinding(AstVarExpression var, AstExpression value)
         {
-            _name = Ensure.IsNotNull(name, nameof(name));
+            _var = Ensure.IsNotNull(var, nameof(var));
             _value = Ensure.IsNotNull(value, nameof(value));
         }
 
-        public string Name => _name;
         public override AstNodeType NodeType => AstNodeType.VarBinding;
         public AstExpression Value => _value;
+        public AstVarExpression Var => _var;
 
         public override AstNode Accept(AstNodeVisitor visitor)
         {
@@ -47,22 +47,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 
         public BsonElement RenderAsElement()
         {
-            return new BsonElement(_name, _value.Render());
+            return new BsonElement(_var.Name, _value.Render());
         }
 
         public override string ToString()
         {
-            return $"\"{_name}\" : {_value.Render().ToJson()}";
+            return $"\"{_var.Name}\" : {_value.Render().ToJson()}";
         }
 
-        public AstVarBinding Update(AstExpression value)
+        public AstVarBinding Update(AstVarExpression var, AstExpression value)
         {
-            if (value == _value)
+            if (var == _var && value == _value)
             {
                 return this;
             }
 
-            return new AstVarBinding(_name, value);
+            return new AstVarBinding(_var, value);
         }
     }
 }

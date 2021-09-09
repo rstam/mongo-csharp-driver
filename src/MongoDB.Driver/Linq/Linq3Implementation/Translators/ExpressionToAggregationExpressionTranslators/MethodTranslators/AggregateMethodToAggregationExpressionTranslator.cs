@@ -53,15 +53,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     var funcContext = context.WithSymbols(accumulatorSymbol, itemSymbol);
                     var funcTranslation = ExpressionToAggregationExpressionTranslator.Translate(funcContext, funcLambda.Body);
 
-                    var sourceField = AstExpression.Var("source");
+                    var sourceVar = AstExpression.Var("source");
                     var ast = AstExpression.Let(
-                        var: AstExpression.VarBinding("source", sourceTranslation.Ast),
+                        var: AstExpression.VarBinding(sourceVar, sourceTranslation.Ast),
                         @in: AstExpression.Cond(
-                            @if: AstExpression.Lte(AstExpression.Size(sourceField), 1),
-                            @then: AstExpression.ArrayElemAt(sourceField, 0),
+                            @if: AstExpression.Lte(AstExpression.Size(sourceVar), 1),
+                            @then: AstExpression.ArrayElemAt(sourceVar, 0),
                             @else: AstExpression.Reduce(
-                                input: AstExpression.Slice(sourceField, 1, int.MaxValue),
-                                initialValue: AstExpression.ArrayElemAt(sourceField, 0),
+                                input: AstExpression.Slice(sourceVar, 1, int.MaxValue),
+                                initialValue: AstExpression.ArrayElemAt(sourceVar, 0),
                                 @in: funcTranslation.Ast)));
 
                     return new AggregationExpression(expression, ast, itemSerializer);
@@ -97,7 +97,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                         var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
 
                         ast = AstExpression.Let(
-                            var: AstExpression.VarBinding(resultSelectorSymbol.Var.Name, ast),
+                            var: AstExpression.VarBinding(resultSelectorSymbol.Var, ast),
                             @in: resultSelectorTranslation.Ast);
                         serializer = BsonSerializer.LookupSerializer(resultSelectorLambda.ReturnType); // TODO: use known serializer
                     }

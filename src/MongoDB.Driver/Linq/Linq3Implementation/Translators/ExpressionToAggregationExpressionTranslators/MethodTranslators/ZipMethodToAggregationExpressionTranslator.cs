@@ -48,8 +48,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     input: AstExpression.Zip(new[] { firstTranslation.Ast, secondTranslation.Ast }),
                     @as: @as,
                     @in: AstExpression.Let(
-                        AstExpression.VarBinding(resultSelectorParameter1.Name, AstExpression.ArrayElemAt(@as, 0)),
-                        AstExpression.VarBinding(resultSelectorParameter2.Name, AstExpression.ArrayElemAt(@as, 1)),
+                        AstExpression.VarBinding(resultSelectorSymbol1.Var, AstExpression.ArrayElemAt(@as, 0)),
+                        AstExpression.VarBinding(resultSelectorSymbol2.Var, AstExpression.ArrayElemAt(@as, 1)),
                         @in: resultSelectorTranslation.Ast));
                 var serializer = IEnumerableSerializer.Create(resultSelectorTranslation.Serializer);
                 return new AggregationExpression(expression, ast, serializer);
