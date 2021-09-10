@@ -51,6 +51,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Abs, arg);
         }
 
+        public static AstAccumulatorExpression AccumulatorExpression(AstAccumulatorOperator @operator, AstExpression arg)
+        {
+            return new AstAccumulatorExpression(@operator, arg);
+        }
+
+        public static AstAccumulatorField AccumulatorField(string name, AstAccumulatorOperator @operator, AstExpression arg)
+        {
+            var value = new AstAccumulatorExpression(@operator, arg);
+            return new AstAccumulatorField(name, value);
+        }
+
+        public static AstAccumulatorField AccumulatorField(string name, AstAccumulatorExpression value)
+        {
+            return new AstAccumulatorField(name, value);
+        }
+
         public static AstExpression Add(params AstExpression[] args)
         {
             if (AllArgsAreConstantInt32s(args, out var values))
@@ -696,6 +712,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstExpression Trunc(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Trunc, arg);
+        }
+
+        public static AstExpression Unary(AstUnaryOperator @operator, AstExpression arg)
+        {
+            return new AstUnaryExpression(@operator, arg);
         }
 
         public static (AstVarBinding, AstExpression) UseVarIfNotSimple(string name, AstExpression expression)

@@ -25,19 +25,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 {
     internal sealed class AstGroupStage : AstStage
     {
-        private readonly IReadOnlyList<AstComputedField> _fields;
+        private readonly IReadOnlyList<AstAccumulatorField> _fields;
         private readonly AstExpression _id;
 
         public AstGroupStage(
             AstExpression id,
-            IEnumerable<AstComputedField> fields)
+            IEnumerable<AstAccumulatorField> fields)
         {
             _id = Ensure.IsNotNull(id, nameof(id));
             _fields = Ensure.IsNotNull(fields, nameof(fields)).AsReadOnlyList();
             Ensure.That(!_fields.Any(f => f.Path == "_id"), "An accumulator field of a $group stage cannot be named \"_id\".", nameof(fields));
         }
 
-        public IReadOnlyList<AstComputedField> Fields => _fields;
+        public IReadOnlyList<AstAccumulatorField> Fields => _fields;
         public AstExpression Id => _id;
         public override AstNodeType NodeType => AstNodeType.GroupStage;
 
@@ -53,7 +53,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstGroupStage Update(
             AstExpression id,
-            IEnumerable<AstComputedField> fields)
+            IEnumerable<AstAccumulatorField> fields)
         {
             if (id == _id && fields == _fields)
             {

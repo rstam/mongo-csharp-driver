@@ -32,11 +32,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             var queryable = subject.GroupBy(c => c.A, (k, g) => new { Result = g.Select(x => x).First() });
             var pipeline = Translate(queryable);
 
-            // note: the expected pipeline will be different once the AstPipelineOptimizer is implemented
             var expectedPipeline = new[]
             {
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Result : { $arrayElemAt : [{ $map : { input : '$_elements', as : 'x', in : '$$x' } }, 0] }, _id : 0 } }"
+                "{ $group : { _id : '$A', __agg0 : { $first : '$$ROOT' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }"
             };
             pipeline.Should().Equal(expectedPipeline.Select(json => BsonDocument.Parse(json)));
         }
@@ -49,11 +48,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             var queryable = subject.GroupBy(c => c.A).Select(g => new { Result = g.Select(x => x).First() });
             var pipeline = Translate(queryable);
 
-            // note: the expected pipeline will be different once the AstPipelineOptimizer is implemented
             var expectedPipeline = new[]
             {
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Result : { $arrayElemAt : [{ $map : { input : '$_elements', as : 'x', in : '$$x' } }, 0] }, _id : 0 } }"
+                "{ $group : { _id : '$A', __agg0 : { $first : '$$ROOT' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }"
             };
             pipeline.Should().Equal(expectedPipeline.Select(json => BsonDocument.Parse(json)));
         }
@@ -66,11 +64,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             var queryable = subject.GroupBy(c => c.A, (k, g) => new { Result = g.Select(x => x).Last() });
             var pipeline = Translate(queryable);
 
-            // note: the expected pipeline will be different once the AstPipelineOptimizer is implemented
             var expectedPipeline = new[]
             {
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Result : { $arrayElemAt : [{ $map : { input : '$_elements', as : 'x', in : '$$x' } }, -1] }, _id : 0 } }"
+                "{ $group : { _id : '$A', __agg0 : { $last : '$$ROOT' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }"
             };
             pipeline.Should().Equal(expectedPipeline.Select(json => BsonDocument.Parse(json)));
         }
@@ -83,11 +80,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             var queryable = subject.GroupBy(c => c.A).Select(g => new { Result = g.Select(x => x).Last() });
             var pipeline = Translate(queryable);
 
-            // note: the expected pipeline will be different once the AstPipelineOptimizer is implemented
             var expectedPipeline = new[]
             {
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Result : { $arrayElemAt : [{ $map : { input : '$_elements', as : 'x', in : '$$x' } }, -1] }, _id : 0 } }"
+                "{ $group : { _id : '$A', __agg0 : { $last : '$$ROOT' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }"
             };
             pipeline.Should().Equal(expectedPipeline.Select(json => BsonDocument.Parse(json)));
         }

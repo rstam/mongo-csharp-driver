@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             AstExpression groupBy,
             IEnumerable<BsonValue> boundaries,
             BsonValue @default = null,
-            IEnumerable<AstComputedField> output = null)
+            IEnumerable<AstAccumulatorField> output = null)
         {
             return new AstBucketStage(groupBy, boundaries,  @default, output);
         }
@@ -40,7 +40,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             AstExpression groupBy,
             int buckets,
             string granularity = null,
-            IEnumerable<AstComputedField> output = null)
+            IEnumerable<AstAccumulatorField> output = null)
         {
             return new AstBucketAutoStage(groupBy, buckets, granularity, output);
         }
@@ -102,18 +102,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             return new AstGraphLookupStage(from, startWith, connectFromField, connectToField, @as, maxDepth, depthField, restrictSearchWithMatch);
         }
 
-        public static AstStage Group(
+        public static AstGroupStage Group(
             AstExpression id,
-            IEnumerable<AstComputedField> fields)
+            IEnumerable<AstAccumulatorField> fields)
         {
             return new AstGroupStage(id, fields);
         }
 
         public static AstStage Group(
             AstExpression id,
-            params AstComputedField[] fields)
+            params AstAccumulatorField[] fields)
         {
-            return AstStage.Group(id, (IEnumerable<AstComputedField>)fields);
+            return AstStage.Group(id, (IEnumerable<AstAccumulatorField>)fields);
         }
 
         public static AstStage IndexStats()

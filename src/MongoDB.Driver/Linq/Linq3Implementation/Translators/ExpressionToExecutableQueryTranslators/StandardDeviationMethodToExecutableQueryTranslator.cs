@@ -270,7 +270,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
                 var sourceSerializer = pipeline.OutputSerializer;
 
-                var stdDevOperator = method.IsOneOf(__standardDeviationPopulationMethods) ? AstUnaryOperator.StdDevPop : AstUnaryOperator.StdDevSamp;
+                var stdDevOperator = method.IsOneOf(__standardDeviationPopulationMethods) ? AstAccumulatorOperator.StdDevPop : AstAccumulatorOperator.StdDevSamp;
                 AstExpression valueAst;
                 if (method.IsOneOf(__standardDeviationWithSelectorMethods))
                 {
@@ -291,7 +291,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     outputWrappedValueSerializer,
                     AstStage.Group(
                         id: BsonNull.Value,
-                        AstExpression.ComputedField("_v", AstExpression.StdDev(stdDevOperator, valueAst))),
+                        AstExpression.AccumulatorField("_v", stdDevOperator, valueAst)),
                     AstStage.Project(AstProject.ExcludeId()));
 
                 var finalizer = method.IsOneOf(__standardDeviationNullableMethods) ? __singleOrDefaultFinalizer : __singleFinalizer;

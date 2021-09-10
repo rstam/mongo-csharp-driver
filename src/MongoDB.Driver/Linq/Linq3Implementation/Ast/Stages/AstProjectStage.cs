@@ -167,6 +167,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
                 return this;
             }
 
+            if (specifications.SequenceEqual(_specifications, ReferenceEqualityComparer<AstProjectStageSpecification>.Instance))
+            {
+                return this;
+            }
+
             return new AstProjectStage(specifications);
         }
     }

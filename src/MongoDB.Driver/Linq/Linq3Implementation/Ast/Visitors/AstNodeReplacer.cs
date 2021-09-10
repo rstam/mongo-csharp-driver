@@ -20,7 +20,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
     internal sealed class AstNodeReplacer : AstNodeVisitor
     {
         #region static
-        public static AstNode Replace(AstNode node, (AstNode Original, AstNode Replacement)[] mappings)
+        public static AstNode Replace(AstNode node, params (AstNode Original, AstNode Replacement)[] mappings)
         {
             var replacer = new AstNodeReplacer(mappings);
             return replacer.Visit(node);

@@ -17,6 +17,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
 {
     internal enum AstNodeType
     {
+        AccumulatorExpression,
+        AccumulatorField,
         AddFieldsStage,
         AllFilterOperation,
         AndExpression,

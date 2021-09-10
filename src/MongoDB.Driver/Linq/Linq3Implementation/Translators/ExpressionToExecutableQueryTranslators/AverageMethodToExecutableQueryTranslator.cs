@@ -144,7 +144,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                     outputWrappedValueSerializer,
                     AstStage.Group(
                         id: BsonNull.Value,
-                        fields: AstExpression.ComputedField("_v", AstUnaryExpression.Avg(valueExpression))),
+                        fields: AstExpression.AccumulatorField("_v", AstAccumulatorOperator.Avg, valueExpression)),
                     AstStage.Project(AstProject.ExcludeId()));
 
                 return ExecutableQuery.Create(

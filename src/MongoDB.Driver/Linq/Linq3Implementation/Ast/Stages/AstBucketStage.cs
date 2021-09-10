@@ -28,13 +28,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         private readonly IReadOnlyList<BsonValue> _boundaries;
         private readonly BsonValue _default;
         private readonly AstExpression _groupBy;
-        private readonly IReadOnlyList<AstComputedField> _output;
+        private readonly IReadOnlyList<AstAccumulatorField> _output;
 
         public AstBucketStage(
             AstExpression groupBy,
             IEnumerable<BsonValue> boundaries,
             BsonValue @default = null,
-            IEnumerable<AstComputedField> output = null)
+            IEnumerable<AstAccumulatorField> output = null)
         {
             _groupBy = Ensure.IsNotNull(groupBy, nameof(groupBy));
             _boundaries = Ensure.IsNotNull(boundaries, nameof(boundaries)).AsReadOnlyList();
@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public BsonValue Default => _default;
         public AstExpression GroupBy => _groupBy;
         public override AstNodeType NodeType => AstNodeType.BucketStage;
-        public IReadOnlyList<AstComputedField> Output => _output;
+        public IReadOnlyList<AstAccumulatorField> Output => _output;
 
         public override AstNode Accept(AstNodeVisitor visitor)
         {
@@ -70,7 +70,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstBucketStage Update(
             AstExpression groupBy,
-            IEnumerable<AstComputedField> output)
+            IEnumerable<AstAccumulatorField> output)
         {
             if (groupBy == _groupBy && output == _output)
             {

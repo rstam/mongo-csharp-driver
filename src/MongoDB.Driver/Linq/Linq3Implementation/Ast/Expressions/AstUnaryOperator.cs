@@ -80,6 +80,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
     internal static class AstUnaryOperatorExtensions
     {
+        public static bool IsAccumulator(this AstUnaryOperator @operator, out AstAccumulatorOperator accumulatorOperator)
+        {
+            switch (@operator)
+            {
+                case AstUnaryOperator.AddToSet: accumulatorOperator = AstAccumulatorOperator.AddToSet; return true;
+                case AstUnaryOperator.Avg: accumulatorOperator = AstAccumulatorOperator.Avg; return true;
+                case AstUnaryOperator.First: accumulatorOperator = AstAccumulatorOperator.First; return true;
+                case AstUnaryOperator.Last: accumulatorOperator = AstAccumulatorOperator.Last; return true;
+                case AstUnaryOperator.Max: accumulatorOperator = AstAccumulatorOperator.Max; return true;
+                case AstUnaryOperator.Min: accumulatorOperator = AstAccumulatorOperator.Min; return true;
+                case AstUnaryOperator.Push: accumulatorOperator = AstAccumulatorOperator.Push; return true;
+                case AstUnaryOperator.StdDevPop: accumulatorOperator = AstAccumulatorOperator.StdDevPop; return true;
+                case AstUnaryOperator.StdDevSamp: accumulatorOperator = AstAccumulatorOperator.StdDevSamp; return true;
+                case AstUnaryOperator.Sum: accumulatorOperator = AstAccumulatorOperator.Sum; return true;
+                default: accumulatorOperator = default; return false;
+            }
+        }
+
         public static string Render(this AstUnaryOperator @operator)
         {
             switch (@operator)

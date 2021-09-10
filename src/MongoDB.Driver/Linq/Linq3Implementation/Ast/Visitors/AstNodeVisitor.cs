@@ -65,6 +65,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
             }
         }
 
+        public virtual AstNode VisitAccumulatorExpression(AstAccumulatorExpression node)
+        {
+            return node.Update(VisitAndConvert(node.Arg));
+        }
+
+        public virtual AstNode VisitAccumulatorField(AstAccumulatorField node)
+        {
+            return node.Update(VisitAndConvert(node.Value));
+        }
+
         public virtual AstNode VisitAddFieldsStage(AstAddFieldsStage node)
         {
             return  node.Update(VisitAndConvert(node.Fields));

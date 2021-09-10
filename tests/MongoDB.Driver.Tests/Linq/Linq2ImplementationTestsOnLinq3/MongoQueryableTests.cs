@@ -137,8 +137,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
             Assert(query,
                 1,
                 "{ $match: { 'B': { '$in': ['Baloon', 'Balloon'] } } }",
-                "{ $group : { '_id': '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { _v : { $max : '$_elements.C' }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { '_id': '$A', '__agg0': { '$max': '$C' } } }",
+                "{ $project: { '_v': '$__agg0', '_id': 0 } }");
         }
 
         [Fact]
@@ -377,16 +377,16 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { A : '$_id', Count : { $size : '$_elements' }, Min : { $min : '$_elements.U' }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id: '$A', __agg0: { $sum: 1 }, __agg1: { $min: '$U' } } }",
+                "{ $project: { A: '$_id', Count: '$__agg0', Min: '$__agg1', _id: 0 } }");
 
             query = CreateQuery()
                 .GroupBy(x => x.A, (key, x) => new { A = key, Count = x.Count(), Min = x.Min(y => y.U) });
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { A : '$_id', Count : { $size : '$_elements' }, Min : { $min : '$_elements.U' }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group : { _id : '$A', __agg0 : { $sum : 1 }, __agg1 : { $min : '$U' } } }",
+                "{ $project : { A : '$_id', Count : '$__agg0', Min : '$__agg1', _id : 0 } }");
         }
 
         [Fact]
@@ -398,8 +398,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $group : { _id : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _elements : { $push : '$$ROOT' } } }");
+                "{ $group : { _id: '$A', _elements : { $push : '$$ROOT' } } }",
+                "{ $group : { _id: { $let : { vars : { this : { $arrayElemAt : ['$_elements' , 0] } }, in : '$$this.B' } }, _elements : { $push : '$$ROOT' } } }");
         }
 
         [Fact]
@@ -411,8 +411,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Key : '$_id', FirstB : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'} } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg0.B', _id: 0 } }");
 
             query = CreateQuery()
                 .GroupBy(x => x.A)
@@ -420,8 +420,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Key : '$_id', FirstB : { $arrayElemAt : ['$_elements.B', 0] }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id: '$A', __agg0: { $first: '$B'} } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg0', _id: 0 } }");
         }
 
 #if !MONO
@@ -434,8 +434,17 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Key : '$_id', FirstB : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'} } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg0.B', _id: 0 } }");
+
+            query = from p in CreateQuery()
+                        group p by p.A into g
+                        select new { g.Key, FirstB = g.Select(x => x.B).First() };
+
+            Assert(query,
+                2,
+                "{ $group: { _id: '$A', __agg0: { $first: '$B'} } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg0', _id: 0 } }");
         }
 #endif
 
@@ -475,9 +484,20 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 1,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $match : { '_elements.0.B' : 'Balloon' } }",
-                "{ $project : { Key : '$_id', FirstB : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1: { $first: '$$ROOT'} } }", // TODO: detect duplicates
+                "{ $match: { '__agg0.B' : 'Balloon' } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg1.B', _id: 0 } }");
+
+            query = CreateQuery()
+                .GroupBy(x => x.A)
+                .Where(g => g.First().B == "Balloon")
+                .Select(x => new { x.Key, FirstB = x.Select(x => x.B).First() });
+
+            Assert(query,
+                1,
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1: { $first: '$B'} } }", // TODO: detect duplicates
+                "{ $match: { '__agg0.B' : 'Balloon' } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg1', _id: 0 } }");
         }
 
 #if !MONO
@@ -491,9 +511,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 1,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $match : { '_elements.0.B' : 'Balloon' } }",
-                "{ $project : { Key : '$_id', FirstB : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1: { $first: '$$ROOT'} } }", // TODO: detect duplicates
+                "{ $match: { '__agg0.B' : 'Balloon' } }",
+                "{ $project: { Key: '$_id', FirstB: '$__agg1.B', _id: 0 } }");
         }
 #endif
 
@@ -505,8 +525,16 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Key : '$_id', FirstB : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group: { _id : '$A', __agg0 : { $first: '$$ROOT'} } }",
+                "{ $project : { Key : '$_id', FirstB : '$__agg0.B', _id : 0 } }");
+
+            query = CreateQuery()
+                .GroupBy(x => x.A, (k, s) => new { Key = k, FirstB = s.Select(x => x.B).First() });
+
+            Assert(query,
+                2,
+                "{ $group: { _id : '$A', __agg0 : { $first: '$B'} } }",
+                "{ $project : { Key : '$_id', FirstB : '$__agg0', _id : 0 } }");
         }
 
         [Fact]
@@ -517,8 +545,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 2,
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Key : '$_id', FirstB : { $arrayElemAt : ['$_elements.B', 0] }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group : { _id : '$A', __agg0 : { $first : '$B' } } }",
+                "{ $project : { Key : '$_id', FirstB : '$__agg0', _id : 0 } }");
         }
 
         [SkippableFact]
@@ -1025,8 +1053,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 1,
-                "{ $project : { Yeah : '$A', _id : 0 } }",
-                "{ $match : { Yeah : 'Awesome' } }");
+                "{ $project: { Yeah: '$A', _id: 0 } }",
+                "{ $match: { Yeah: 'Awesome' } }");
         }
 
         [Fact]

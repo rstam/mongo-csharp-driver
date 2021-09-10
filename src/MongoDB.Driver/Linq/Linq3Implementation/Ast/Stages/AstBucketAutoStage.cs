@@ -28,13 +28,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         private readonly int _buckets;
         private readonly string _granularity;
         private readonly AstExpression _groupBy;
-        private readonly IReadOnlyList<AstComputedField> _output;
+        private readonly IReadOnlyList<AstAccumulatorField> _output;
 
         public AstBucketAutoStage(
             AstExpression groupBy,
             int buckets,
             string granularity = null,
-            IEnumerable<AstComputedField> output = null)
+            IEnumerable<AstAccumulatorField> output = null)
         {
             _groupBy = Ensure.IsNotNull(groupBy, nameof(groupBy));
             _buckets = Ensure.IsGreaterThanZero(buckets, nameof(buckets));
@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
         public string Granularity => _granularity;
         public AstExpression GroupBy => _groupBy;
         public override AstNodeType NodeType => AstNodeType.BucketAutoStage;
-        public IReadOnlyList<AstComputedField> Output => _output;
+        public IReadOnlyList<AstAccumulatorField> Output => _output;
 
         public override AstNode Accept(AstNodeVisitor visitor)
         {
@@ -70,7 +70,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
 
         public AstBucketAutoStage Update(
             AstExpression groupBy,
-            IEnumerable<AstComputedField> output)
+            IEnumerable<AstAccumulatorField> output)
         {
             if (groupBy == _groupBy && output == _output)
             {

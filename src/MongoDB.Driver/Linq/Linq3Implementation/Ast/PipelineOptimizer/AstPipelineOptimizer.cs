@@ -17,9 +17,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
 {
     internal static class AstPipelineOptimizer
     {
-        public static AstPipeline Optimize(AstPipeline unoptimizedPipeline)
+        public static AstPipeline Optimize(AstPipeline pipeline)
         {
-            return unoptimizedPipeline; // TODO: implement AstPipelineOptimizer
+            var groupOptimizer = new AstGroupPipelineOptimizer();
+            return groupOptimizer.Optimize(pipeline);
         }
     }
 }
