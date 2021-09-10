@@ -72,6 +72,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
 
             static bool IsOptimizableGroupStage(AstGroupStage groupStage)
             {
+                // { $group : { _id : ?, _elements : { $push : "$$ROOT" } } }
                 if (groupStage.Fields.Count == 1)
                 {
                     var field = groupStage.Fields[0];
@@ -240,6 +241,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
 
             public override AstNode VisitFilterField(AstFilterField node)
             {
+                // "_elements.0.X" => { __agg0 : { $first : "$$ROOT" } } + "__agg0.X"
                 if (node.Path.StartsWith("_elements.0."))
                 {
                     var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
@@ -257,23 +259,50 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
             {
                 var root = AstExpression.Var("ROOT", isCurrent: true);
 
-                if (node.Operator == AstUnaryOperator.Size)
+                if (TryOptimizeSizeOfElements(out var optimizedExpression))
                 {
-                    if (node.Arg is AstGetFieldExpression argGetFieldExpression &&
-                        argGetFieldExpression.FieldName is AstConstantExpression constantFieldNameExpression &&
-                        constantFieldNameExpression.Value.IsString &&
-                        constantFieldNameExpression.Value.AsString == "_elements")
-                    {
-                        var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
-                        var accumulatorExpression = AstExpression.AccumulatorExpression(AstAccumulatorOperator.Sum, 1);
-                        _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
-                        return AstExpression.GetField(root, accumulatorFieldName);
-                    }
+                    return optimizedExpression;
                 }
 
-                if (node.Operator.IsAccumulator(out var accumulatorOperator))
+                if (TryOptimizeAccumulatorOfElements(out optimizedExpression))
                 {
-                    if (node.Arg is AstGetFieldExpression getFieldExpression &&
+                    return optimizedExpression;
+                }
+
+                if (TryOptimizeAccumulatorOfMappedElements(out optimizedExpression))
+                {
+                    return optimizedExpression;
+                }
+
+                return base.VisitUnaryExpression(node);
+
+                bool TryOptimizeSizeOfElements(out AstExpression optimizedExpression)
+                {
+                    // { $size : "$_elements" } => { __agg0 : { $sum : 1 } } + "$__agg0"
+                    if (node.Operator == AstUnaryOperator.Size)
+                    {
+                        if (node.Arg is AstGetFieldExpression argGetFieldExpression &&
+                            argGetFieldExpression.FieldName is AstConstantExpression constantFieldNameExpression &&
+                            constantFieldNameExpression.Value.IsString &&
+                            constantFieldNameExpression.Value.AsString == "_elements")
+                        {
+                            var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
+                            var accumulatorExpression = AstExpression.AccumulatorExpression(AstAccumulatorOperator.Sum, 1);
+                            _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                            optimizedExpression = AstExpression.GetField(root, accumulatorFieldName);
+                            return true;
+                        }
+                    }
+
+                    optimizedExpression = null;
+                    return false;
+                }
+
+                bool TryOptimizeAccumulatorOfElements(out AstExpression optimizedExpression)
+                {
+                    // { $accumulator : { $getField : { input : "$$ROOT", field : "_elements" } } } => { __agg0 : { $accumulator : "$$ROOT" } } + "$__agg0"
+                    if (node.Operator.IsAccumulator(out var accumulatorOperator) &&
+                        node.Arg is AstGetFieldExpression getFieldExpression &&
                         getFieldExpression.FieldName is AstConstantExpression getFieldConstantFieldNameExpression &&
                         getFieldConstantFieldNameExpression.Value.IsString &&
                         getFieldConstantFieldNameExpression.Value == "_elements" &&
@@ -283,10 +312,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                         var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
                         var accumulatorExpression = AstExpression.AccumulatorExpression(accumulatorOperator, root);
                         _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
-                        return AstExpression.GetField(root, accumulatorFieldName);
+                        optimizedExpression = AstExpression.GetField(root, accumulatorFieldName);
+                        return true;
                     }
 
-                    if (node.Arg is AstMapExpression mapExpression &&
+                    optimizedExpression = null;
+                    return false;
+
+                }
+
+                bool TryOptimizeAccumulatorOfMappedElements(out AstExpression optimizedExpression)
+                {
+                    // { $accumulator : { $map : { input : { $getField : { input : "$$ROOT", field : "_elements" } }, as : "x", in : f(x) } } } => { __agg0 : { $accumulator : f(x => root) } } + "$__agg0"
+                    if (node.Operator.IsAccumulator(out var accumulatorOperator) &&
+                        node.Arg is AstMapExpression mapExpression &&
                         mapExpression.Input is AstGetFieldExpression mapInputGetFieldExpression &&
                         mapInputGetFieldExpression.FieldName is AstConstantExpression mapInputconstantFieldExpression &&
                         mapInputconstantFieldExpression.Value.IsString &&
@@ -298,11 +337,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                         var rewrittenArg = (AstExpression)AstNodeReplacer.Replace(mapExpression.In, (mapExpression.As, root));
                         var accumulatorExpression = AstExpression.AccumulatorExpression(accumulatorOperator, rewrittenArg);
                         _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
-                        return AstExpression.GetField(root, accumulatorFieldName);
+                        optimizedExpression = AstExpression.GetField(root, accumulatorFieldName);
+                        return true;
                     }
-                }
 
-                return base.VisitUnaryExpression(node);
+                    optimizedExpression = null;
+                    return false;
+                }
             }
         }
     }

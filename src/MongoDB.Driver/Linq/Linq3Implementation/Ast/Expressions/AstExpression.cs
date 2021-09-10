@@ -714,11 +714,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Trunc, arg);
         }
 
-        public static AstExpression Unary(AstUnaryOperator @operator, AstExpression arg)
-        {
-            return new AstUnaryExpression(@operator, arg);
-        }
-
         public static (AstVarBinding, AstExpression) UseVarIfNotSimple(string name, AstExpression expression)
         {
             if (IsSimple(expression))
