@@ -78,7 +78,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             AstVarExpression @as,
             AstExpression @in)
         {
-            if (input == _input && @as != _as && @in == _in)
+            if (input == _input && @as == _as && @in == _in)
             {
                 return this;
             }

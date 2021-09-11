@@ -46,7 +46,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstComputedArrayExpression Update(IEnumerable<AstExpression> items)
         {
-            if (items != _items)
+            if (items == _items)
             {
                 return this;
             }

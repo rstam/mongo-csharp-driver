@@ -46,7 +46,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstComputedDocumentExpression Update(IEnumerable<AstComputedField> fields)
         {
-            if (fields != _fields)
+            if (fields == _fields)
+            {
+                return this;
+            }
+
+            if (fields.SequenceEqual(_fields, ReferenceEqualityComparer<AstComputedField>.Instance))
             {
                 return this;
             }

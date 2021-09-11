@@ -1231,8 +1231,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
             Assert(query,
                 2,
                 "{ $project : { Id : '$_id', First : '$A', Second : '$B', _id : 0 } }",
-                "{ $group : { _id : '$First', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { First : '$_id', Stuff :  { $map : { input : '$_elements', as : 'y', in : { Id : '$$y.Id', Second : '$$y.Second' } } }, _id : 0 } }"); // TODO: push accumulators back to $group
+                "{ $group : { _id : '$First', __agg0 : { $push : { Id : '$Id', Second : '$Second' } } } }",
+                "{ $project : { First : '$_id', Stuff :  '$__agg0', _id : 0 } }");
         }
 
         [Fact]

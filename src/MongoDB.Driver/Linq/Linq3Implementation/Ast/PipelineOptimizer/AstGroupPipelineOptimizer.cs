@@ -255,6 +255,27 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                 return base.VisitFilterField(node);
             }
 
+            public override AstNode VisitMapExpression(AstMapExpression node)
+            {
+                // { $map : { input : { $getField : { input : "$$ROOT", field : "_elements" } }, as : "x", in : f(x) } } => { __agg0 : { $push : f(x => root) } } + "$__agg0"
+                if (node.Input is AstGetFieldExpression mapInputGetFieldExpression &&
+                    mapInputGetFieldExpression.FieldName is AstConstantExpression mapInputconstantFieldExpression &&
+                    mapInputconstantFieldExpression.Value.IsString &&
+                    mapInputconstantFieldExpression.Value.AsString == "_elements" &&
+                    mapInputGetFieldExpression.Input is AstVarExpression mapInputGetFieldVarExpression &&
+                    mapInputGetFieldVarExpression.Name == "ROOT")
+                {
+                    var root = AstExpression.Var("ROOT", isCurrent: true);
+                    var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
+                    var rewrittenArg = (AstExpression)AstNodeReplacer.Replace(node.In, (node.As, root));
+                    var accumulatorExpression = AstExpression.AccumulatorExpression(AstAccumulatorOperator.Push, rewrittenArg);
+                    _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                    return AstExpression.GetField(root, accumulatorFieldName);
+                }
+
+                return base.VisitMapExpression(node);
+            }
+
             public override AstNode VisitUnaryExpression(AstUnaryExpression node)
             {
                 var root = AstExpression.Var("ROOT", isCurrent: true);
