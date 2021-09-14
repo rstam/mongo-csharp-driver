@@ -38,23 +38,23 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     {
         public static string Render(this AstDatePart part)
         {
-            switch (part)
+            return part switch
             {
-                case AstDatePart.DayOfMonth: return "$dayOfMonth";
-                case AstDatePart.DayOfWeek: return "$dayOfWeek";
-                case AstDatePart.DayOfYear: return "$dayOfYear";
-                case AstDatePart.Hour: return "$hour";
-                case AstDatePart.IsoDayOfWeek: return "$isoDayOfWeek";
-                case AstDatePart.IsoWeek: return "$isoWeek";
-                case AstDatePart.IsoWeekYear: return "$isoWeekYear";
-                case AstDatePart.Millisecond: return "$millisecond";
-                case AstDatePart.Minute: return "$minute";
-                case AstDatePart.Month: return "$month";
-                case AstDatePart.Second: return "$second";
-                case AstDatePart.Week: return "$week";
-                case AstDatePart.Year: return "$year";
-                default: throw new InvalidOperationException($"Unexpected date part: {part}.");
-            }
+                AstDatePart.DayOfMonth => "$dayOfMonth",
+                AstDatePart.DayOfWeek => "$dayOfWeek",
+                AstDatePart.DayOfYear => "$dayOfYear",
+                AstDatePart.Hour => "$hour",
+                AstDatePart.IsoDayOfWeek => "$isoDayOfWeek",
+                AstDatePart.IsoWeek => "$isoWeek",
+                AstDatePart.IsoWeekYear => "$isoWeekYear",
+                AstDatePart.Millisecond => "$millisecond",
+                AstDatePart.Minute => "$minute",
+                AstDatePart.Month => "$month",
+                AstDatePart.Second => "$second",
+                AstDatePart.Week => "$week",
+                AstDatePart.Year => "$year",
+                _ => throw new InvalidOperationException($"Unexpected date part: {part}.")
+            };
         }
     }
 }

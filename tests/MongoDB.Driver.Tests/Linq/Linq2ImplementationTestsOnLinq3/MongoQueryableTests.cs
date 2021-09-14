@@ -484,9 +484,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 1,
-                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1: { $first: '$$ROOT'} } }", // TODO: detect duplicates
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'} } }",
                 "{ $match: { '__agg0.B' : 'Balloon' } }",
-                "{ $project: { Key: '$_id', FirstB: '$__agg1.B', _id: 0 } }");
+                "{ $project: { Key: '$_id', FirstB: '$__agg0.B', _id: 0 } }");
 
             query = CreateQuery()
                 .GroupBy(x => x.A)
@@ -495,7 +495,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 1,
-                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1: { $first: '$B'} } }", // TODO: detect duplicates
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1 : { $first : '$B' } } }",
                 "{ $match: { '__agg0.B' : 'Balloon' } }",
                 "{ $project: { Key: '$_id', FirstB: '$__agg1', _id: 0 } }");
         }
@@ -511,9 +511,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
 
             Assert(query,
                 1,
-                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'}, __agg1: { $first: '$$ROOT'} } }", // TODO: detect duplicates
+                "{ $group: { _id: '$A', __agg0: { $first: '$$ROOT'} } }",
                 "{ $match: { '__agg0.B' : 'Balloon' } }",
-                "{ $project: { Key: '$_id', FirstB: '$__agg1.B', _id: 0 } }");
+                "{ $project: { Key: '$_id', FirstB: '$__agg0.B', _id: 0 } }");
         }
 #endif
 

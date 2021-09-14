@@ -39,24 +39,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     {
         public static string Render(this AstNaryOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstNaryOperator.Add: return "$add";
-                case AstNaryOperator.Avg: return "$avg";
-                case AstNaryOperator.Concat: return "$concat";
-                case AstNaryOperator.ConcatArrays: return "$concatArrays";
-                case AstNaryOperator.Max: return "$max";
-                case AstNaryOperator.MergeObjects: return "$mergeObjects";
-                case AstNaryOperator.Min: return "$min";
-                case AstNaryOperator.Multiply: return "$multiply";
-                case AstNaryOperator.SetEquals: return "$setEquals";
-                case AstNaryOperator.SetIntersection: return "$setIntersection";
-                case AstNaryOperator.SetUnion: return "$setUnion";
-                case AstNaryOperator.StdDevPop: return "$stdDevPop";
-                case AstNaryOperator.StdDevSamp: return "$stdDevSamp";
-                case AstNaryOperator.Sum: return "$sum";
-                default: throw new InvalidOperationException($"Unexpected n-ary operator: {@operator}.");
-            }
+                AstNaryOperator.Add => "$add",
+                AstNaryOperator.Avg => "$avg",
+                AstNaryOperator.Concat => "$concat",
+                AstNaryOperator.ConcatArrays => "$concatArrays",
+                AstNaryOperator.Max => "$max",
+                AstNaryOperator.MergeObjects => "$mergeObjects",
+                AstNaryOperator.Min => "$min",
+                AstNaryOperator.Multiply => "$multiply",
+                AstNaryOperator.SetEquals => "$setEquals",
+                AstNaryOperator.SetIntersection => "$setIntersection",
+                AstNaryOperator.SetUnion => "$setUnion",
+                AstNaryOperator.StdDevPop => "$stdDevPop",
+                AstNaryOperator.StdDevSamp => "$stdDevSamp",
+                AstNaryOperator.Sum => "$sum",
+                _ => throw new InvalidOperationException($"Unexpected n-ary operator: {@operator}.")
+            };
         }
     }
 }

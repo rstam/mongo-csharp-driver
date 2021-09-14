@@ -14,7 +14,9 @@
 */
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
@@ -24,8 +26,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
 {
     internal class AstGroupPipelineOptimizer
     {
-        private int _nextAccumulatorFieldNumber;
-        private List<AstAccumulatorField> _newAccumulatorFields = new();
+        private readonly AccumulatorSet _accumulators = new AccumulatorSet();
 
         public AstPipeline Optimize(AstPipeline pipeline)
         {
@@ -41,31 +42,28 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
             return pipeline;
         }
 
-        private void AddAccumulatorField(string name, AstAccumulatorExpression value)
-        {
-            _newAccumulatorFields.Add(AstExpression.AccumulatorField(name, value));
-        }
-
-        private string GetNextAccumulatorFieldName()
-        {
-            return $"__agg{_nextAccumulatorFieldNumber++}";
-        }
-
         private AstPipeline OptimizeGroupStage(AstPipeline pipeline, int i, AstGroupStage groupStage)
         {
-            if (IsOptimizableGroupStage(groupStage))
+            try
             {
-                var followingStages = GetFollowingStagesToOptimize(pipeline, i + 1);
-                if (followingStages == null)
+                if (IsOptimizableGroupStage(groupStage))
                 {
-                    return pipeline;
-                }
+                    var followingStages = GetFollowingStagesToOptimize(pipeline, i + 1);
+                    if (followingStages == null)
+                    {
+                        return pipeline;
+                    }
 
-                var mappings = OptimizeGroupAndFollowingStages(groupStage, followingStages);
-                if (mappings.Length > 0 && NoReferencesToElementsRemain(mappings))
-                {
-                    return (AstPipeline)AstNodeReplacer.Replace(pipeline, mappings);
+                    var mappings = OptimizeGroupAndFollowingStages(groupStage, followingStages);
+                    if (mappings.Length > 0)
+                    {
+                        return (AstPipeline)AstNodeReplacer.Replace(pipeline, mappings);
+                    }
                 }
+            }
+            catch (UnableToRemoveReferenceToElementsException)
+            {
+                // wasn't able to optimize away all references to _elements
             }
 
             return pipeline;
@@ -130,11 +128,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                     };
                 }
             }
-
-            static bool NoReferencesToElementsRemain((AstNode, AstNode)[] mappings)
-            {
-                return true; // TODO: figure out how to correctly determine that no references to _elements remain
-            }
         }
 
         private (AstNode, AstNode)[] OptimizeGroupAndFollowingStages(AstGroupStage groupStage, List<AstStage> followingStages)
@@ -150,9 +143,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                 }
             }
 
-            if (_newAccumulatorFields.Count > 0)
+            if (_accumulators.Count > 0)
             {
-                var newGroupStage = AstStage.Group(groupStage.Id, _newAccumulatorFields);
+                var newGroupStage = AstStage.Group(groupStage.Id, _accumulators);
                 mappings.Add((groupStage, newGroupStage));
             }
 
@@ -179,7 +172,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
 
         private AstStage OptimizeMatchStage(AstMatchStage stage)
         {
-            var optimizedFilter = AccumulatorMover.MoveAccumulators(this, stage.Filter);
+            var optimizedFilter = AccumulatorMover.MoveAccumulators(_accumulators, stage.Filter);
             return stage.Update(optimizedFilter);
         }
 
@@ -207,7 +200,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
 
         private AstProjectStageSpecification OptimizeProjectStageSetFieldSpecification(AstProjectStageSetFieldSpecification specification)
         {
-            var optimizedValue = AccumulatorMover.MoveAccumulators(this, specification.Value);
+            var optimizedValue = AccumulatorMover.MoveAccumulators(_accumulators, specification.Value);
             return specification.Update(optimizedValue);
         }
 
@@ -221,22 +214,53 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
             return stage;
         }
 
+        private class AccumulatorSet : IEnumerable<AstAccumulatorField>
+        {
+            private int _accumulatorCounter;
+            private readonly List<AstAccumulatorField> _accumulatorFields = new();
+            private readonly List<BsonValue> _renderedAccumulatorExpressions = new();
+
+            public int Count => _accumulatorFields.Count;
+
+            public string AddAccumulatorExpression(AstAccumulatorExpression value)
+            {
+                var renderedAccumulatorExpression = value.Render();
+
+                for (var i = 0; i < _renderedAccumulatorExpressions.Count; i++)
+                {
+                    if (_renderedAccumulatorExpressions[i].Equals(renderedAccumulatorExpression))
+                    {
+                        return _accumulatorFields[i].Path;
+                    }
+                }
+
+                var accumulatorFieldName = $"__agg{_accumulatorCounter++}";
+                var accumulatorField = AstExpression.AccumulatorField(accumulatorFieldName, value);
+                _accumulatorFields.Add(accumulatorField);
+                _renderedAccumulatorExpressions.Add(renderedAccumulatorExpression);
+                return accumulatorFieldName;
+            }
+
+            public IEnumerator<AstAccumulatorField> GetEnumerator() => _accumulatorFields.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+        }
+
         private class AccumulatorMover : AstNodeVisitor
         {
             #region static
-            public static TNode MoveAccumulators<TNode>(AstGroupPipelineOptimizer optimizer, TNode node)
+            public static TNode MoveAccumulators<TNode>(AccumulatorSet accumulators, TNode node)
                 where TNode : AstNode
             {
-                var mover = new AccumulatorMover(optimizer);
+                var mover = new AccumulatorMover(accumulators);
                 return mover.VisitAndConvert(node);
             }
             #endregion
 
-            private AstGroupPipelineOptimizer _groupOptimizer;
+            private readonly AccumulatorSet _accumulators;
 
-            public AccumulatorMover(AstGroupPipelineOptimizer groupOptimizer)
+            private AccumulatorMover(AccumulatorSet accumulator)
             {
-                _groupOptimizer = groupOptimizer;
+                _accumulators = accumulator;
             }
 
             public override AstNode VisitFilterField(AstFilterField node)
@@ -244,15 +268,33 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                 // "_elements.0.X" => { __agg0 : { $first : "$$ROOT" } } + "__agg0.X"
                 if (node.Path.StartsWith("_elements.0."))
                 {
-                    var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
                     var accumulatorExpression = AstExpression.AccumulatorExpression(AstAccumulatorOperator.First, AstExpression.Var("ROOT"));
-                    _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                    var accumulatorFieldName = _accumulators.AddAccumulatorExpression(accumulatorExpression);
                     var restOfPath = node.Path.Substring("_elements.0.".Length);
                     var rewrittenPath = $"{accumulatorFieldName}.{restOfPath}";
                     return AstFilter.Field(rewrittenPath, node.Serializer);
                 }
 
+                if (node.Path == "_elements" || node.Path.StartsWith("_elements."))
+                {
+                    throw new UnableToRemoveReferenceToElementsException();
+                }
+
                 return base.VisitFilterField(node);
+            }
+
+            public override AstNode VisitGetFieldExpression(AstGetFieldExpression node)
+            {
+                if (node.FieldName is AstConstantExpression constantFieldName &&
+                    constantFieldName.Value.IsString &&
+                    constantFieldName.Value.AsString == "_elements" &&
+                    node.Input is AstVarExpression varExpression &&
+                    varExpression.Name == "ROOT")
+                {
+                    throw new UnableToRemoveReferenceToElementsException();
+                }
+
+                return base.VisitGetFieldExpression(node);
             }
 
             public override AstNode VisitMapExpression(AstMapExpression node)
@@ -266,10 +308,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                     mapInputGetFieldVarExpression.Name == "ROOT")
                 {
                     var root = AstExpression.Var("ROOT", isCurrent: true);
-                    var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
                     var rewrittenArg = (AstExpression)AstNodeReplacer.Replace(node.In, (node.As, root));
                     var accumulatorExpression = AstExpression.AccumulatorExpression(AstAccumulatorOperator.Push, rewrittenArg);
-                    _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                    var accumulatorFieldName = _accumulators.AddAccumulatorExpression(accumulatorExpression);
                     return AstExpression.GetField(root, accumulatorFieldName);
                 }
 
@@ -307,9 +348,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                             constantFieldNameExpression.Value.IsString &&
                             constantFieldNameExpression.Value.AsString == "_elements")
                         {
-                            var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
                             var accumulatorExpression = AstExpression.AccumulatorExpression(AstAccumulatorOperator.Sum, 1);
-                            _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                            var accumulatorFieldName = _accumulators.AddAccumulatorExpression(accumulatorExpression);
                             optimizedExpression = AstExpression.GetField(root, accumulatorFieldName);
                             return true;
                         }
@@ -330,9 +370,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                         getFieldExpression.Input is AstVarExpression getFieldInputVarExpression &&
                         getFieldInputVarExpression.Name == "ROOT")
                     {
-                        var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
                         var accumulatorExpression = AstExpression.AccumulatorExpression(accumulatorOperator, root);
-                        _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                        var accumulatorFieldName = _accumulators.AddAccumulatorExpression(accumulatorExpression);
                         optimizedExpression = AstExpression.GetField(root, accumulatorFieldName);
                         return true;
                     }
@@ -354,10 +393,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                         mapInputGetFieldExpression.Input is AstVarExpression mapInputGetFieldVarExpression &&
                         mapInputGetFieldVarExpression.Name == "ROOT")
                     {
-                        var accumulatorFieldName = _groupOptimizer.GetNextAccumulatorFieldName();
                         var rewrittenArg = (AstExpression)AstNodeReplacer.Replace(mapExpression.In, (mapExpression.As, root));
                         var accumulatorExpression = AstExpression.AccumulatorExpression(accumulatorOperator, rewrittenArg);
-                        _groupOptimizer.AddAccumulatorField(accumulatorFieldName, accumulatorExpression);
+                        var accumulatorFieldName = _accumulators.AddAccumulatorExpression(accumulatorExpression);
                         optimizedExpression = AstExpression.GetField(root, accumulatorFieldName);
                         return true;
                     }
@@ -366,6 +404,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                     return false;
                 }
             }
+        }
+
+        public class UnableToRemoveReferenceToElementsException : Exception
+        {
         }
     }
 }

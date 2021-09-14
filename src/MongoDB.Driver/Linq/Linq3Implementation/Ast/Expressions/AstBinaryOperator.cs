@@ -47,32 +47,32 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     {
         public static string Render(this AstBinaryOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstBinaryOperator.ArrayElemAt: return "$arrayElemAt";
-                case AstBinaryOperator.ATan2: return "$atan2";
-                case AstBinaryOperator.Cmp: return "$cmp";
-                case AstBinaryOperator.Divide: return "$divide";
-                case AstBinaryOperator.Eq: return "$eq";
-                case AstBinaryOperator.Gt: return "$gt";
-                case AstBinaryOperator.Gte: return "$gte";
-                case AstBinaryOperator.IfNull: return "$ifNull";
-                case AstBinaryOperator.In: return "$in";
-                case AstBinaryOperator.Log: return "$log";
-                case AstBinaryOperator.Lt: return "$lt";
-                case AstBinaryOperator.Lte: return "$lte";
-                case AstBinaryOperator.Mod: return "$mod";
-                case AstBinaryOperator.Ne: return "$ne";
-                case AstBinaryOperator.Pow: return "$pow";
-                case AstBinaryOperator.Round: return "$round";
-                case AstBinaryOperator.SetDifference: return "$setDifference";
-                case AstBinaryOperator.SetIsSubset: return "$setIsSubset";
-                case AstBinaryOperator.Split: return "$split";
-                case AstBinaryOperator.StrCaseCmp: return "$strcasecmp";
-                case AstBinaryOperator.Subtract: return "$subtract";
-                case AstBinaryOperator.Trunc: return "$trunc";
-                default: throw new InvalidOperationException($"Unexpected binary operator: {@operator}.");
-            }
+                AstBinaryOperator.ArrayElemAt => "$arrayElemAt",
+                AstBinaryOperator.ATan2 => "$atan2",
+                AstBinaryOperator.Cmp => "$cmp",
+                AstBinaryOperator.Divide => "$divide",
+                AstBinaryOperator.Eq => "$eq",
+                AstBinaryOperator.Gt => "$gt",
+                AstBinaryOperator.Gte => "$gte",
+                AstBinaryOperator.IfNull => "$ifNull",
+                AstBinaryOperator.In => "$in",
+                AstBinaryOperator.Log => "$log",
+                AstBinaryOperator.Lt => "$lt",
+                AstBinaryOperator.Lte => "$lte",
+                AstBinaryOperator.Mod => "$mod",
+                AstBinaryOperator.Ne => "$ne",
+                AstBinaryOperator.Pow => "$pow",
+                AstBinaryOperator.Round => "$round",
+                AstBinaryOperator.SetDifference => "$setDifference",
+                AstBinaryOperator.SetIsSubset => "$setIsSubset",
+                AstBinaryOperator.Split => "$split",
+                AstBinaryOperator.StrCaseCmp => "$strcasecmp",
+                AstBinaryOperator.Subtract => "$subtract",
+                AstBinaryOperator.Trunc => "$trunc",
+                _ => throw new InvalidOperationException($"Unexpected binary operator: {@operator}.")
+            };
         }
     }
 }

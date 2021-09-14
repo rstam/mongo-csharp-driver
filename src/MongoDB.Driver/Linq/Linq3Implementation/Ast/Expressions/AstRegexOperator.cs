@@ -28,13 +28,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     {
         public static string Render(this AstRegexOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstRegexOperator.Find: return "$regexFind";
-                case AstRegexOperator.FindAll: return "$regexFindAll";
-                case AstRegexOperator.Match: return "$regexMatch";
-                default: throw new InvalidOperationException($"Unexpected regex operator: {@operator}.");
-            }
+                AstRegexOperator.Find => "$regexFind",
+                AstRegexOperator.FindAll => "$regexFindAll",
+                AstRegexOperator.Match => "$regexMatch",
+                _ => throw new InvalidOperationException($"Unexpected regex operator: {@operator}.")
+            };
         }
     }
 }

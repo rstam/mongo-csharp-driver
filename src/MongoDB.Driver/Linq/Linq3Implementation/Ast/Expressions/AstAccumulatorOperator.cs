@@ -36,21 +36,21 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     {
         public static string Render(this AstAccumulatorOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstAccumulatorOperator.AddToSet: return "$addToSet";
-                case AstAccumulatorOperator.Avg: return "$avg";
-                case AstAccumulatorOperator.First: return "$first";
-                case AstAccumulatorOperator.Last: return "$last";
-                case AstAccumulatorOperator.Max: return "$max";
-                case AstAccumulatorOperator.MergeObjects: return "$mergeObjects";
-                case AstAccumulatorOperator.Min: return "$min";
-                case AstAccumulatorOperator.Push: return "$push";
-                case AstAccumulatorOperator.StdDevPop: return "$stdDevPop";
-                case AstAccumulatorOperator.StdDevSamp: return "$stdDevSamp";
-                case AstAccumulatorOperator.Sum: return "$sum";
-                default: throw new InvalidOperationException($"Unexpected accumulator operator: {@operator}.");
-            }
+                AstAccumulatorOperator.AddToSet => "$addToSet",
+                AstAccumulatorOperator.Avg => "$avg",
+                AstAccumulatorOperator.First => "$first",
+                AstAccumulatorOperator.Last => "$last",
+                AstAccumulatorOperator.Max => "$max",
+                AstAccumulatorOperator.MergeObjects => "$mergeObjects",
+                AstAccumulatorOperator.Min => "$min",
+                AstAccumulatorOperator.Push => "$push",
+                AstAccumulatorOperator.StdDevPop => "$stdDevPop",
+                AstAccumulatorOperator.StdDevSamp => "$stdDevSamp",
+                AstAccumulatorOperator.Sum => "$sum",
+                _ => throw new InvalidOperationException($"Unexpected accumulator operator: {@operator}.")
+            };
         }
     }
 }

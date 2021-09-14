@@ -28,13 +28,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
     {
         public static string Render(this AstTernaryOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstTernaryOperator.Substr: return "$substr";
-                case AstTernaryOperator.SubstrBytes: return "$substrBytes";
-                case AstTernaryOperator.SubstrCP: return "$substrCP";
-                default: throw new InvalidOperationException($"Unexpected ternary operator: {@operator}.");
-            }
+                AstTernaryOperator.Substr => "$substr",
+                AstTernaryOperator.SubstrBytes => "$substrBytes",
+                AstTernaryOperator.SubstrCP => "$substrCP",
+                _ => throw new InvalidOperationException($"Unexpected ternary operator: {@operator}.")
+            };
         }
     }
 }

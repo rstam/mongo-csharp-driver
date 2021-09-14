@@ -31,16 +31,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
     {
         public static string Render(this AstComparisonFilterOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstComparisonFilterOperator.Eq: return "$eq";
-                case AstComparisonFilterOperator.Gt: return "$gt";
-                case AstComparisonFilterOperator.Gte: return "$gte";
-                case AstComparisonFilterOperator.Lt: return "$lt";
-                case AstComparisonFilterOperator.Lte: return "$lte";
-                case AstComparisonFilterOperator.Ne: return "$ne";
-                default: throw new InvalidOperationException($"Unexpected comparison filter operator: {@operator}.");
-            }
+                AstComparisonFilterOperator.Eq => "$eq",
+                AstComparisonFilterOperator.Gt => "$gt",
+                AstComparisonFilterOperator.Gte => "$gte",
+                AstComparisonFilterOperator.Lt => "$lt",
+                AstComparisonFilterOperator.Lte => "$lte",
+                AstComparisonFilterOperator.Ne => "$ne",
+                _ => throw new InvalidOperationException($"Unexpected comparison filter operator: {@operator}.")
+            };
         }
     }
 }

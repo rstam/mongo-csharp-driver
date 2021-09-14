@@ -100,67 +100,67 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public static string Render(this AstUnaryOperator @operator)
         {
-            switch (@operator)
+            return @operator switch
             {
-                case AstUnaryOperator.Abs: return "$abs";
-                case AstUnaryOperator.ACos: return "$acos";
-                case AstUnaryOperator.ACosh: return "$acosh";
-                case AstUnaryOperator.AddToSet: return "$addToSet";
-                case AstUnaryOperator.AllElementsTrue: return "$allElementsTrue";
-                case AstUnaryOperator.AnyElementTrue: return "$anyElementTrue";
-                case AstUnaryOperator.ArrayToObject: return "$arrayToObject";
-                case AstUnaryOperator.ASin: return "$asin";
-                case AstUnaryOperator.ASinh: return "$asinh";
-                case AstUnaryOperator.ATan: return "$atan";
-                case AstUnaryOperator.ATanh: return "$atanh";
-                case AstUnaryOperator.Avg: return "$avg";
-                case AstUnaryOperator.BinarySize: return "$binarySize";
-                case AstUnaryOperator.BsonSize: return "$bsonSize";
-                case AstUnaryOperator.Ceil: return "$ceil";
-                case AstUnaryOperator.Cos: return "$cos";
-                case AstUnaryOperator.DegreesToRadians: return "$degreesToRadians";
-                case AstUnaryOperator.Exp: return "$exp";
-                case AstUnaryOperator.First: return "$first";
-                case AstUnaryOperator.Floor: return "$floor";
-                case AstUnaryOperator.IsArray: return "$isArray";
-                case AstUnaryOperator.IsNumber: return "$isNumber";
-                case AstUnaryOperator.Last: return "$last";
-                case AstUnaryOperator.Literal: return "$literal";
-                case AstUnaryOperator.Ln: return "$ln";
-                case AstUnaryOperator.Log10: return "$log10";
-                case AstUnaryOperator.Max: return "$max";
-                case AstUnaryOperator.MergeObjects: return "$mergeObjects";
-                case AstUnaryOperator.Meta: return "$meta";
-                case AstUnaryOperator.Min: return "$min";
-                case AstUnaryOperator.Not: return "$not";
-                case AstUnaryOperator.ObjectToArray:return "$objectToArray";
-                case AstUnaryOperator.Push: return "$push";
-                case AstUnaryOperator.RadiansToDegrees: return "$radiansToDegrees";
-                case AstUnaryOperator.ReverseArray: return "$reverseArray";
-                case AstUnaryOperator.Round: return "$round";
-                case AstUnaryOperator.Sin: return "$sin";
-                case AstUnaryOperator.Size: return "$size";
-                case AstUnaryOperator.Sqrt: return "$sqrt";
-                case AstUnaryOperator.StdDevPop: return "$stdDevPop";
-                case AstUnaryOperator.StdDevSamp: return "$stdDevSamp";
-                case AstUnaryOperator.StrLenBytes: return "$strLenBytes";
-                case AstUnaryOperator.StrLenCP: return "$strLenCP";
-                case AstUnaryOperator.Sum: return "$sum";
-                case AstUnaryOperator.Tan: return "$tan";
-                case AstUnaryOperator.ToBool: return "$toBool";
-                case AstUnaryOperator.ToDate: return "$toDate";
-                case AstUnaryOperator.ToDecimal: return "$toDecimal";
-                case AstUnaryOperator.ToDouble: return "$toDouble";
-                case AstUnaryOperator.ToInt: return "$toInt";
-                case AstUnaryOperator.ToLong: return "$toLong";
-                case AstUnaryOperator.ToLower: return "$toLower";
-                case AstUnaryOperator.ToObjectId: return "$toObjectId";
-                case AstUnaryOperator.ToString: return "$toString";
-                case AstUnaryOperator.ToUpper: return "$toUpper";
-                case AstUnaryOperator.Trunc: return "$trunc";
-                case AstUnaryOperator.Type: return "$type";
-                default: throw new InvalidOperationException($"Unexpected unary operator: {@operator}.");
-            }
+                AstUnaryOperator.Abs => "$abs",
+                AstUnaryOperator.ACos => "$acos",
+                AstUnaryOperator.ACosh => "$acosh",
+                AstUnaryOperator.AddToSet => "$addToSet",
+                AstUnaryOperator.AllElementsTrue => "$allElementsTrue",
+                AstUnaryOperator.AnyElementTrue => "$anyElementTrue",
+                AstUnaryOperator.ArrayToObject => "$arrayToObject",
+                AstUnaryOperator.ASin => "$asin",
+                AstUnaryOperator.ASinh => "$asinh",
+                AstUnaryOperator.ATan => "$atan",
+                AstUnaryOperator.ATanh => "$atanh",
+                AstUnaryOperator.Avg => "$avg",
+                AstUnaryOperator.BinarySize => "$binarySize",
+                AstUnaryOperator.BsonSize => "$bsonSize",
+                AstUnaryOperator.Ceil => "$ceil",
+                AstUnaryOperator.Cos => "$cos",
+                AstUnaryOperator.DegreesToRadians => "$degreesToRadians",
+                AstUnaryOperator.Exp => "$exp",
+                AstUnaryOperator.First => "$first",
+                AstUnaryOperator.Floor => "$floor",
+                AstUnaryOperator.IsArray => "$isArray",
+                AstUnaryOperator.IsNumber => "$isNumber",
+                AstUnaryOperator.Last => "$last",
+                AstUnaryOperator.Literal => "$literal",
+                AstUnaryOperator.Ln => "$ln",
+                AstUnaryOperator.Log10 => "$log10",
+                AstUnaryOperator.Max => "$max",
+                AstUnaryOperator.MergeObjects => "$mergeObjects",
+                AstUnaryOperator.Meta => "$meta",
+                AstUnaryOperator.Min => "$min",
+                AstUnaryOperator.Not => "$not",
+                AstUnaryOperator.ObjectToArray => "$objectToArray",
+                AstUnaryOperator.Push => "$push",
+                AstUnaryOperator.RadiansToDegrees => "$radiansToDegrees",
+                AstUnaryOperator.ReverseArray => "$reverseArray",
+                AstUnaryOperator.Round => "$round",
+                AstUnaryOperator.Sin => "$sin",
+                AstUnaryOperator.Size => "$size",
+                AstUnaryOperator.Sqrt => "$sqrt",
+                AstUnaryOperator.StdDevPop => "$stdDevPop",
+                AstUnaryOperator.StdDevSamp => "$stdDevSamp",
+                AstUnaryOperator.StrLenBytes => "$strLenBytes",
+                AstUnaryOperator.StrLenCP => "$strLenCP",
+                AstUnaryOperator.Sum => "$sum",
+                AstUnaryOperator.Tan => "$tan",
+                AstUnaryOperator.ToBool => "$toBool",
+                AstUnaryOperator.ToDate => "$toDate",
+                AstUnaryOperator.ToDecimal => "$toDecimal",
+                AstUnaryOperator.ToDouble => "$toDouble",
+                AstUnaryOperator.ToInt => "$toInt",
+                AstUnaryOperator.ToLong => "$toLong",
+                AstUnaryOperator.ToLower => "$toLower",
+                AstUnaryOperator.ToObjectId => "$toObjectId",
+                AstUnaryOperator.ToString => "$toString",
+                AstUnaryOperator.ToUpper => "$toUpper",
+                AstUnaryOperator.Trunc => "$trunc",
+                AstUnaryOperator.Type => "$type",
+                _ => throw new InvalidOperationException($"Unexpected unary operator: {@operator}.")
+            };
         }
     }
 }

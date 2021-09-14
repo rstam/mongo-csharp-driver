@@ -35,8 +35,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             // note: the expected pipeline will be different once the AstPipelineOptimizer is implemented
             var expectedPipeline = new[]
             {
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Result : { $map : { input : '$_elements', as : 'x', in : '$$x' } }, _id : 0 } }"
+                "{ $group : { _id : '$A', __agg0 : { $push : '$$ROOT' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }"
             };
             pipeline.Should().Equal(expectedPipeline.Select(json => BsonDocument.Parse(json)));
         }
@@ -52,8 +52,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             // note: the expected pipeline will be different once the AstPipelineOptimizer is implemented
             var expectedPipeline = new[]
             {
-                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
-                "{ $project : { Result : { $map : { input : '$_elements', as : 'x', in : '$$x' } }, _id : 0 } }"
+                "{ $group : { _id : '$A', __agg0 : { $push : '$$ROOT' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }"
             };
             pipeline.Should().Equal(expectedPipeline.Select(json => BsonDocument.Parse(json)));
         }
