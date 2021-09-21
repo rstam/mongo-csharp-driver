@@ -47,20 +47,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public override BsonValue Render()
         {
-            var renderedInput = _input.Render();
-            if (renderedInput is BsonString inputPath && inputPath.Value.StartsWith("$"))
-            {
-                var renderedIn = _in.Render();
-                if (renderedIn is BsonString inPath && inPath.Value.StartsWith("$"))
-                {
-                    var prefix = $"$${_as.Name}.";
-                    if (inPath.Value.StartsWith(prefix))
-                    {
-                        return inputPath + "." + inPath.Value.Substring(prefix.Length);
-                    }
-                }
-            }
-
             return new BsonDocument
             {
                 { "$map", new BsonDocument

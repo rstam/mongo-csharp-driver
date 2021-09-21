@@ -19,6 +19,7 @@ using System.Linq.Expressions;
 using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators;
@@ -48,8 +49,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         {
             var context = new TranslationContext();
             var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, sourceSerializer, asRoot: true);
+            var simplifiedAst = AstSimplifier.Simplify(translation.Ast);
 
-            return translation.Ast.Render();
+            return simplifiedAst.Render();
         }
 
         internal override RenderedProjectionDefinition<TOutput> TranslateExpressionToBucketOutputProjection<TInput, TValue, TOutput>(
@@ -136,7 +138,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             var context = new TranslationContext();
             var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, inputSerializer, asRoot: true);
             var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(translation);
-            var renderedProjection = projectStage.Render().AsBsonDocument["$project"].AsBsonDocument;
+            var simplifiedProjectStage = AstSimplifier.Simplify(projectStage);
+            var renderedProjection = simplifiedProjectStage.Render().AsBsonDocument["$project"].AsBsonDocument;
 
             return new RenderedProjectionDefinition<TOutput>(renderedProjection, (IBsonSerializer<TOutput>)projectionSerializer);
         }

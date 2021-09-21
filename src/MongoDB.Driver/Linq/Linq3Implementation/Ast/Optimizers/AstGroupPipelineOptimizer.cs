@@ -22,25 +22,28 @@ using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
-namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
+namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
 {
     internal class AstGroupPipelineOptimizer
     {
-        private readonly AccumulatorSet _accumulators = new AccumulatorSet();
-
-        public AstPipeline Optimize(AstPipeline pipeline)
+        #region static
+        public static AstPipeline Optimize(AstPipeline pipeline)
         {
+            var optimizer = new AstGroupPipelineOptimizer();
             for (var i = 0; i < pipeline.Stages.Count; i++)
             {
                 var stage = pipeline.Stages[i];
                 if (stage is AstGroupStage groupStage)
                 {
-                    pipeline = OptimizeGroupStage(pipeline, i, groupStage);
+                    pipeline = optimizer.OptimizeGroupStage(pipeline, i, groupStage);
                 }
             }
 
             return pipeline;
         }
+        #endregion
+
+        private readonly AccumulatorSet _accumulators = new AccumulatorSet();
 
         private AstPipeline OptimizeGroupStage(AstPipeline pipeline, int i, AstGroupStage groupStage)
         {
@@ -143,11 +146,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
                 }
             }
 
-            if (_accumulators.Count > 0)
-            {
-                var newGroupStage = AstStage.Group(groupStage.Id, _accumulators);
-                mappings.Add((groupStage, newGroupStage));
-            }
+            var newGroupStage = AstStage.Group(groupStage.Id, _accumulators);
+            mappings.Add((groupStage, newGroupStage));
 
             return mappings.ToArray();
         }

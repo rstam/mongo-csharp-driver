@@ -19,44 +19,29 @@ using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
-    internal sealed class AstVarExpression : AstExpression
+    internal sealed class AstFieldPathExpression : AstExpression
     {
-        private readonly bool _isCurrent;
-        private readonly string _name;
+        private readonly string _path;
 
-        public AstVarExpression(string name, bool isCurrent = false)
+        public AstFieldPathExpression(string path)
         {
-            _name = Ensure.IsNotNullOrEmpty(name, nameof(name));
-            _isCurrent = isCurrent;
+            _path = Ensure.IsNotNullOrEmpty(path, nameof(path));
         }
 
-        public bool IsCurrent => _isCurrent;
-        public string Name => _name;
-        public override AstNodeType NodeType => AstNodeType.VarExpression;
+        public string Path => _path;
+        public override AstNodeType NodeType => AstNodeType.FieldPathExpression;
 
         public override AstNode Accept(AstNodeVisitor visitor)
         {
-            return visitor.VisitVarExpression(this);
+            return visitor.VisitFieldPathExpression(this);
         }
 
-        public AstVarExpression AsNotCurrent()
-        {
-            return _isCurrent ? new AstVarExpression(_name, isCurrent: false) : this;
-        }
-
-        public override bool CanBeConvertedToFieldPath()
-        {
-            return true;
-        }
-
-        public override string ConvertToFieldPath()
-        {
-            return "$$" + _name;
-        }
+        public override bool CanBeConvertedToFieldPath() => true;
+        public override string ConvertToFieldPath() => _path;
 
         public override BsonValue Render()
         {
-            return "$$" + _name;
+            return _path; // _path includes leading "$" or "$$"
         }
     }
 }

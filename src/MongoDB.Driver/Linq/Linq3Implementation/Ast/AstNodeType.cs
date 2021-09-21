@@ -53,6 +53,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         FacetStage,
         FacetStageFacet,
         FieldOperationFilter,
+        FieldPathExpression,
         FilterExpression,
         FilterField,
         FindProjection,

@@ -15,7 +15,6 @@
 
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators;
 
@@ -26,16 +25,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
         public static string GetFieldPath(this LambdaExpression fieldSelectorLambda, TranslationContext context, IBsonSerializer parameterSerializer)
         {
             var fieldSelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, fieldSelectorLambda, parameterSerializer, asRoot: true);
-            if (fieldSelectorTranslation.Ast is AstGetFieldExpression getFieldExpression)
+            if (fieldSelectorTranslation.Ast.CanBeConvertedToFieldPath())
             {
-                var renderedFieldSelector = getFieldExpression.Render();
-                if (renderedFieldSelector.IsString)
+                var path = fieldSelectorTranslation.Ast.ConvertToFieldPath();
+                if (path.Length >= 2 && path[0] == '$' && path[1] != '$')
                 {
-                    var path = renderedFieldSelector.AsString;
-                    if (path.Length >= 2 && path[0] == '$' && path[1] != '$')
-                    {
-                        return path.Substring(1);
-                    }
+                    return path.Substring(1);
                 }
             }
 

@@ -28,19 +28,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public AstSliceExpression(
             AstExpression array,
-            AstExpression n)
-        {
-            _array = Ensure.IsNotNull(array, nameof(array));
-            _n = Ensure.IsNotNull(n, nameof(n));
-        }
-
-        public AstSliceExpression(
-            AstExpression array,
             AstExpression position,
             AstExpression n)
         {
             _array = Ensure.IsNotNull(array, nameof(array));
-            _position = Ensure.IsNotNull(position, nameof(position));
+            _position = position; // can be null
             _n = Ensure.IsNotNull(n, nameof(n));
         }
 

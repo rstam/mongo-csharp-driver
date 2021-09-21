@@ -24,6 +24,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Linq;
 using MongoDB.Driver.Linq.Linq3Implementation;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipelineTranslators;
 using MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3;
@@ -38,7 +39,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new RootView { Property = g.Key, Field = g.First().B });
 
-            result.Projection.Should().Be("{ $project : { Property : '$_id', Field : { $let : { vars : { this : { $arrayElemAt : [ '$_elements', 0 ] } }, in : '$$this.B' } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $first : '$$ROOT' } } }",
+                "{ $project : { Property : '$_id', Field : '$__agg0.B', _id : 0 } }");
 
             result.Value.Property.Should().Be("Amazing");
             result.Value.Field.Should().Be("Baby");
@@ -49,7 +53,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new RootView(g.Key) { Field = g.First().B });
 
-            result.Projection.Should().Be("{ $project : { Property : '$_id', Field : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $first : '$$ROOT' } } }",
+                "{ $project : { Property : '$_id', Field : '$__agg0.B', _id : 0 } }");
 
             result.Value.Property.Should().Be("Amazing");
             result.Value.Field.Should().Be("Baby");
@@ -60,7 +67,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { _id = g.Key });
 
-            result.Projection.Should().Be("{ $project : { _id : '$_id' } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A' } }",
+                "{ $project : { _id : '$_id' } }");
 
             result.Value._id.Should().Be("Amazing");
         }
@@ -70,7 +80,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Test = g.Key });
 
-            result.Projection.Should().Be("{ $project : { Test : '$_id', _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A' } }",
+                "{ $project : { Test : '$_id', _id : 0 } }");
 
             result.Value.Test.Should().Be("Amazing");
         }
@@ -80,7 +93,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = new HashSet<int>(g.Select(x => x.C.E.F)) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $setUnion : ['$_elements.C.E.F'] }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : '$C.E.F' } } }",
+                "{ $project : { Result : { $setUnion : ['$__agg0'] }, _id : 0 } }");
 
             result.Value.Result.Should().Equal(111);
         }
@@ -90,7 +106,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).Distinct() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $setIntersection : ['$_elements.C.E.F'] }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : '$C.E.F' } } }",
+                "{ $project : { Result : { $setIntersection : ['$__agg0'] }, _id : 0 } }");
 
             result.Value.Result.Should().Equal(111);
         }
@@ -100,7 +119,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Average(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $avg : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                 result.Stages,
+               "{ $group : { _id : '$A', __agg0 : { $avg : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -110,7 +132,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).Average() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $avg : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $avg : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -120,7 +145,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Count() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $size : '$_elements' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $sum : 1 } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(1);
         }
@@ -130,7 +158,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Count(x => x.A != "Awesome") });
 
-            result.Projection.Should().Be("{ $project : { Result : { $size : { $filter : { input : '$_elements', as : 'x', cond : { $ne : ['$$x.A', 'Awesome' ] } } } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
+                "{ $project : { Result : { $size : { $filter : { input : '$_elements', as : 'x', cond : { $ne : ['$$x.A', 'Awesome' ] } } } }, _id : 0 } }");
 
             result.Value.Result.Should().Be(1);
         }
@@ -140,7 +171,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Where(x => x.A != "Awesome").Count() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $size : { $filter : { input : '$_elements', as : 'x', cond : { $ne : ['$$x.A', 'Awesome'] } } } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
+                "{ $project : { Result : { $size : { $filter : { input : '$_elements', as : 'x', cond : { $ne : ['$$x.A', 'Awesome'] } } } }, _id : 0 } }");
 
             result.Value.Result.Should().Be(1);
         }
@@ -150,7 +184,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => new { A = x.A }).Count(x => x.A != "Awesome") });
 
-            result.Projection.Should().Be("{ $project : { Result : { $size : { $filter : { input : { $map : { input : '$_elements', as : 'x', in : { A : '$$x.A' } } }, as : 'x', cond : { $ne : ['$$x.A', 'Awesome'] } } } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : { A : '$A' } } } }",
+                "{ $project : { Result : { $size : { $filter : { input : '$__agg0', as : 'x', cond : { $ne : ['$$x.A', 'Awesome'] } } } }, _id : 0 } }");
 
             result.Value.Result.Should().Be(1);
         }
@@ -160,7 +197,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => new { A = x.A }).Count() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $size : { $map : { input : '$_elements', as : 'x', in : { A : '$$x.A' } } } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : { A : '$A' } } } }",
+                "{ $project : { Result : { $size : '$__agg0' }, _id : 0 } }");
 
             result.Value.Result.Should().Be(1);
         }
@@ -170,7 +210,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.LongCount() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $size : '$_elements' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $sum : 1 } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(1);
         }
@@ -180,7 +223,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { B = g.Select(x => x.B).First() });
 
-            result.Projection.Should().Be("{ $project : { B : { $arrayElemAt : ['$_elements.B', 0] }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $first : '$B' } } }",
+                "{ $project : { B : '$__agg0', _id : 0 } }");
 
             result.Value.B.Should().Be("Baby");
         }
@@ -190,7 +236,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { g.First().B });
 
-            result.Projection.Should().Be("{ $project : { B : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $first : '$$ROOT' } } }",
+                "{ $project : { B : '$__agg0.B', _id : 0 } }");
 
             result.Value.B.Should().Be("Baby");
         }
@@ -200,7 +249,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { B = g.Select(x => x.B).Last() });
 
-            result.Projection.Should().Be("{ $project : { B : { $arrayElemAt : ['$_elements.B', -1] }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $last : '$B' } } }",
+                "{ $project : { B : '$__agg0', _id : 0 } }");
 
             result.Value.B.Should().Be("Baby");
         }
@@ -210,7 +262,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { g.Last().B });
 
-            result.Projection.Should().Be("{ $project : { B : { $let : { vars : { this : { $arrayElemAt : ['$_elements', -1] } }, in : '$$this.B' } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $last : '$$ROOT' } } }",
+                "{ $project : { B : '$__agg0.B', _id : 0 } }");
 
             result.Value.B.Should().Be("Baby");
         }
@@ -220,7 +275,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { g.Last(x => x.A != "").B }); // TODO: there is an issue when no items match the predicate for Last
 
-            result.Projection.Should().Be("{ $project : { B : { $let : { vars : { this : { $arrayElemAt : [{ $filter : { input : '$_elements', as : 'x', cond : { $ne : ['$$x.A', ''] } } }, -1] } }, in : '$$this.B' } }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', _elements : { $push : '$$ROOT' } } }",
+                "{ $project : { B : { $let : { vars : { this : { $arrayElemAt : [{ $filter : { input : '$_elements', as : 'x', cond : { $ne : ['$$x.A', ''] } } }, -1] } }, in : '$$this.B' } }, _id : 0 } }");
 
             result.Value.B.Should().Be("Baby");
         }
@@ -230,7 +288,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Max(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $max : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $max : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -240,7 +301,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).Max() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $max : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $max : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -250,7 +314,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Min(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $min : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $min : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -260,7 +327,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).Min() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $min : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $min : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -270,7 +340,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : '$_elements.C.E.F', _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Equal(111);
         }
@@ -280,7 +353,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).ToArray() });
 
-            result.Projection.Should().Be("{ $project : { Result : '$_elements.C.E.F', _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Equal(111);
         }
@@ -290,7 +366,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = new List<int>(g.Select(x => x.C.E.F)) });
 
-            result.Projection.Should().Be("{ $project : { Result : '$_elements.C.E.F', _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Equal(111);
         }
@@ -300,7 +379,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).ToList() });
 
-            result.Projection.Should().Be("{ $project : { Result : '$_elements.C.E.F', _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $push : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Equal(111);
         }
@@ -312,7 +394,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
 
             var result = Group(x => 1, g => new { Result = g.StandardDeviationPopulation(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $stdDevPop : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : 1, __agg0 : { $stdDevPop : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(50);
         }
@@ -324,7 +409,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
 
             var result = Group(x => 1, g => new { Result = g.Select(x => x.C.E.F).StandardDeviationPopulation() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $stdDevPop : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : 1, __agg0 : { $stdDevPop : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(50);
         }
@@ -336,7 +424,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
 
             var result = Group(x => 1, g => new { Result = g.StandardDeviationSample(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $stdDevSamp : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : 1, __agg0 : { $stdDevSamp : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().BeApproximately(70.7106781156545, .0001);
         }
@@ -348,7 +439,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
 
             var result = Group(x => 1, g => new { Result = g.Select(x => x.C.E.F).StandardDeviationSample() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $stdDevSamp : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : 1, __agg0 : { $stdDevSamp : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().BeApproximately(70.7106781156545, .0001);
         }
@@ -358,7 +452,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Sum(x => x.C.E.F) });
 
-            result.Projection.Should().Be("{ $project : { Result : { $sum : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $sum : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -368,7 +465,10 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         {
             var result = Group(x => x.A, g => new { Result = g.Select(x => x.C.E.F).Sum() });
 
-            result.Projection.Should().Be("{ $project : { Result : { $sum : '$_elements.C.E.F' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : '$A', __agg0 : { $sum : '$C.E.F' } } }",
+                "{ $project : { Result : '$__agg0', _id : 0 } }");
 
             result.Value.Result.Should().Be(111);
         }
@@ -386,16 +486,29 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
                 Max = g.Max(x => x.C.E.F + x.C.E.H)
             });
 
-            result.Projection.Should().Be(
+            AssertStages(
+                result.Stages,
+                @"
+                {
+                    $group : {
+                        _id : '$A',
+                        __agg0 : { $sum : 1 },
+                        __agg1 : { $sum : { $add : ['$C.E.F', '$C.E.H'] } },
+                        __agg2 : { $first : '$$ROOT' },
+                        __agg3 : { $last : '$$ROOT' },
+                        __agg4 : { $min : { $add : ['$C.E.F', '$C.E.H'] } },
+                        __agg5 : { $max : { $add : ['$C.E.F', '$C.E.H'] } }
+                    }
+                }",
                 @"
                 {
                     $project : {
-                        Count : { $size : '$_elements' },
-                        Sum : { $sum : { $map : { input : '$_elements', as : 'x', in : { $add : ['$$x.C.E.F', '$$x.C.E.H'] } } } },
-                        First : { $let : { vars : { this : { $arrayElemAt : ['$_elements', 0] } }, in : '$$this.B' } },
-                        Last : { $let : { vars : { this : { $arrayElemAt : ['$_elements', -1] } }, in : '$$this.K' } },
-                        Min : { $min : { $map : { input : '$_elements', as : 'x', in : { $add : ['$$x.C.E.F', '$$x.C.E.H'] } } } },
-                        Max : { $max : { $map : { input : '$_elements', as : 'x', in : { $add : ['$$x.C.E.F', '$$x.C.E.H'] } } } },
+                        Count : '$__agg0',
+                        Sum : '$__agg1',
+                        First : '$__agg2.B',
+                        Last : '$__agg3.K',
+                        Min : '$__agg4',
+                        Max : '$__agg5',
                         _id : 0
                     }
                 }");
@@ -416,9 +529,17 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
                 Sum = g.Sum(x => x.U)
             });
 
-            result.Projection.Should().Be("{ $project : { Sum : { $sum : '$_elements.U' }, _id : 0 } }");
+            AssertStages(
+                result.Stages,
+                "{ $group : { _id : 1, __agg0 : { $sum : '$U' } } }",
+                "{ $project : { Sum : '$__agg0', _id : 0 } }");
 
             result.Value.Sum.Should().Be(-0.00000000714529169165701m);
+        }
+
+        private void AssertStages(List<BsonDocument> actual, params string[] expected)
+        {
+            actual.Should().Equal(expected.Select(e => BsonDocument.Parse(e)));
         }
 
         private ProjectedResult<TResult> Group<TKey, TResult>(Expression<Func<Root, TKey>> idProjector, Expression<Func<IGrouping<TKey, Root>, TResult>> groupProjector)
@@ -433,23 +554,25 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
                 .Select(groupProjector);
 
             var context = new TranslationContext();
-            var executableQuery = ExpressionToPipelineTranslator.Translate(context, queryable.Expression);
+            var pipeline = ExpressionToPipelineTranslator.Translate(context, queryable.Expression);
+            pipeline = AstPipelineOptimizer.Optimize(pipeline);
 
-            var stages = executableQuery.Stages.Select(s => s.Render()).Cast<BsonDocument>().ToList();
+            var stages = pipeline.Stages.Select(s => s.Render()).Cast<BsonDocument>().ToList();
             stages.Insert(1, new BsonDocument("$sort", new BsonDocument("_id", 1))); // force a standard order for testing purposes
-            var pipeline = new BsonDocumentStagePipelineDefinition<Root, TResult>(stages, outputSerializer: (IBsonSerializer<TResult>)executableQuery.OutputSerializer);
-            var results = __collection.Aggregate(pipeline).ToList();
+            var pipelineDefinition = new BsonDocumentStagePipelineDefinition<Root, TResult>(stages, outputSerializer: (IBsonSerializer<TResult>)pipeline.OutputSerializer);
+            var results = __collection.Aggregate(pipelineDefinition).ToList();
 
+            stages.RemoveAt(1); // remove $sort added above for predictable testing
             return new ProjectedResult<TResult>
             {
-                Projection = stages[2],
+                Stages = stages,
                 Value = results[0]
             };
         }
 
         private class ProjectedResult<T>
         {
-            public BsonDocument Projection { get; set; }
+            public List<BsonDocument> Stages { get; set; }
             public T Value { get; set; }
         }
     }

@@ -300,6 +300,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Exp, arg);
         }
 
+        public static AstFieldPathExpression FieldPath(string path)
+        {
+            return new AstFieldPathExpression(path);
+        }
+
         public static AstExpression Filter(AstExpression input, AstExpression cond, string @as)
         {
             return new AstFilterExpression(input, cond, @as);
@@ -579,7 +584,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public static AstExpression Slice(AstExpression array, AstExpression n)
         {
-            return new AstSliceExpression(array, n);
+            return new AstSliceExpression(array, position: null, n);
         }
 
         public static AstExpression Slice(AstExpression array, AstExpression position, AstExpression n)
@@ -732,7 +737,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                 return
                     expression == null ||
                     expression.NodeType == AstNodeType.ConstantExpression ||
-                    expression.CanBeRenderedAsFieldPath();
+                    expression.CanBeConvertedToFieldPath();
             }
         }
 
@@ -778,6 +783,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         #endregion static
 
         // public methods
-        public virtual bool CanBeRenderedAsFieldPath() => false;
+        public virtual bool CanBeConvertedToFieldPath() => false;
+
+        public virtual string ConvertToFieldPath()
+        {
+            throw new InvalidOperationException();
+        }
     }
 }

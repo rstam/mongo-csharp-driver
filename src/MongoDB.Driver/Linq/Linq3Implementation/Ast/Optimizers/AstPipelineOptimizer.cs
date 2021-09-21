@@ -13,14 +13,15 @@
 * limitations under the License.
 */
 
-namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.PipelineOptimizer
+namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
 {
     internal static class AstPipelineOptimizer
     {
         public static AstPipeline Optimize(AstPipeline pipeline)
         {
-            var groupOptimizer = new AstGroupPipelineOptimizer();
-            return groupOptimizer.Optimize(pipeline);
+            pipeline = AstGroupPipelineOptimizer.Optimize(pipeline);
+            pipeline = AstSimplifier.SimplifyAndConvert(pipeline);
+            return pipeline;
         }
     }
 }
