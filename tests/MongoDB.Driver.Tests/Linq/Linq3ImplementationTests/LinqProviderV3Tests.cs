@@ -36,15 +36,13 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests
             var collection = Mock.Of<IMongoCollection<C>>();
             var session = Mock.Of<IClientSessionHandle>();
             var options = new AggregateOptions();
-            var cancellationToken = new CancellationToken();
 
-            var result = subject.AsQueryable(collection, session, options, cancellationToken);
+            var result = subject.AsQueryable(collection, session, options);
 
             var queryable = result.Should().BeOfType<MongoQuery<C, C>>().Subject;
             var provider = queryable.Provider.Should().BeOfType<MongoQueryProvider<C>>().Subject;
             provider._collection().Should().BeSameAs(collection);
             provider._options().Should().BeSameAs(options);
-            provider.CancellationToken.Should().Be(cancellationToken);
         }
 
         [Fact]

@@ -64,13 +64,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         public override IAsyncCursor<TOutput> Execute()
         {
             var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
-            return executableQuery.Execute(_provider.Session, _provider.CancellationToken);
+            return executableQuery.Execute(_provider.Session, CancellationToken.None);
         }
 
         public override Task<IAsyncCursor<TOutput>> ExecuteAsync()
         {
             var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
-            return executableQuery.ExecuteAsync(_provider.Session, _provider.CancellationToken);
+            return executableQuery.ExecuteAsync(_provider.Session, CancellationToken.None);
         }
 
         public IEnumerator<TOutput> GetEnumerator()

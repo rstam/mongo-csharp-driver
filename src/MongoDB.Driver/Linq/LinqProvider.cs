@@ -44,8 +44,7 @@ namespace MongoDB.Driver.Linq
         internal abstract IMongoQueryable<TDocument> AsQueryable<TDocument>(
             IMongoCollection<TDocument> collection,
             IClientSessionHandle session,
-            AggregateOptions options,
-            CancellationToken cancellationToken);
+            AggregateOptions options);
 
         internal abstract BsonValue TranslateExpressionToAggregateExpression<TSource, TResult>(
             Expression<Func<TSource, TResult>> expression,

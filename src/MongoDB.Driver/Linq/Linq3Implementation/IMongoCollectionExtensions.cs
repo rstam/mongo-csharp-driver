@@ -23,10 +23,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         public static IMongoQueryable<TDocument> AsQueryable3<TDocument>(
             this IMongoCollection<TDocument> collection,
             IClientSessionHandle session = null,
-            AggregateOptions options = null,
-            CancellationToken cancellationToken = default)
+            AggregateOptions options = null)
         {
-            var provider = new MongoQueryProvider<TDocument>(collection, session, options, cancellationToken);
+            var provider = new MongoQueryProvider<TDocument>(collection, session, options);
             return new MongoQuery<TDocument, TDocument>(provider);
         }
     }

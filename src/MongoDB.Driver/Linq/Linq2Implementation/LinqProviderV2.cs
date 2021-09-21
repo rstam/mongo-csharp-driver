@@ -31,8 +31,7 @@ namespace MongoDB.Driver.Linq.Linq2Implementation
         internal override IMongoQueryable<TDocument> AsQueryable<TDocument>(
             IMongoCollection<TDocument> collection,
             IClientSessionHandle session,
-            AggregateOptions options,
-            CancellationToken cancellationToken)
+            AggregateOptions options)
         {
             var queryProvider = new MongoQueryProviderImpl<TDocument>(collection, session, options);
             return new MongoQueryableImpl<TDocument, TDocument>(queryProvider);

@@ -33,10 +33,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         internal override IMongoQueryable<TDocument> AsQueryable<TDocument>(
             IMongoCollection<TDocument> collection,
             IClientSessionHandle session,
-            AggregateOptions options,
-            CancellationToken cancellationToken)
+            AggregateOptions options)
         {
-            return collection.AsQueryable3(session, options, cancellationToken);
+            return collection.AsQueryable3(session, options);
         }
 
         public override string ToString() => "V3";

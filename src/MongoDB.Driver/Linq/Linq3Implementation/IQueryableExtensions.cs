@@ -23,19 +23,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
 {
     internal static class IQueryableExtensions
     {
-        public static IMongoQueryable<T> WithCancellationToken<T>(this IMongoQueryable<T> queryable, CancellationToken cancellationToken)
-        {
-            Ensure.IsNotNull(queryable, nameof(queryable));
-
-            if (!(queryable.Provider is MongoQueryProvider provider))
-            {
-                throw new InvalidOperationException("WithCancellationToken can only be called when the QueryProvider is a MongoQueryProvider.");
-            }
-
-            provider = provider.WithCancellationToken(cancellationToken);
-            return (IMongoQueryable<T>)provider.CreateQuery<T>(queryable.Expression);
-        }
-
         public static IMongoQueryable<T> WithOptions<T>(this IMongoQueryable<T> queryable, AggregateOptions options)
         {
             Ensure.IsNotNull(queryable, nameof(queryable));

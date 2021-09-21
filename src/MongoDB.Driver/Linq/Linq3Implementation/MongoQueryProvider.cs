@@ -27,23 +27,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
     internal abstract class MongoQueryProvider : IMongoQueryProvider
     {
         // protected fields
-        protected readonly CancellationToken _cancellationToken;
         protected readonly AggregateOptions _options;
         protected readonly IClientSessionHandle _session;
 
         // constructors
         protected MongoQueryProvider(
             IClientSessionHandle session, 
-            AggregateOptions options,
-            CancellationToken cancellationToken)
+            AggregateOptions options)
         {
             _session = session;
             _options = options;
-            _cancellationToken = cancellationToken;
         }
 
         // public properties
-        public CancellationToken CancellationToken => _cancellationToken;
         public abstract IBsonSerializer CollectionDocumentSerializer { get; }
         public abstract CollectionNamespace CollectionNamespace { get; }
         public AggregateOptions Options => _options;
@@ -56,12 +52,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         public abstract object Execute(Expression expression);
         public abstract TResult Execute<TResult>(Expression expression);
         public abstract Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken);
-        public MongoQueryProvider WithCancellationToken(CancellationToken cancellationToken) => WithCancellationTokenGeneric(cancellationToken);
         public MongoQueryProvider WithOptions(AggregateOptions options) => WithOptionsGeneric(options);
         public MongoQueryProvider WithSession(IClientSessionHandle session) => WithSessionGeneric(session);
 
         // protected methods
-        protected abstract MongoQueryProvider WithCancellationTokenGeneric(CancellationToken cancellationToken);
         protected abstract MongoQueryProvider WithOptionsGeneric(AggregateOptions options);
         protected abstract MongoQueryProvider WithSessionGeneric(IClientSessionHandle session);
     }
@@ -75,9 +69,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         public MongoQueryProvider(
             IMongoCollection<TDocument> collection,
             IClientSessionHandle session,
-            AggregateOptions options,
-            CancellationToken cancellationToken)
-            : base(session, options, cancellationToken)
+            AggregateOptions options)
+            : base(session, options)
         {
             _collection = collection;
         }
@@ -111,7 +104,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         public override TResult Execute<TResult>(Expression expression)
         {
             var executableQuery = ExpressionToExecutableQueryTranslator.TranslateScalar<TDocument, TResult>(this, expression);
-            return executableQuery.Execute(_session, _cancellationToken);
+            return executableQuery.Execute(_session, CancellationToken.None);
         }
 
         public override Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken)
@@ -120,27 +113,17 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             return executableQuery.ExecuteAsync(_session, cancellationToken);
         }
 
-        public new MongoQueryProvider<TDocument> WithCancellationToken(CancellationToken cancellationToken)
-        {
-            return new MongoQueryProvider<TDocument>(_collection, _session, _options, cancellationToken);
-        }
-
         public new MongoQueryProvider<TDocument> WithOptions(AggregateOptions options)
         {
-            return new MongoQueryProvider<TDocument>(_collection, _session, options, _cancellationToken);
+            return new MongoQueryProvider<TDocument>(_collection, _session, options);
         }
 
         public new MongoQueryProvider<TDocument> WithSession(IClientSessionHandle session)
         {
-            return new MongoQueryProvider<TDocument>(_collection, session, _options, _cancellationToken);
+            return new MongoQueryProvider<TDocument>(_collection, session, _options);
         }
 
         // protected methods
-        protected override MongoQueryProvider WithCancellationTokenGeneric(CancellationToken cancellationToken)
-        {
-            return WithCancellationToken(cancellationToken);
-        }
-
         protected override MongoQueryProvider WithOptionsGeneric(AggregateOptions options)
         {
             return WithOptions(options);
