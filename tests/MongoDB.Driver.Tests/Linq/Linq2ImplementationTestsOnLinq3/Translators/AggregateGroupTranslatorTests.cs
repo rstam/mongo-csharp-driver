@@ -433,7 +433,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
                 .Select(groupProjector);
 
             var collectionBsonSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<Root>();
-            var knownSerializersRegistry = KnownSerializerFinder<Root>.FindKnownSerializers(queryable.Expression, collectionBsonSerializer);
+            var knownSerializersRegistry = KnownSerializerFinder.FindKnownSerializers(queryable.Expression, collectionBsonSerializer);
             var context = new TranslationContext(knownSerializersRegistry);
             var executableQuery = ExpressionToPipelineTranslator.Translate(context, queryable.Expression);
 

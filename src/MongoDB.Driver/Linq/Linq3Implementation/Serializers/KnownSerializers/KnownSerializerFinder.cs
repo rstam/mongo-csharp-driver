@@ -19,29 +19,29 @@ using ExpressionVisitor = System.Linq.Expressions.ExpressionVisitor;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 {
-    internal class KnownSerializerFinder<T> : ExpressionVisitor
+    internal class KnownSerializerFinder : ExpressionVisitor
     {
         #region static
         // public static methods
-        public static KnownSerializersRegistry FindKnownSerializers(Expression root, IBsonDocumentSerializer providerCollectionDocumentSerializer)
+        public static KnownSerializersRegistry FindKnownSerializers(Expression root, IBsonDocumentSerializer rootSerializer)
         {
-            var visitor = new KnownSerializerFinder<T>(providerCollectionDocumentSerializer, root);
+            var visitor = new KnownSerializerFinder(root, rootSerializer);
             visitor.Visit(root);
             return visitor._registry;
         }
         #endregion
 
         // private fields
-        private KnownSerializersNode _expressionKnownSerializers = null;
+        private KnownSerializersNode _currentKnownSerializersNode;
         private IBsonDocumentSerializer _parentSerializer;
-        private readonly IBsonDocumentSerializer _providerCollectionDocumentSerializer;
-        private readonly KnownSerializersRegistry _registry = new KnownSerializersRegistry();
+        private readonly KnownSerializersRegistry _registry = new();
         private readonly Expression _root;
+        private readonly IBsonDocumentSerializer _rootSerializer;
 
         // constructors
-        private KnownSerializerFinder(IBsonDocumentSerializer providerCollectionDocumentSerializer, Expression root)
+        private KnownSerializerFinder(Expression root, IBsonDocumentSerializer rootSerializer)
         {
-            _providerCollectionDocumentSerializer = providerCollectionDocumentSerializer;
+            _rootSerializer = rootSerializer;
             _root = root;
         }
 
@@ -50,16 +50,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         {
             if (node == null) return null;
 
-            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
+            _currentKnownSerializersNode = new KnownSerializersNode(_currentKnownSerializersNode);
 
             if (node == _root)
             {
-                _parentSerializer = _providerCollectionDocumentSerializer;
+                _parentSerializer = _rootSerializer;
             }
 
             var result = base.Visit(node);
-            _registry.Add(node, _expressionKnownSerializers);
-            _expressionKnownSerializers = _expressionKnownSerializers.Parent;
+            _registry.Add(node, _currentKnownSerializersNode);
+            _currentKnownSerializersNode = _currentKnownSerializersNode.Parent;
             return result;
         }
 
@@ -84,11 +84,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         {
             var result = base.VisitParameter(node);
 
-            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
-
-            if (node.Type == _providerCollectionDocumentSerializer.ValueType)
+            if (node.Type == _rootSerializer.ValueType)
             {
-                PropagateToRoot(_root, _providerCollectionDocumentSerializer);
+                PropagateToRoot(_root, _rootSerializer);
             }
 
             return result;
@@ -96,7 +94,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
         private void PropagateToRoot(Expression node, IBsonSerializer memberSerializer)
         {
-            var knownSerializers = _expressionKnownSerializers;
+            var knownSerializers = _currentKnownSerializersNode;
             while (knownSerializers != null)
             {
                 knownSerializers.AddKnownSerializer(node.Type, memberSerializer);
