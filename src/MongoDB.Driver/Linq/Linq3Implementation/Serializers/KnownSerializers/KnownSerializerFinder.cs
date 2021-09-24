@@ -14,17 +14,18 @@
 */
 
 using System.Linq.Expressions;
+using MongoDB.Bson.Serialization;
 using ExpressionVisitor = System.Linq.Expressions.ExpressionVisitor;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 {
-    internal class KnownSerializerFinder : ExpressionVisitor
+    internal class KnownSerializerFinder<T> : ExpressionVisitor
     {
         #region static
         // public static methods
-        public static KnownSerializersRegistry FindKnownSerializers(Expression root)
+        public static KnownSerializersRegistry FindKnownSerializers(Expression root, IBsonDocumentSerializer providerCollectionDocumentSerializer)
         {
-            var visitor = new KnownSerializerFinder();
+            var visitor = new KnownSerializerFinder<T>(providerCollectionDocumentSerializer, root);
             visitor.Visit(root);
             return visitor._registry;
         }
@@ -32,23 +33,75 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
         // private fields
         private KnownSerializersNode _expressionKnownSerializers = null;
+        private IBsonDocumentSerializer _parentSerializer;
+        private readonly IBsonDocumentSerializer _providerCollectionDocumentSerializer;
         private readonly KnownSerializersRegistry _registry = new KnownSerializersRegistry();
+        private readonly Expression _root;
 
         // constructors
-        public KnownSerializerFinder()
+        private KnownSerializerFinder(IBsonDocumentSerializer providerCollectionDocumentSerializer, Expression root)
         {
+            _providerCollectionDocumentSerializer = providerCollectionDocumentSerializer;
+            _root = root;
         }
 
         // public methods
         public override Expression Visit(Expression node)
         {
-            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
-            _registry.Add(node, _expressionKnownSerializers);
+            if (node == null) return null;
+
+            if (node == _root)
+            {
+                _parentSerializer = _providerCollectionDocumentSerializer;
+                _expressionKnownSerializers = new KnownSerializersNode(null);
+            }
 
             var result = base.Visit(node);
-
-            _expressionKnownSerializers = _expressionKnownSerializers.Parent;
+            _registry.Add(node, _expressionKnownSerializers);
             return result;
+        }
+
+        protected override Expression VisitMember(MemberExpression node)
+        {
+            var result = base.VisitMember(node);
+
+            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
+
+            if (_parentSerializer.TryGetMemberSerializationInfo(node.Member.Name, out var memberSerializer))
+            {
+                PropagateToRoot(node, memberSerializer.Serializer);
+
+                if (memberSerializer.Serializer is IBsonDocumentSerializer bsonDocumentSerializer)
+                {
+                    _parentSerializer = bsonDocumentSerializer;
+                }
+            }
+
+            return result;
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            var result = base.VisitParameter(node);
+
+            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
+
+            if (node.Type == _providerCollectionDocumentSerializer.ValueType)
+            {
+                PropagateToRoot(_root, _providerCollectionDocumentSerializer);
+            }
+
+            return result;
+        }
+
+        private void PropagateToRoot(Expression node, IBsonSerializer memberSerializer)
+        {
+            var knownSerializers = _expressionKnownSerializers;
+            while (knownSerializers != null)
+            {
+                knownSerializers.AddKnownSerializer(node.Type, memberSerializer);
+                knownSerializers = knownSerializers.Parent;
+            }
         }
     }
 }

@@ -15,6 +15,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
 
@@ -23,24 +24,56 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
     internal class KnownSerializersRegistry
     {
         // private fields
-        private readonly Dictionary<Expression, KnownSerializersNode> _registry = new Dictionary<Expression, KnownSerializersNode>();
+        private readonly BsonClassMapSerializationProvider _bsonClassMapSerializationProvider = new();
+        private readonly CollectionsSerializationProvider _collectionsSerializationProvider = new();
+        private readonly PrimitiveSerializationProvider _primitiveSerializationProvider = new();
+        private readonly Dictionary<Expression, KnownSerializersNode> _registry = new();
 
         // public methods
         public void Add(Expression expression, KnownSerializersNode knownSerializers)
         {
+            if (_registry.ContainsKey(expression)) return;
+
             _registry.Add(expression, knownSerializers);
         }
 
-        public HashSet<IBsonSerializer> GetPossibleSerializers(Expression expression, Type type)
+        public HashSet<IBsonSerializer> GetPossibleSerializers(Expression expression)
         {
             if (_registry.TryGetValue(expression, out var knownSerializers))
             {
-                return knownSerializers.GetPossibleSerializers(type);
+                return knownSerializers.GetPossibleSerializers(expression.Type);
             }
             else
             {
                 return new HashSet<IBsonSerializer>();
             }
+        }
+
+        public IBsonSerializer GetSerializer(Expression expr)
+        {
+            var possibleSerializers = GetPossibleSerializers(expr);
+            if (possibleSerializers.Count == 0)
+            {
+                var type = expr.Type;
+                var serializer = _primitiveSerializationProvider.GetSerializer(type)
+                                 ?? _collectionsSerializationProvider.GetSerializer(type)
+                                 ?? _bsonClassMapSerializationProvider.GetSerializer(type);
+                if (serializer != null)
+                {
+                    return serializer;
+                }
+                throw new InvalidOperationException($"Cannot find serializer for {expr}.");
+            }
+            if (possibleSerializers.Count > 1)
+            {
+                throw new InvalidOperationException($"More than one possible serializer found for {expr}.");
+            }
+            return possibleSerializers.First();
+        }
+
+        public IBsonSerializer GetSerializer(Type type)
+        {
+            return _primitiveSerializationProvider.GetSerializer(type);
         }
     }
 }

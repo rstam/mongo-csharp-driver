@@ -26,7 +26,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             if (expression.NodeType == ExpressionType.Constant)
             {
                 var value = expression.Value;
-                var valueSerializer = BsonSerializer.LookupSerializer(expression.Type); // TODO: use known serializer
+                var valueSerializer = context.KnownSerializersRegistry.GetSerializer(expression);
                 var serializedValue = valueSerializer.ToBsonValue(value);
                 var ast = AstExpression.Constant(serializedValue);
                 return new AggregationExpression(expression, ast, valueSerializer);

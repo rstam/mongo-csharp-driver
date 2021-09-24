@@ -37,14 +37,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             throw new ExpressionNotSupportedException(expression);
         }
 
-        public static Expression RemoveWideningConvert(Expression expression)
+        public static Expression RemoveUnnecessaryConvert(Expression expression)
         {
             if (expression.NodeType == ExpressionType.Convert)
             {
                 var convertExpression = (UnaryExpression)expression;
                 var sourceType = convertExpression.Operand.Type;
                 var targetType = expression.Type;
-                if (IsWideningConvert(sourceType, targetType))
+                if (IsWideningConvert(sourceType, targetType) || sourceType.IsEnum())
                 {
                     return convertExpression.Operand;
                 }

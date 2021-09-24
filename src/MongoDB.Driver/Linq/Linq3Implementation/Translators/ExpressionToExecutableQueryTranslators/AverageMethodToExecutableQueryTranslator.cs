@@ -13,12 +13,9 @@
 * limitations under the License.
 */
 
-using System;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Tasks;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
@@ -137,7 +134,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
                 }
 
                 var outputValueType = expression.GetResultType();
-                var outputValueSerializer = BsonSerializer.LookupSerializer(outputValueType); // TODO: use known serializer
+                var outputValueSerializer = context.KnownSerializersRegistry.GetSerializer(outputValueType);
                 var outputWrappedValueSerializer = WrappedValueSerializer.Create("_v", outputValueSerializer);
 
                 pipeline = pipeline.AddStages(

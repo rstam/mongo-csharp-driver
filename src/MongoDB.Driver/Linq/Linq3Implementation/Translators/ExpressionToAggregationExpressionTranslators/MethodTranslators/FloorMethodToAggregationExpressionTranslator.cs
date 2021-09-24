@@ -30,7 +30,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
             if (method.IsOneOf(MathMethod.FloorWithDecimal, MathMethod.FloorWithDouble))
             {
-                var argumentExpression = ConvertHelper.RemoveWideningConvert(arguments[0]);
+                var argumentExpression = ConvertHelper.RemoveUnnecessaryConvert(arguments[0]);
                 var argumentTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, argumentExpression);
                 var ast = AstExpression.Floor(argumentTranslation.Ast);
                 var serializer = BsonSerializer.LookupSerializer(expression.Type);

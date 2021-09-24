@@ -30,9 +30,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
             if (method.IsOneOf(MathMethod.Pow))
             {
-                var xExpression = ConvertHelper.RemoveWideningConvert(arguments[0]);
+                var xExpression = ConvertHelper.RemoveUnnecessaryConvert(arguments[0]);
                 var xTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, xExpression);
-                var yExpression = ConvertHelper.RemoveWideningConvert(arguments[1]);
+                var yExpression = ConvertHelper.RemoveUnnecessaryConvert(arguments[1]);
                 var yTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, yExpression);
                 var ast = AstExpression.Pow(xTranslation.Ast, yTranslation.Ast);
                 return new AggregationExpression(expression, ast, new DoubleSerializer());

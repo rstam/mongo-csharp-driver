@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-present MongoDB Inc.
+/* Copyright 2010-present MongoDB Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -101,7 +101,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     var discriminatorField = AstFilter.Field(discriminatorConvention.ElementName, BsonValueSerializer.Instance);
                     var discriminatorValue = discriminatorConvention.GetDiscriminator(nominalType, actualType);
                     var ofTypeFilter = AstFilter.Eq(discriminatorField, discriminatorValue);
-                    var actualTypeSerializer = BsonSerializer.LookupSerializer(actualType); // TODO: use known serializers
+                    var actualTypeSerializer = context.KnownSerializersRegistry.GetSerializer(actualType);
                     var enumerableActualTypeSerializer = IEnumerableSerializer.Create(actualTypeSerializer);
                     var actualTypeSourceField = AstFilter.Field(sourceField.Path, enumerableActualTypeSerializer);
                     var combinedFilter = AstFilter.Combine(sourceFilter, ofTypeFilter);
