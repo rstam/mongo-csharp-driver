@@ -50,14 +50,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         {
             if (node == null) return null;
 
+            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
+
             if (node == _root)
             {
                 _parentSerializer = _providerCollectionDocumentSerializer;
-                _expressionKnownSerializers = new KnownSerializersNode(null);
-            }
-            else
-            {
-                _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
             }
 
             var result = base.Visit(node);
