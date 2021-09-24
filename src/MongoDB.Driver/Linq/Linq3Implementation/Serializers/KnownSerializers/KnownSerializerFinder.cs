@@ -55,17 +55,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
                 _parentSerializer = _providerCollectionDocumentSerializer;
                 _expressionKnownSerializers = new KnownSerializersNode(null);
             }
+            else
+            {
+                _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
+            }
 
             var result = base.Visit(node);
             _registry.Add(node, _expressionKnownSerializers);
+            _expressionKnownSerializers = _expressionKnownSerializers.Parent;
             return result;
         }
 
         protected override Expression VisitMember(MemberExpression node)
         {
             var result = base.VisitMember(node);
-
-            _expressionKnownSerializers = new KnownSerializersNode(_expressionKnownSerializers);
 
             if (_parentSerializer.TryGetMemberSerializationInfo(node.Member.Name, out var memberSerializer))
             {
