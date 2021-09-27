@@ -37,21 +37,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             _registry.Add(expression, knownSerializers);
         }
 
-        public HashSet<IBsonSerializer> GetPossibleSerializers(Expression expression)
-        {
-            if (_registry.TryGetValue(expression, out var knownSerializers))
-            {
-                return knownSerializers.GetPossibleSerializers(expression.Type);
-            }
-            else
-            {
-                return new HashSet<IBsonSerializer>();
-            }
-        }
-
         public IBsonSerializer GetSerializer(Expression expr)
         {
-            var possibleSerializers = GetPossibleSerializers(expr);
+            var possibleSerializers = _registry.TryGetValue(expr, out var knownSerializers) ? knownSerializers.GetPossibleSerializers(expr.Type) : new HashSet<IBsonSerializer>();
             if (possibleSerializers.Count == 0)
             {
                 var type = expr.Type;

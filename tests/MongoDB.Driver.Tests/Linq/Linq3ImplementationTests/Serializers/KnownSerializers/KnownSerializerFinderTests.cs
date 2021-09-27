@@ -149,18 +149,13 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         }
 
         [Fact]
-        public void Conditional_expression_with_different_enum_representations_should_return_both_representations()
+        public void Conditional_expression_with_different_enum_representations_should_throw()
         {
             Expression<Func<C, E>> expression = x => x.Ei == E.A ? E.B : x.Es;
             var collectionBsonSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<C>();
             var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionBsonSerializer);
-            collectionBsonSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedEnumIntSerializer);
-            collectionBsonSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedEnumStringSerializer);
             ConditionalExpression cond = (ConditionalExpression)expression.Body;
-            var possibleSerializers = result.GetPossibleSerializers(cond.IfTrue);
-            possibleSerializers.Should().HaveCount(2);
-            possibleSerializers.Should().Contain(expectedEnumIntSerializer.Serializer);
-            possibleSerializers.Should().Contain(expectedEnumStringSerializer.Serializer);
+            Assert.Throws<InvalidOperationException>(() => result.GetSerializer(cond.IfTrue));
         }
 
         [Fact]
