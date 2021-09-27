@@ -32,6 +32,11 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
 
         class B { }
 
+        class View
+        {
+            public A A { get; set; }
+        }
+
         [Fact]
         public void Identity_expression_should_return_collection_serializer()
         {
@@ -69,7 +74,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             enumRepresentation.Should().Be(BsonType.Int32);
         }
 
-        [Fact(Skip="Deferred")]
+        [Fact]
         public void Enum_comparison_expression_should_return_enum_serializer_with_int_representation()
         {
             Expression<Func<C, bool>> expression = x => x.Ei == E.A;
@@ -98,7 +103,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             enumRepresentation.Should().Be(BsonType.String);
         }
 
-        [Fact(Skip="Deferred")]
+        [Fact]
         public void Enum_comparison_expression_should_return_enum_serializer_with_string_representation()
         {
             Expression<Func<C, bool>> expression = x => x.Es == E.A;
@@ -166,9 +171,18 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionBsonSerializer);
             collectionBsonSerializer.TryGetMemberSerializationInfo(nameof(C.A), out var aSerializer);
             ((BsonClassMapSerializer<A>)aSerializer.Serializer).TryGetMemberSerializationInfo(nameof(A.B), out var expectedSerializer);
-            var possibleSerializers = result.GetPossibleSerializers(expression.Body);
-            possibleSerializers.Should().HaveCount(1);
-            possibleSerializers.Should().Contain(expectedSerializer.Serializer);
+            var possibleSerializers = result.GetSerializer(expression.Body);
+            possibleSerializers.Should().Be(expectedSerializer.Serializer);
+        }
+
+        [Fact]
+        public void Projection_into_new_type_should_return_correct_serializer()
+        {
+            Expression<Func<C, View>> expression = x => new View { A = x.A };
+            var collectionBsonSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<C>();
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionBsonSerializer);
+            var foundSerializer = result.GetSerializer(expression.Body);
+            foundSerializer.ValueType.Should().Be(typeof(View));
         }
     }
 }

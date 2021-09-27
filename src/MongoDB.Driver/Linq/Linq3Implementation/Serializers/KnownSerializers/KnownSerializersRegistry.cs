@@ -56,8 +56,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             {
                 var type = expr.Type;
                 var serializer = _primitiveSerializationProvider.GetSerializer(type)
-                                 ?? _collectionsSerializationProvider.GetSerializer(type)
-                                 ?? _bsonClassMapSerializationProvider.GetSerializer(type);
+                                 ?? _collectionsSerializationProvider.GetSerializer(type);
                 if (serializer != null)
                 {
                     return serializer;

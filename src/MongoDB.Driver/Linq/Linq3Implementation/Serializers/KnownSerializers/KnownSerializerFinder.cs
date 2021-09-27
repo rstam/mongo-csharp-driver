@@ -13,6 +13,8 @@
 * limitations under the License.
 */
 
+using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
 using ExpressionVisitor = System.Linq.Expressions.ExpressionVisitor;
@@ -76,6 +78,30 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
                     _parentSerializer = bsonDocumentSerializer;
                 }
             }
+
+            return result;
+        }
+
+        protected override Expression VisitNew(NewExpression node)
+        {
+            var result = base.VisitNew(node);
+
+            if (node.Type == _rootSerializer.ValueType ||
+                node.Type == typeof(DateTime) ||
+                (node.Type.IsConstructedGenericType && node.Type.GetGenericTypeDefinition() == typeof(HashSet<>)) ||
+                (node.Type.IsConstructedGenericType && node.Type.GetGenericTypeDefinition() == typeof(List<>)))
+            {
+                return result;
+            }
+
+            var classMapType = typeof(BsonClassMap<>).MakeGenericType(node.Type);
+            var classMap = (BsonClassMap)Activator.CreateInstance(classMapType);
+            classMap.AutoMap();
+            classMap.Freeze();
+
+            var serializerType = typeof(BsonClassMapSerializer<>).MakeGenericType(node.Type);
+            var serializer = (IBsonSerializer)Activator.CreateInstance(serializerType, classMap);
+            PropagateToRoot(node, serializer);
 
             return result;
         }
