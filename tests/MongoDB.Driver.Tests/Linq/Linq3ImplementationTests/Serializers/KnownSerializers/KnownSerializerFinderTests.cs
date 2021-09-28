@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using FluentAssertions;
@@ -23,6 +24,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             [BsonRepresentation(BsonType.String)]
             public E Es { get; set; }
             public A A { get; set; }
+            public IEnumerable<A> EnumerableOfA { get; set; }
         }
 
         class A
@@ -166,8 +168,23 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionBsonSerializer);
             collectionBsonSerializer.TryGetMemberSerializationInfo(nameof(C.A), out var aSerializer);
             ((BsonClassMapSerializer<A>)aSerializer.Serializer).TryGetMemberSerializationInfo(nameof(A.B), out var expectedSerializer);
-            var possibleSerializers = result.GetSerializer(expression.Body);
-            possibleSerializers.Should().Be(expectedSerializer.Serializer);
+            var serializer = result.GetSerializer(expression.Body);
+            serializer.Should().Be(expectedSerializer.Serializer);
+        }
+
+        [Fact]
+        public void Two_property_chains_should_each_return_correct_nested_serializer()
+        {
+            Expression<Func<C, E>> expression = x => x.A.B == null ? x.Ei : x.Es;
+            var collectionBsonSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<C>();
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionBsonSerializer);
+            ConditionalExpression cond = (ConditionalExpression)expression.Body;
+            collectionBsonSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var eiSerializationInfo);
+            collectionBsonSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var esSerializationInfo);
+            var trueBranchSerializer = result.GetSerializer(cond.IfTrue);
+            trueBranchSerializer.Should().Be(eiSerializationInfo.Serializer);
+            var falseBranchSerializer = result.GetSerializer(cond.IfFalse);
+            falseBranchSerializer.Should().Be(esSerializationInfo.Serializer);
         }
 
         [Fact]
@@ -176,8 +193,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             Expression<Func<C, View>> expression = x => new View { A = x.A };
             var collectionBsonSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<C>();
             var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionBsonSerializer);
-            var foundSerializer = result.GetSerializer(expression.Body);
-            foundSerializer.ValueType.Should().Be(typeof(View));
+            var serializer = result.GetSerializer(expression.Body);
+            serializer.ValueType.Should().Be(typeof(View));
         }
     }
 }

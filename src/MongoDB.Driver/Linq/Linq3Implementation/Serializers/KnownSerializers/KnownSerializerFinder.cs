@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
         // private fields
         private KnownSerializersNode _currentKnownSerializersNode;
-        private IBsonDocumentSerializer _parentSerializer;
+        private IBsonDocumentSerializer _currentSerializer;
         private readonly KnownSerializersRegistry _registry = new();
         private readonly Expression _root;
         private readonly IBsonDocumentSerializer _rootSerializer;
@@ -56,7 +56,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
             if (node == _root)
             {
-                _parentSerializer = _rootSerializer;
+                _currentSerializer = _rootSerializer;
             }
 
             var result = base.Visit(node);
@@ -68,17 +68,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         protected override Expression VisitMember(MemberExpression node)
         {
             var result = base.VisitMember(node);
-
-            if (_parentSerializer.TryGetMemberSerializationInfo(node.Member.Name, out var memberSerializer))
+            if (_currentSerializer.TryGetMemberSerializationInfo(node.Member.Name, out var memberSerializer))
             {
                 PropagateToRoot(node, memberSerializer.Serializer);
 
                 if (memberSerializer.Serializer is IBsonDocumentSerializer bsonDocumentSerializer)
                 {
-                    _parentSerializer = bsonDocumentSerializer;
+                    _currentSerializer = bsonDocumentSerializer;
                 }
             }
-
             return result;
         }
 
@@ -112,7 +110,17 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
             if (node.Type == _rootSerializer.ValueType)
             {
+                _currentSerializer = _rootSerializer;
                 PropagateToRoot(_root, _rootSerializer);
+            }
+
+            if (_currentSerializer is IBsonArraySerializer bsonArraySerializer &&
+                bsonArraySerializer.TryGetItemSerializationInfo(out var itemSerializerInfo) &&
+                node.Type == itemSerializerInfo.NominalType &&
+                itemSerializerInfo.Serializer is IBsonDocumentSerializer bsonDocumentSerializer)
+            {
+                _currentSerializer = bsonDocumentSerializer;
+                PropagateToRoot(node, bsonDocumentSerializer);
             }
 
             return result;
