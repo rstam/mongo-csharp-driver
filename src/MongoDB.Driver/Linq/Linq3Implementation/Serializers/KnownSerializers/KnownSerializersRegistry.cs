@@ -39,17 +39,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
         public IBsonSerializer GetSerializer(Expression expr)
         {
-            // <TODO> We shouldn't be creating a BooleanSerializer here.
-            if (expr.Type == typeof(bool))
-            {
-                return new BooleanSerializer();
-            }
-            // </TODO>
             var possibleSerializers = _registry.TryGetValue(expr, out var knownSerializers) ? knownSerializers.GetPossibleSerializers(expr.Type) : new HashSet<IBsonSerializer>();
             if (possibleSerializers.Count == 0)
             {
                 var type = expr.Type;
-                var serializer = _primitiveSerializationProvider.GetSerializer(type) ??
+                var serializer = //_primitiveSerializationProvider.GetSerializer(type) ??
                                  _collectionsSerializationProvider.GetSerializer(type);
                 if (serializer != null)
                 {
