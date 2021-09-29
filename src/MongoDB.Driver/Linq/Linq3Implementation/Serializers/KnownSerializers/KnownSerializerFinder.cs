@@ -85,9 +85,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         {
             var result = base.VisitNew(node);
 
-            if (node.Type == _rootSerializer.ValueType ||
-                (node.Type.IsConstructedGenericType && node.Type.GetGenericTypeDefinition() == typeof(HashSet<>)) ||
-                (node.Type.IsConstructedGenericType && node.Type.GetGenericTypeDefinition() == typeof(List<>)))
+            if (node.Type == _rootSerializer.ValueType)
             {
                 return result;
             }

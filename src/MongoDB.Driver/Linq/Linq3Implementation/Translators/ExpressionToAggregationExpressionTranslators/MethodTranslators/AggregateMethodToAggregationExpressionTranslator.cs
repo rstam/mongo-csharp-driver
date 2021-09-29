@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.Linq.Expressions;
 using System.Reflection;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
@@ -98,7 +99,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                         ast = AstExpression.Let(
                             var: AstExpression.VarBinding(resultSelectorSymbol.Var, ast),
                             @in: resultSelectorTranslation.Ast);
-                        serializer = context.KnownSerializersRegistry.GetSerializer(resultSelectorLambda.ReturnType);
+                        serializer = context.KnownSerializersRegistry.GetSerializer(resultSelectorLambda);
                     }
 
                     return new AggregationExpression(expression, ast, serializer);

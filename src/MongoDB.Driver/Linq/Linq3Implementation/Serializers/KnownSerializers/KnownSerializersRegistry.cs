@@ -18,14 +18,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 {
     internal class KnownSerializersRegistry
     {
         // private fields
-        private readonly CollectionsSerializationProvider _collectionsSerializationProvider = new();
         private readonly PrimitiveSerializationProvider _primitiveSerializationProvider = new();
         private readonly Dictionary<Expression, KnownSerializersNode> _registry = new();
 
@@ -37,25 +35,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             _registry.Add(expression, knownSerializers);
         }
 
-        public IBsonSerializer GetSerializer(Expression expr)
+        public IBsonSerializer GetSerializer(Expression expression, IBsonSerializer defaultSerializer = null)
         {
-            var possibleSerializers = _registry.TryGetValue(expr, out var knownSerializers) ? knownSerializers.GetPossibleSerializers(expr.Type) : new HashSet<IBsonSerializer>();
-            if (possibleSerializers.Count == 0)
+            var expressionType = expression is LambdaExpression lambdaExpression ? lambdaExpression.ReturnType : expression.Type;
+            var possibleSerializers = _registry.TryGetValue(expression, out var knownSerializers) ? knownSerializers.GetPossibleSerializers(expressionType) : new HashSet<IBsonSerializer>();
+            return possibleSerializers.Count switch
             {
-                var type = expr.Type;
-                var serializer = //_primitiveSerializationProvider.GetSerializer(type) ??
-                                 _collectionsSerializationProvider.GetSerializer(type);
-                if (serializer != null)
-                {
-                    return serializer;
-                }
-                throw new InvalidOperationException($"Cannot find serializer for {expr}.");
-            }
-            if (possibleSerializers.Count > 1)
-            {
-                throw new InvalidOperationException($"More than one possible serializer found for {expr}.");
-            }
-            return possibleSerializers.First();
+                0 => defaultSerializer ?? throw new InvalidOperationException($"Cannot find serializer for {expression}."),
+                > 1 => throw new InvalidOperationException($"More than one possible serializer found for {expression}."),
+                _ => possibleSerializers.First()
+            };
         }
 
         public IBsonSerializer GetSerializer(Type type)

@@ -28,8 +28,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             if (expression.NodeType == ExpressionType.Constant)
             {
                 var value = expression.Value;
-                var valueSerializer = context.KnownSerializersRegistry.GetSerializer(expression); // required for enums
-                valueSerializer ??= expression.Type switch
+                var defaultValueSerializer = expression.Type switch
                 {
                     Type t when t == typeof(bool) => new BooleanSerializer(),
                     Type t when t == typeof(string) => new StringSerializer(),
@@ -43,8 +42,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     Type t when t == typeof(double) => new DoubleSerializer(),
                     Type t when t == typeof(decimal) => new DecimalSerializer(),
                     Type { IsConstructedGenericType: true } t when t.GetGenericTypeDefinition() == typeof(Nullable<>) => (IBsonSerializer)Activator.CreateInstance(typeof(NullableSerializer<>).MakeGenericType(t.GenericTypeArguments[0])),
-                    _ => throw new ExpressionNotSupportedException(expression)
+                    Type { IsArray: true } t => (IBsonSerializer)Activator.CreateInstance(typeof(ArraySerializer<>).MakeGenericType(t.GetElementType())),
+                    _ => null
                 };
+                // If we need an EnumSerializer, we have to look up the correct one based on the current expression.
+                var valueSerializer = context.KnownSerializersRegistry.GetSerializer(expression, defaultValueSerializer);
                 var serializedValue = valueSerializer.ToBsonValue(value);
                 var ast = AstExpression.Constant(serializedValue);
                 return new AggregationExpression(expression, ast, valueSerializer);
