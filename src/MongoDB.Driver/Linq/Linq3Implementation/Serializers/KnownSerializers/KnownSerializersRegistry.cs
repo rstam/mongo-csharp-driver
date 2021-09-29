@@ -45,10 +45,5 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
                 _ => possibleSerializers.First()
             };
         }
-
-        public IBsonSerializer GetSerializer(Type type)
-        {
-            throw new NotImplementedException("Callers should use Expression overload, not this overload based on Type.");
-        }
     }
 }

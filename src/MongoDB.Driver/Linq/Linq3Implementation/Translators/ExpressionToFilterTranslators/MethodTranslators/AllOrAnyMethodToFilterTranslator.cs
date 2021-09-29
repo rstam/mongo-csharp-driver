@@ -53,7 +53,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     var predicateLambda = (LambdaExpression)arguments[1];
                     var parameterExpression = predicateLambda.Parameters.Single();
                     var elementSerializer = ArraySerializerHelper.GetItemSerializer(field.Serializer);
-                    var parameterSymbol = context.CreateSymbol(parameterExpression, "@<elem>", elementSerializer); // @<elem> represents the implied element 
+                    var parameterSymbol = context.CreateSymbol(parameterExpression, "@<elem>", elementSerializer); // @<elem> represents the implied element
                     var predicateContext = context.WithSingleSymbol(parameterSymbol); // @<elem> is the only symbol visible inside an $elemMatch
                     var predicateFilter = ExpressionToFilterTranslator.Translate(predicateContext, predicateLambda.Body, exprOk: false);
 
@@ -101,7 +101,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     var discriminatorField = AstFilter.Field(discriminatorConvention.ElementName, BsonValueSerializer.Instance);
                     var discriminatorValue = discriminatorConvention.GetDiscriminator(nominalType, actualType);
                     var ofTypeFilter = AstFilter.Eq(discriminatorField, discriminatorValue);
-                    var actualTypeSerializer = context.KnownSerializersRegistry.GetSerializer(actualType);
+                    var actualTypeSerializer = context.KnownSerializersRegistry.GetSerializer(sourceExpression);
                     var enumerableActualTypeSerializer = IEnumerableSerializer.Create(actualTypeSerializer);
                     var actualTypeSourceField = AstFilter.Field(sourceField.Path, enumerableActualTypeSerializer);
                     var combinedFilter = AstFilter.Combine(sourceFilter, ofTypeFilter);
@@ -117,7 +117,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     var predicateLambda = (LambdaExpression)arguments[1];
                     var parameterExpression = predicateLambda.Parameters.Single();
                     var itemSerializer = ArraySerializerHelper.GetItemSerializer(sourceField.Serializer);
-                    var parameterSymbol = context.CreateSymbol(parameterExpression, "@<elem>", itemSerializer); // @<elem> represents the implied element 
+                    var parameterSymbol = context.CreateSymbol(parameterExpression, "@<elem>", itemSerializer); // @<elem> represents the implied element
                     var predicateContext = context.WithSingleSymbol(parameterSymbol); // @<elem> is the only symbol visible inside an $elemMatch
                     var whereFilter = ExpressionToFilterTranslator.Translate(predicateContext, predicateLambda.Body, exprOk: false);
                     var combinedFilter = AstFilter.Combine(sourceFilter, whereFilter);

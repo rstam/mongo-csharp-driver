@@ -14,10 +14,11 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
 using ExpressionVisitor = System.Linq.Expressions.ExpressionVisitor;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
@@ -78,6 +79,20 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
                     _currentSerializer = bsonDocumentSerializer;
                 }
             }
+            return result;
+        }
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            var result = base.VisitMethodCall(node);
+
+            if (node.Method.Is(QueryableMethod.OfType) || node.Method.Is(EnumerableMethod.OfType))
+            {
+                var actualType = node.Method.GetGenericArguments()[0];
+                var serializer = BsonSerializer.LookupSerializer(actualType);
+                PropagateToRoot(node, serializer);
+            }
+
             return result;
         }
 
