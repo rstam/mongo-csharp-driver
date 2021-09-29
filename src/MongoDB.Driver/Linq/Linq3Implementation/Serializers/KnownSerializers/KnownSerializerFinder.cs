@@ -137,7 +137,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             if (node.Type == _rootSerializer.ValueType)
             {
                 _currentSerializer = _rootSerializer;
-                PropagateToRoot(_root, _rootSerializer);
+                PropagateToRoot(node, _rootSerializer);
             }
 
             if (_currentSerializer is IBsonArraySerializer bsonArraySerializer &&
