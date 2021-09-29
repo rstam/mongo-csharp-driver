@@ -24,7 +24,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
     internal class KnownSerializersRegistry
     {
         // private fields
-        private readonly PrimitiveSerializationProvider _primitiveSerializationProvider = new();
         private readonly Dictionary<Expression, KnownSerializersNode> _registry = new();
 
         // public methods
@@ -49,7 +48,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 
         public IBsonSerializer GetSerializer(Type type)
         {
-            return _primitiveSerializationProvider.GetSerializer(type);
+            throw new NotImplementedException("Callers should use Expression overload, not this overload based on Type.");
         }
     }
 }
