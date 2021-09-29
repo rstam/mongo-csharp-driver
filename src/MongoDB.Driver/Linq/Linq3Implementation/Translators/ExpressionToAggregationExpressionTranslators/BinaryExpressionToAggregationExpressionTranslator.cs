@@ -64,6 +64,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             {
                 Type t when t == typeof(bool) => new BooleanSerializer(),
                 Type t when t == typeof(string) => new StringSerializer(),
+                Type t when t == typeof(byte) => new ByteSerializer(),
                 Type t when t == typeof(short) => new Int16Serializer(),
                 Type t when t == typeof(ushort) => new UInt16Serializer(),
                 Type t when t == typeof(int) => new Int32Serializer(),

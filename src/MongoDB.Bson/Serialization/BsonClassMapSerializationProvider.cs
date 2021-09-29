@@ -21,7 +21,7 @@ namespace MongoDB.Bson.Serialization
     /// <summary>
     /// Represents the class map serialization provider.
     /// </summary>
-    public class BsonClassMapSerializationProvider : BsonSerializationProviderBase
+    internal class BsonClassMapSerializationProvider : BsonSerializationProviderBase
     {
         /// <inheritdoc/>
         public override IBsonSerializer GetSerializer(Type type, IBsonSerializerRegistry serializerRegistry)
