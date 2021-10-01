@@ -89,6 +89,19 @@ namespace MongoDB.Driver.Support
                 type == typeof(string);
         }
 
+        public static bool IsNumericUnderlyingEnumType(this Type type)
+        {
+            return
+                type == typeof(sbyte) ||
+                type == typeof(byte) ||
+                type == typeof(short) ||
+                type == typeof(ushort) ||
+                type == typeof(int) ||
+                type == typeof(uint) ||
+                type == typeof(long) ||
+                type == typeof(ulong);
+        }
+
         public static Type GetNullableUnderlyingType(this Type type)
         {
             if (!IsNullable(type))

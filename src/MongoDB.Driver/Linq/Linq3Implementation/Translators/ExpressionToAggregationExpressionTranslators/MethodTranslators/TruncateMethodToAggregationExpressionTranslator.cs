@@ -29,7 +29,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
             if (method.IsOneOf(MathMethod.TruncateDecimal, MathMethod.TruncateDouble))
             {
-                var argumentExpression = ConvertHelper.RemoveUnnecessaryConvert(arguments[0]);
+                var argumentExpression = ConvertHelper.RemoveWideningConvert(arguments[0]);
                 var argumentTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, argumentExpression);
                 var ast = AstExpression.Trunc(argumentTranslation.Ast);
                 return new AggregationExpression(expression, ast, argumentTranslation.Serializer);

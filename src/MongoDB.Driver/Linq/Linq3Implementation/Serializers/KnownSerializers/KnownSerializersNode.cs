@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
+using MongoDB.Driver.Support;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
 {
@@ -84,8 +85,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             var possibleSerializers = new HashSet<IBsonSerializer>();
             foreach (var serializer in _knownSerializers.Values.SelectMany(hashset => hashset))
             {
-                if (serializer.ValueType.IsAssignableFrom(type)
-                    || (serializer.ValueType.IsEnum() && Enum.GetUnderlyingType(serializer.ValueType).IsAssignableFrom(type)))
+                if (serializer.ValueType == type || serializer.ValueType.IsEnum() && type.IsNumericUnderlyingEnumType())
                 {
                     possibleSerializers.Add(serializer);
                 }

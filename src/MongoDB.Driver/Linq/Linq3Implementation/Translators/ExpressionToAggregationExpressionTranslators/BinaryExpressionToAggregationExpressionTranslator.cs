@@ -31,8 +31,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 return StringGetCharsComparisonExpressionToAggregationExpressionTranslator.Translate(context, expression, getCharsExpression);
             }
 
-            var leftExpression = ConvertHelper.RemoveUnnecessaryConvert(expression.Left);
-            var rightExpression = ConvertHelper.RemoveUnnecessaryConvert(expression.Right);
+            var leftExpression = ConvertHelper.RemoveWideningConvert(
+                                 ConvertHelper.RemoveEnumConvert(expression.Left));
+            var rightExpression = ConvertHelper.RemoveWideningConvert(
+                                  ConvertHelper.RemoveEnumConvert(expression.Right));
 
             var leftTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, leftExpression);
             var rightTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, rightExpression);
@@ -75,6 +77,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 Type t when t == typeof(double) => new DoubleSerializer(),
                 Type t when t == typeof(decimal) => new DecimalSerializer(),
                 Type { IsConstructedGenericType: true } t when t.GetGenericTypeDefinition() == typeof(Nullable<>) => (IBsonSerializer)Activator.CreateInstance(typeof(NullableSerializer<>).MakeGenericType(t.GenericTypeArguments[0])),
+                Type { IsArray: true } t => (IBsonSerializer)Activator.CreateInstance(typeof(ArraySerializer<>).MakeGenericType(t.GetElementType())),
                 _ => context.KnownSerializersRegistry.GetSerializer(expression) // Required for Coalesce
             };
 

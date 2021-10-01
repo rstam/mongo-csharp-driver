@@ -15,7 +15,6 @@
 
 using System;
 using System.Linq.Expressions;
-using MongoDB.Driver.Linq;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 {
@@ -37,14 +36,29 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             throw new ExpressionNotSupportedException(expression);
         }
 
-        public static Expression RemoveUnnecessaryConvert(Expression expression)
+        public static Expression RemoveEnumConvert(Expression expression)
+        {
+            if (expression.NodeType == ExpressionType.Convert)
+            {
+                var convertExpression = (UnaryExpression)expression;
+                var sourceType = convertExpression.Operand.Type;
+                if (sourceType.IsEnum())
+                {
+                    return convertExpression.Operand;
+                }
+            }
+
+            return expression;
+        }
+
+        public static Expression RemoveWideningConvert(Expression expression)
         {
             if (expression.NodeType == ExpressionType.Convert)
             {
                 var convertExpression = (UnaryExpression)expression;
                 var sourceType = convertExpression.Operand.Type;
                 var targetType = expression.Type;
-                if (IsWideningConvert(sourceType, targetType) || sourceType.IsEnum())
+                if (IsWideningConvert(sourceType, targetType))
                 {
                     return convertExpression.Operand;
                 }

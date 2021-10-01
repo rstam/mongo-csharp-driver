@@ -30,7 +30,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
             if (method.Is(MathMethod.Sqrt))
             {
-                var argumentExpression = ConvertHelper.RemoveUnnecessaryConvert(arguments[0]);
+                var argumentExpression = ConvertHelper.RemoveWideningConvert(arguments[0]);
                 var argumentTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, argumentExpression);
                 var ast = AstExpression.Sqrt(argumentTranslation.Ast);
                 return new AggregationExpression(expression, ast, new DoubleSerializer());
