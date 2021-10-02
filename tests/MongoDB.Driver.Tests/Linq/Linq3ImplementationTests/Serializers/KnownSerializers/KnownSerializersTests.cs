@@ -30,6 +30,15 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
     {
         #region static
         private static readonly IMongoDatabase __database = DriverTestConfiguration.Client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
+
+        static KnownSerializersTests()
+        {
+            BsonClassMap.RegisterClassMap<C3>(cm =>
+            {
+                cm.AutoMap();
+                cm.MapMember(p => p.Es).SetSerializer(new EnumSerializer<E>(BsonType.String));
+            });
+        }
         #endregion
 
         #region class definitions for testing
@@ -38,8 +47,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         private class C1
         {
             public E Ei { get; set; }
-            [BsonRepresentation(BsonType.String)]
-            public E Es { get; set; }
         }
 
         private class C2
@@ -91,11 +98,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         [InlineData(E.B, "{ \"Result\" : { \"$eq\" : [ \"$Es\", \"B\" ] }, \"_id\" : 0 }")]
         public void Where_operator_equal_should_render_enum_as_string_when_configured_with_class_map(E value, string expectedProjection)
         {
-            BsonClassMap.RegisterClassMap<C3>(cm =>
-            {
-                cm.AutoMap();
-                cm.MapMember(p => p.Es).SetSerializer(new EnumSerializer<E>(BsonType.String));
-            });
             var collection = __database.GetCollection<C3>(DriverTestConfiguration.CollectionNamespace.CollectionName);
             var subject = collection.AsQueryable3();
 
