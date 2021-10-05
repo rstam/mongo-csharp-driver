@@ -52,7 +52,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         // public methods
         public override Expression Visit(Expression node)
         {
-            if (node == null) return null;
+            if (node == null)
+            {
+                return null;
+            }
 
             _currentKnownSerializersNode = new KnownSerializersNode(_currentKnownSerializersNode);
 
@@ -70,13 +73,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
         protected override Expression VisitMember(MemberExpression node)
         {
             var result = base.VisitMember(node);
-            if (_currentSerializer.TryGetMemberSerializationInfo(node.Member.Name, out var memberSerializer))
+            if (_currentSerializer != null &&
+                _currentSerializer.TryGetMemberSerializationInfo(node.Member.Name, out var memberSerializationInfo))
             {
-                PropagateToRoot(node, memberSerializer.Serializer);
+                _currentKnownSerializersNode.AddKnownSerializer(node.Type, memberSerializationInfo.Serializer);
 
-                if (memberSerializer.Serializer is IBsonDocumentSerializer bsonDocumentSerializer)
+                if (memberSerializationInfo.Serializer is IBsonDocumentSerializer bsonDocumentSerializer)
                 {
                     _currentSerializer = bsonDocumentSerializer;
+                }
+                else
+                {
+                    _currentSerializer = null;
                 }
             }
             return result;
@@ -90,7 +98,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             {
                 var actualType = node.Method.GetGenericArguments()[0];
                 var serializer = BsonSerializer.LookupSerializer(actualType);
-                PropagateToRoot(node, serializer);
+                _currentKnownSerializersNode.AddKnownSerializer(node.Type, serializer);
             }
 
             return result;
@@ -125,7 +133,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
                 serializer = (IBsonSerializer)Activator.CreateInstance(serializerType, classMap);
             }
 
-            PropagateToRoot(node, serializer);
+            _currentKnownSerializersNode.AddKnownSerializer(node.Type, serializer);
 
             return result;
         }
@@ -137,29 +145,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             if (node.Type == _rootSerializer.ValueType)
             {
                 _currentSerializer = _rootSerializer;
-                PropagateToRoot(node, _rootSerializer);
+                _currentKnownSerializersNode.AddKnownSerializer(node.Type, _rootSerializer);
             }
 
-            if (_currentSerializer is IBsonArraySerializer bsonArraySerializer &&
-                bsonArraySerializer.TryGetItemSerializationInfo(out var itemSerializerInfo) &&
-                node.Type == itemSerializerInfo.NominalType &&
-                itemSerializerInfo.Serializer is IBsonDocumentSerializer bsonDocumentSerializer)
+            if (_currentSerializer is IBsonArraySerializer arraySerializer &&
+                arraySerializer.TryGetItemSerializationInfo(out var itemSerializationInfo) &&
+                node.Type == itemSerializationInfo.NominalType &&
+                itemSerializationInfo.Serializer is IBsonDocumentSerializer documentSerializer)
             {
-                _currentSerializer = bsonDocumentSerializer;
-                PropagateToRoot(node, bsonDocumentSerializer);
+                _currentSerializer = documentSerializer;
+                _currentKnownSerializersNode.AddKnownSerializer(node.Type, documentSerializer);
             }
 
             return result;
-        }
-
-        private void PropagateToRoot(Expression node, IBsonSerializer memberSerializer)
-        {
-            var knownSerializers = _currentKnownSerializersNode;
-            while (knownSerializers != null)
-            {
-                knownSerializers.AddKnownSerializer(node.Type, memberSerializer);
-                knownSerializers = knownSerializers.Parent;
-            }
         }
     }
 }

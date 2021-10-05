@@ -36,13 +36,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             throw new ExpressionNotSupportedException(expression);
         }
 
-        public static Expression RemoveEnumConvert(Expression expression)
+        public static Expression RemoveConvertToEnumUnderlyingType(Expression expression)
         {
             if (expression.NodeType == ExpressionType.Convert)
             {
                 var convertExpression = (UnaryExpression)expression;
                 var sourceType = convertExpression.Operand.Type;
-                if (sourceType.IsEnum())
+                var targetType = convertExpression.Type;
+                if (sourceType.IsEnum() && targetType == Enum.GetUnderlyingType(sourceType))
                 {
                     return convertExpression.Operand;
                 }

@@ -19,7 +19,6 @@ using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers;
 using Xunit;
 
@@ -27,9 +26,13 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
 {
     public class KnownSerializerFinderTests
     {
-        private readonly IBsonDocumentSerializer _collectionSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<C>();
+        #region static
+        private static IBsonDocumentSerializer GetCollectionSerializer()
+        {
+            return (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<C>();
+        }
+        #endregion
 
-        #region class definitions for testing
         private enum E { A, B }
 
         private class C
@@ -53,133 +56,121 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         {
             public A A { get; set; }
         }
-        #endregion
 
         [Fact]
         public void Identity_expression_should_return_collection_serializer()
         {
             Expression<Func<C, C>> expression = x => x;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var serializer = result.GetSerializer(expression.Body);
-            serializer.Should().Be(_collectionSerializer);
-            serializer.Should().BeOfType<BsonClassMapSerializer<C>>();
+            serializer.Should().Be(collectionSerializer);
         }
 
         [Fact]
         public void Int_property_expression_should_return_int_serializer()
         {
             Expression<Func<C, int>> expression = x => x.P;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var serializer = result.GetSerializer(expression.Body);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.P), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.P), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<Int32Serializer>();
         }
 
         [Fact]
         public void Enum_property_expression_should_return_enum_serializer_with_int_representation()
         {
             Expression<Func<C, E>> expression = x => x.Ei;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var serializer = result.GetSerializer(expression.Body);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<EnumSerializer<E>>();
-            var enumRepresentation = ((EnumSerializer<E>)serializer).Representation;
-            enumRepresentation.Should().Be(BsonType.Int32);
         }
 
         [Fact]
         public void Enum_comparison_expression_should_return_enum_serializer_with_int_representation()
         {
             Expression<Func<C, bool>> expression = x => x.Ei == E.A;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var equalsExpression = (BinaryExpression)expression.Body;
             var serializer = result.GetSerializer(equalsExpression.Right);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<EnumSerializer<E>>();
-            var enumRepresentation = ((EnumSerializer<E>)serializer).Representation;
-            enumRepresentation.Should().Be(BsonType.Int32);
         }
 
         [Fact]
         public void Enum_property_expression_should_return_enum_serializer_with_string_representation()
         {
             Expression<Func<C, E>> expression = x => x.Es;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var serializer = result.GetSerializer(expression.Body);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<EnumSerializer<E>>();
-            var enumRepresentation = ((EnumSerializer<E>)serializer).Representation;
-            enumRepresentation.Should().Be(BsonType.String);
         }
 
         [Fact]
         public void Enum_comparison_expression_should_return_enum_serializer_with_string_representation()
         {
             Expression<Func<C, bool>> expression = x => x.Es == E.A;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var equalsExpression = (BinaryExpression)expression.Body;
             var serializer = result.GetSerializer(equalsExpression.Right);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<EnumSerializer<E>>();
-            var enumRepresentation = ((EnumSerializer<E>)serializer).Representation;
-            enumRepresentation.Should().Be(BsonType.String);
         }
 
         [Fact]
         public void Conditional_expression_should_return_enum_serializer_with_int_representation()
         {
             Expression<Func<C, E>> expression = x => x.Ei == E.A ? E.B : x.Ei;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var conditionalExpression = (ConditionalExpression)expression.Body;
             var serializer = result.GetSerializer(conditionalExpression.IfTrue);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<EnumSerializer<E>>();
-            var enumRepresentation = ((EnumSerializer<E>)serializer).Representation;
-            enumRepresentation.Should().Be(BsonType.Int32);
         }
 
         [Fact]
         public void Conditional_expression_should_return_enum_serializer_with_string_representation()
         {
             Expression<Func<C, E>> expression = x => x.Es == E.A ? E.B : x.Es;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var conditionalExpression = (ConditionalExpression)expression.Body;
             var serializer = result.GetSerializer(conditionalExpression.IfTrue);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedPropertySerializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var expectedPropertySerializer).Should().BeTrue();
             serializer.Should().Be(expectedPropertySerializer.Serializer);
-            serializer.Should().BeOfType<EnumSerializer<E>>();
-            var enumRepresentation = ((EnumSerializer<E>)serializer).Representation;
-            enumRepresentation.Should().Be(BsonType.String);
         }
 
         [Fact]
         public void Conditional_expression_with_different_enum_representations_should_throw()
         {
             Expression<Func<C, E>> expression = x => x.Ei == E.A ? E.B : x.Es;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var conditionalExpression = (ConditionalExpression)expression.Body;
             Assert.Throws<InvalidOperationException>(() => result.GetSerializer(conditionalExpression.IfTrue));
@@ -189,28 +180,30 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         public void Property_chain_should_return_correct_nested_serializer()
         {
             Expression<Func<C, B>> expression = x => x.A.B;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var serializer = result.GetSerializer(expression.Body);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.A), out var aSerializer);
-            ((BsonClassMapSerializer<A>)aSerializer.Serializer).TryGetMemberSerializationInfo(nameof(A.B), out var expectedSerializer);
-            serializer.Should().Be(expectedSerializer.Serializer);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.A), out var aSerializationInfo).Should().BeTrue();
+            ((BsonClassMapSerializer<A>)aSerializationInfo.Serializer).TryGetMemberSerializationInfo(nameof(A.B), out var bSerializationInfo).Should().BeTrue();
+            serializer.Should().Be(bSerializationInfo.Serializer);
         }
 
         [Fact]
         public void Two_property_chains_should_each_return_correct_nested_serializer()
         {
             Expression<Func<C, E>> expression = x => x.A.B == null ? x.Ei : x.Es;
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var conditionalExpression = (ConditionalExpression)expression.Body;
             var trueBranchSerializer = result.GetSerializer(conditionalExpression.IfTrue);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var eiSerializationInfo);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Ei), out var eiSerializationInfo).Should().BeTrue();
             trueBranchSerializer.Should().Be(eiSerializationInfo.Serializer);
             var falseBranchSerializer = result.GetSerializer(conditionalExpression.IfFalse);
-            _collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var esSerializationInfo);
+            collectionSerializer.TryGetMemberSerializationInfo(nameof(C.Es), out var esSerializationInfo).Should().BeTrue();
             falseBranchSerializer.Should().Be(esSerializationInfo.Serializer);
         }
 
@@ -218,8 +211,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         public void Projection_into_new_type_should_return_correct_serializer()
         {
             Expression<Func<C, View>> expression = x => new View { A = x.A };
+            var collectionSerializer = GetCollectionSerializer();
 
-            var result = KnownSerializerFinder.FindKnownSerializers(expression, _collectionSerializer);
+            var result = KnownSerializerFinder.FindKnownSerializers(expression, collectionSerializer);
 
             var serializer = result.GetSerializer(expression.Body);
             serializer.ValueType.Should().Be(typeof(View));

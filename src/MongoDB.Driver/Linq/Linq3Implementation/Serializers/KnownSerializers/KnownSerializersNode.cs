@@ -85,7 +85,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
             var possibleSerializers = new HashSet<IBsonSerializer>();
             foreach (var serializer in _knownSerializers.Values.SelectMany(hashset => hashset))
             {
-                if (serializer.ValueType == type || serializer.ValueType.IsEnum() && type.IsNumericUnderlyingEnumType())
+                var valueType = serializer.ValueType;
+                if (valueType == type || valueType.IsEnum() && Enum.GetUnderlyingType(valueType) == type)
                 {
                     possibleSerializers.Add(serializer);
                 }
@@ -99,7 +100,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Serializers.KnownSerializers
                     }
                 }
 
-                if (serializer.ValueType == itemType)
+                if (valueType == itemType)
                 {
                     var ienumerableSerializer = IEnumerableSerializer.Create(serializer);
                     possibleSerializers.Add(ienumerableSerializer);

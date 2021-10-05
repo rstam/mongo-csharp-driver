@@ -47,7 +47,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
 
             var knownSerializersRegistry = KnownSerializerFinder.FindKnownSerializers(expression, (IBsonDocumentSerializer)provider.CollectionDocumentSerializer);
             var context = new TranslationContext(knownSerializersRegistry);
-            // var context = new TranslationContext();
             var methodCallExpression = (MethodCallExpression)expression;
             switch (methodCallExpression.Method.Name)
             {

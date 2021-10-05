@@ -19,7 +19,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Serializers;
-using MongoDB.Driver.Linq;
 using MongoDB.Driver.Linq.Linq3Implementation;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecutableQueryTranslators;
 using Xunit;
@@ -29,7 +28,13 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
     public class KnownSerializersTests
     {
         #region static
-        private static readonly IMongoDatabase __database = DriverTestConfiguration.Client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
+        private static IQueryable<TDocument> GetSubject<TDocument>()
+        {
+            var client = DriverTestConfiguration.Client;
+            var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
+            var collection = database.GetCollection<TDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
+            return collection.AsQueryable3();
+        }
 
         static KnownSerializersTests()
         {
@@ -41,7 +46,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         }
         #endregion
 
-        #region class definitions for testing
         public enum E { A, B };
 
         private class C1
@@ -65,15 +69,13 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         {
             public bool Result { get; set; }
         }
-        #endregion
 
         [Theory]
         [InlineData(E.A, "{ \"Result\" : { \"$eq\" : [ \"$Ei\", 0 ] }, \"_id\" : 0 }")]
         [InlineData(E.B, "{ \"Result\" : { \"$eq\" : [ \"$Ei\", 1 ] }, \"_id\" : 0 }")]
         public void Where_operator_equal_should_render_correctly(E value, string expectedProjection)
         {
-            var collection = __database.GetCollection<C1>(DriverTestConfiguration.CollectionNamespace.CollectionName);
-            var subject = collection.AsQueryable3();
+            var subject = GetSubject<C1>();
 
             var queryable = subject.Select(x => new Results { Result = x.Ei == value });
 
@@ -85,8 +87,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         [InlineData(E.B, "{ \"Result\" : { \"$eq\" : [ \"$Es\", \"B\" ] }, \"_id\" : 0 }")]
         public void Where_operator_equal_should_render_enum_as_string(E value, string expectedProjection)
         {
-            var collection = __database.GetCollection<C2>(DriverTestConfiguration.CollectionNamespace.CollectionName);
-            var subject = collection.AsQueryable3();
+            var subject = GetSubject<C2>();
 
             var queryable = subject.Select(x => new Results { Result = x.Es == value });
 
@@ -98,8 +99,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         [InlineData(E.B, "{ \"Result\" : { \"$eq\" : [ \"$Es\", \"B\" ] }, \"_id\" : 0 }")]
         public void Where_operator_equal_should_render_enum_as_string_when_configured_with_class_map(E value, string expectedProjection)
         {
-            var collection = __database.GetCollection<C3>(DriverTestConfiguration.CollectionNamespace.CollectionName);
-            var subject = collection.AsQueryable3();
+            var subject = GetSubject<C3>();
 
             var queryable = subject.Select(x => new Results { Result = x.Es == value });
 
@@ -111,8 +111,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
         [InlineData(E.B, "{ \"Result\" : { \"$and\" : [{ \"$eq\" : [ \"$Ei\", 1 ] }, { \"$eq\" : [ \"$Es\", \"B\" ] }]}, \"_id\" : 0 }")]
         public void Where_operator_equal_should_render_string_enum_as_string_and_int32_enum_as_int32(E value, string expectedProjection)
         {
-            var collection = __database.GetCollection<C2>(DriverTestConfiguration.CollectionNamespace.CollectionName);
-            var subject = collection.AsQueryable3();
+            var subject = GetSubject<C2>();
 
             var queryable = subject.Select(x => new Results { Result = x.Ei == value && x.Es == value });
 

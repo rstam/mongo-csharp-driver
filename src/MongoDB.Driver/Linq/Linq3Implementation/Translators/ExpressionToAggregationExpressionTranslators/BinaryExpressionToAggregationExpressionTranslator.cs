@@ -19,6 +19,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
+using MongoDB.Driver.Support;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
 {
@@ -31,10 +32,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 return StringGetCharsComparisonExpressionToAggregationExpressionTranslator.Translate(context, expression, getCharsExpression);
             }
 
-            var leftExpression = ConvertHelper.RemoveWideningConvert(
-                                 ConvertHelper.RemoveEnumConvert(expression.Left));
-            var rightExpression = ConvertHelper.RemoveWideningConvert(
-                                  ConvertHelper.RemoveEnumConvert(expression.Right));
+            var leftExpression = expression.Left;
+            var rightExpression = expression.Right;
+            if (IsArithmeticExpression(expression))
+            {
+                leftExpression = ConvertHelper.RemoveWideningConvert(leftExpression);
+                rightExpression = ConvertHelper.RemoveWideningConvert(rightExpression);
+            }
+
+            if (IsEnumComparisonExpression(expression))
+            {
+                leftExpression = ConvertHelper.RemoveConvertToEnumUnderlyingType(leftExpression);
+                rightExpression = ConvertHelper.RemoveConvertToEnumUnderlyingType(rightExpression);
+            }
 
             var leftTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, leftExpression);
             var rightTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, rightExpression);
@@ -82,6 +92,59 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             };
 
             return new AggregationExpression(expression, ast, serializer);
+        }
+
+        private static bool IsArithmeticExpression(BinaryExpression expression)
+        {
+            return expression.Type.IsNumeric() && IsArithmeticOperator(expression.NodeType);
+        }
+
+        private static bool IsArithmeticOperator(ExpressionType nodeType)
+        {
+            return nodeType switch
+            {
+                ExpressionType.Add => true,
+                ExpressionType.Divide => true,
+                ExpressionType.Modulo => true,
+                ExpressionType.Multiply => true,
+                ExpressionType.Power => true,
+                ExpressionType.Subtract => true,
+                _ => false
+            };
+        }
+
+        private static bool IsComparisonOperator(ExpressionType nodeType)
+        {
+            return nodeType switch
+            {
+                ExpressionType.Equal => true,
+                ExpressionType.GreaterThan => true,
+                ExpressionType.GreaterThanOrEqual => true,
+                ExpressionType.LessThan => true,
+                ExpressionType.LessThanOrEqual => true,
+                ExpressionType.NotEqual => true,
+                _ => false
+            };
+        }
+
+        private static bool IsEnumComparisonExpression(BinaryExpression expression)
+        {
+            return
+                IsComparisonOperator(expression.NodeType) &&
+                (IsConvertToEnumUnderlyingType(expression.Left) || IsConvertToEnumUnderlyingType(expression.Right));
+
+            static bool IsConvertToEnumUnderlyingType(Expression expression)
+            {
+                if (expression.NodeType == ExpressionType.Convert)
+                {
+                    var convertExpression = (UnaryExpression)expression;
+                    var sourceType = convertExpression.Operand.Type;
+                    var targetType = convertExpression.Type;
+                    return sourceType.IsEnum() && targetType == Enum.GetUnderlyingType(sourceType);
+                }
+
+                return false;
+            }
         }
 
         private static bool IsStringConcatenationExpression(BinaryExpression expression)
