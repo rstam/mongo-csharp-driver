@@ -429,8 +429,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsTestsOnLinq3.Transla
         private ProjectedResult<TResult> Group<TKey, TResult>(Expression<Func<Root, TKey>> idProjector, Expression<Func<IGrouping<TKey, Root>, TResult>> groupProjector, ExpressionTranslationOptions translationOptions)
         {
             var queryable = __collection.AsQueryable3()
-                                        .GroupBy(idProjector)
-                                        .Select(groupProjector);
+                .GroupBy(idProjector)
+                .Select(groupProjector);
 
             var collectionSerializer = (IBsonDocumentSerializer)BsonSerializer.LookupSerializer<Root>();
             var knownSerializersRegistry = KnownSerializerFinder.FindKnownSerializers(queryable.Expression, collectionSerializer);

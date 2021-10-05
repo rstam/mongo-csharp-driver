@@ -28,14 +28,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
     public class KnownSerializersTests
     {
         #region static
-        private static IQueryable<TDocument> GetSubject<TDocument>()
-        {
-            var client = DriverTestConfiguration.Client;
-            var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
-            var collection = database.GetCollection<TDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
-            return collection.AsQueryable3();
-        }
-
         static KnownSerializersTests()
         {
             BsonClassMap.RegisterClassMap<C3>(cm =>
@@ -118,15 +110,22 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Serializers.KnownSe
             AssertProjection<C2, Results>(queryable, expectedProjection);
         }
 
-        // private methods
-        private static void AssertProjection<TDocument, TOutput>(IQueryable<TOutput> queryable, string expectedProjection)
+        private IQueryable<TDocument> GetSubject<TDocument>()
+        {
+            var client = DriverTestConfiguration.Client;
+            var database = client.GetDatabase(DriverTestConfiguration.DatabaseNamespace.DatabaseName);
+            var collection = database.GetCollection<TDocument>(DriverTestConfiguration.CollectionNamespace.CollectionName);
+            return collection.AsQueryable3();
+        }
+
+        private void AssertProjection<TDocument, TOutput>(IQueryable<TOutput> queryable, string expectedProjection)
         {
             var stages = Translate<TDocument, TOutput>(queryable);
             stages.Should().HaveCount(1);
             stages[0].Should().Be($"{{ \"$project\" : {expectedProjection} }}");
         }
 
-        private static BsonDocument[] Translate<TDocument, TOutput>(IQueryable<TOutput> queryable)
+        private BsonDocument[] Translate<TDocument, TOutput>(IQueryable<TOutput> queryable)
         {
             var provider = (MongoQueryProvider<TDocument>)queryable.Provider;
             var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(provider, queryable.Expression);
