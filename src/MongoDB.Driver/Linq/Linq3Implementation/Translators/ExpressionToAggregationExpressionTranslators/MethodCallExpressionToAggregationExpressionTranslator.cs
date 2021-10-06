@@ -37,6 +37,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 case "ElementAt": return ElementAtMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Equals": return EqualsMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Except": return ExceptMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Exists": return ExistsMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Exp": return ExpMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Floor": return FloorMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "get_Item": return GetItemMethodToAggregationExpressionTranslator.Translate(context, expression);

@@ -48,6 +48,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast
         DateToPartsExpression,
         DateToStringExpression,
         ElemMatchFilterOperation,
+        ExistsExpression,
         ExistsFilterOperation,
         ExprFilter,
         FacetStage,

@@ -295,6 +295,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstBinaryExpression(AstBinaryOperator.Eq, arg1, arg2);
         }
 
+        public static AstExpression Exists(AstExpression field, bool exists)
+        {
+            return new AstExistsExpression(field, exists);
+        }
+
         public static AstExpression Exp(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Exp, arg);
