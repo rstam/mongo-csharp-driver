@@ -41,11 +41,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 
         public override BsonValue Render()
         {
-            // return new BsonDocument("$exists", new BsonArray { _field.Render(), _exists });
-
-            // TODO: move this to AstSimplifier
-            var @operator = _exists ? "$ne" : "$eq";
-            return new BsonDocument(@operator, new BsonArray { _field.Render(), BsonUndefined.Value });
+            // the $exists operator doesn't actually exist (yet?)
+            // it will be replaced with a comparison to BsonUndefined by the AstSimplifier
+            return new BsonDocument("$exists", new BsonArray { _field.Render(), _exists });
         }
 
         public AstExistsExpression Update(AstExpression arg)

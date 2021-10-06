@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
@@ -33,6 +34,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
             return (TNode)Simplify(node);
         }
         #endregion
+
+        public override AstNode VisitExistsExpression(AstExistsExpression node)
+        {
+            var simplifiedField = VisitAndConvert(node.Field);
+            return node.Exists ?
+                AstExpression.Ne(simplifiedField, BsonUndefined.Value) :
+                AstExpression.Eq(simplifiedField, BsonUndefined.Value);
+        }
 
         public override AstNode VisitGetFieldExpression(AstGetFieldExpression node)
         {
