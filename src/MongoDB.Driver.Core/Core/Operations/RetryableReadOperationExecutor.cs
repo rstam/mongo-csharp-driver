@@ -41,44 +41,38 @@ namespace MongoDB.Driver.Core.Operations
             }
 
             var initialServerVersion = context.Channel.ConnectionDescription.ServerVersion;
-            Exception originalException;
             try
             {
                 return operation.ExecuteAttempt(context, attempt: 1, transactionNumber: null, cancellationToken);
+            }
+            catch (Exception originalException) when (RetryabilityHelper.IsRetryableReadException(originalException))
+            {
+                var throwOriginalException = true;
+                try
+                {
+                    context.ReplaceChannelSource(context.Binding.GetReadChannelSource(cancellationToken));
+                    context.ReplaceChannel(context.ChannelSource.GetChannel(cancellationToken));
 
-            }
-            catch (Exception ex) when (RetryabilityHelper.IsRetryableReadException(ex))
-            {
-                originalException = ex;
-            }
+                    if (context.Channel.ConnectionDescription.ServerVersion >= initialServerVersion &&
+                        AreRetryableReadsSupported(context))
+                    {
+                        try
+                        {
+                            return operation.ExecuteAttempt(context, attempt: 2, transactionNumber: null, cancellationToken);
+                        }
+                        catch (Exception retryException)
+                        {
+                            throwOriginalException = ShouldThrowOriginalException(retryException);
+                            throw;
+                        }
+                    }
+                }
+                catch (Exception) when (throwOriginalException)
+                {
+                    // ignore retry exception and rethrow original exception below
+                }
 
-            try
-            {
-                context.ReplaceChannelSource(context.Binding.GetReadChannelSource(cancellationToken));
-                context.ReplaceChannel(context.ChannelSource.GetChannel(cancellationToken));
-            }
-            catch
-            {
-                throw originalException;
-            }
-
-            if (context.Channel.ConnectionDescription.ServerVersion < initialServerVersion)
-            {
-                throw originalException;
-            }
-
-            if (!AreRetryableReadsSupported(context))
-            {
-                throw originalException;
-            }
-
-            try
-            {
-                return operation.ExecuteAttempt(context, attempt: 2, transactionNumber: null, cancellationToken);
-            }
-            catch (Exception ex) when (ShouldThrowOriginalException(ex))
-            {
-                throw originalException;
+                throw; // rethrow original exception
             }
         }
 
