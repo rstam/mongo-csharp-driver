@@ -25,8 +25,8 @@ namespace MongoDB.Driver.Tests.Jira
     public class CSharp3991Tests
     {
         // test all combinations of:
-        // filter: FilterDefinition, Expression, BsonDocument, string
-        // options: omitted, present without projection, present with projection
+        // filter: FilterDefinition, Expression, lambda expression, BsonDocument, string
+        // options: omitted, null, without projection, with projection
         // session: omitted, present
         // async: no, yes
 
@@ -46,6 +46,30 @@ namespace MongoDB.Driver.Tests.Jira
                 (false, true) => collection.FindAsync(filter).GetAwaiter().GetResult(),
                 (true, false) => collection.FindSync(session, filter),
                 (true, true) => collection.FindAsync(session, filter).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Find_with_filter_definition_and_options_null_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var filter = Builders<C>.Filter.Eq("Id", 1);
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(filter, null),
+                (false, true) => collection.FindAsync(filter, null).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, filter, null),
+                (true, true) => collection.FindAsync(session, filter, null).GetAwaiter().GetResult()
             };
 
             var results = cursor.ToList();
@@ -133,6 +157,30 @@ namespace MongoDB.Driver.Tests.Jira
 
         [Theory]
         [ParameterAttributeData]
+        public void Find_with_filter_expression_and_options_null_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var filter = (Expression<Func<C, bool>>)(c => c.Id == 1);
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(filter, null),
+                (false, true) => collection.FindAsync(filter, null).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, filter, null),
+                (true, true) => collection.FindAsync(session, filter, null).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
         public void Find_with_filter_expression_and_options_without_projection_should_work(
             [Values(false, true)] bool withSession,
             [Values(false, true)] bool async)
@@ -185,6 +233,103 @@ namespace MongoDB.Driver.Tests.Jira
 
         [Theory]
         [ParameterAttributeData]
+        public void Find_with_filter_lambda_expression_and_no_options_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(c => c.Id == 1),
+                (false, true) => collection.FindAsync(c => c.Id == 1).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, c => c.Id == 1),
+                (true, true) => collection.FindAsync(session, c => c.Id == 1).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Find_with_filter_lambda_expression_and_options_null_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(c => c.Id == 1, null),
+                (false, true) => collection.FindAsync(c => c.Id == 1, null).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, c => c.Id == 1, null),
+                (true, true) => collection.FindAsync(session, c => c.Id == 1, null).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Find_with_filter_lambda_expression_and_options_without_projection_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var options = new FindOptions<C>();
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(c => c.Id == 1, options),
+                (false, true) => collection.FindAsync(c => c.Id == 1, options).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, c => c.Id == 1, options),
+                (true, true) => collection.FindAsync(session, c => c.Id == 1, options).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Find_with_filter_lambda_expression_and_options_with_projection_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var options = new FindOptions<C, P>()
+            {
+                Projection = Builders<C>.Projection.Include("X").Exclude("Id")
+            };
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(c => c.Id == 1, options),
+                (false, true) => collection.FindAsync(c => c.Id == 1, options).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, c => c.Id == 1, options),
+                (true, true) => collection.FindAsync(session, c => c.Id == 1, options).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
         public void Find_with_filter_document_and_no_options_should_work(
             [Values(false, true)] bool withSession,
             [Values(false, true)] bool async)
@@ -199,6 +344,30 @@ namespace MongoDB.Driver.Tests.Jira
                 (false, true) => collection.FindAsync(filter).GetAwaiter().GetResult(),
                 (true, false) => collection.FindSync(session, filter),
                 (true, true) => collection.FindAsync(session, filter).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void Find_with_filter_document_and_options_null_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var filter = new BsonDocument("_id", 1);
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(filter, null),
+                (false, true) => collection.FindAsync(filter, null).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, filter, null),
+                (true, true) => collection.FindAsync(session, filter, null).GetAwaiter().GetResult()
             };
 
             var results = cursor.ToList();
@@ -285,6 +454,30 @@ namespace MongoDB.Driver.Tests.Jira
 
         [Theory]
         [ParameterAttributeData]
+        public void Find_with_filter_json_and_options_null_should_work(
+            [Values(false, true)] bool withSession,
+            [Values(false, true)] bool async)
+        {
+            var (client, collection) = Setup();
+            var filter = "{ _id : 1 }";
+            var session = withSession ? client.StartSession() : null;
+
+            using var cursor = (withSession, async) switch
+            {
+                (false, false) => collection.FindSync(filter, null),
+                (false, true) => collection.FindAsync(filter, null).GetAwaiter().GetResult(),
+                (true, false) => collection.FindSync(session, filter, null),
+                (true, true) => collection.FindAsync(session, filter, null).GetAwaiter().GetResult()
+            };
+
+            var results = cursor.ToList();
+            results.Count.Should().Be(1);
+            results[0].Id.Should().Be(1);
+            results[0].X.Should().Be(2);
+        }
+
+        [Theory]
+        [ParameterAttributeData]
         public void Find_with_filter_json_and_options_without_projection_should_work(
             [Values(false, true)] bool withSession,
             [Values(false, true)] bool async)
@@ -342,7 +535,7 @@ namespace MongoDB.Driver.Tests.Jira
 
             using var cursor =
                 collection.FindSync(
-                    new ExpressionFilterDefinition<C>(x => x.Id == 1),
+                    x => x.Id == 1,
                     new FindOptions<C, P>()
                     {
                         Projection = Builders<C>.Projection.Include(x => x.X).Exclude(x => x.Id)

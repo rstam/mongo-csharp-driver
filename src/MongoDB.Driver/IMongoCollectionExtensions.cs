@@ -994,6 +994,46 @@ namespace MongoDB.Driver
         /// Finds the documents matching the filter.
         /// </summary>
         /// <typeparam name="TDocument">The type of the document.</typeparam>
+        /// <typeparam name="TProjection">The type of the projection.</typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="filter">The filter.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A Task whose result is a cursor.</returns>
+        public static IAsyncCursor<TProjection> FindSync<TDocument, TProjection>(this IMongoCollection<TDocument> collection, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TProjection> options, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Ensure.IsNotNull(collection, nameof(collection));
+            Ensure.IsNotNull(filter, nameof(filter));
+
+            return collection.FindSync(new ExpressionFilterDefinition<TDocument>(filter), options, cancellationToken);
+        }
+
+        /// <summary>
+        /// Finds the documents matching the filter.
+        /// </summary>
+        /// <typeparam name="TDocument">The type of the document.</typeparam>
+        /// <typeparam name="TProjection">The type of the projection.</typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="session">The session.</param>
+        /// <param name="filter">The filter.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// A Task whose result is a cursor.
+        /// </returns>
+        public static IAsyncCursor<TProjection> FindSync<TDocument, TProjection>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TProjection> options, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Ensure.IsNotNull(collection, nameof(collection));
+            Ensure.IsNotNull(session, nameof(session));
+            Ensure.IsNotNull(filter, nameof(filter));
+
+            return collection.FindSync(session, new ExpressionFilterDefinition<TDocument>(filter), options, cancellationToken);
+        }
+
+        /// <summary>
+        /// Finds the documents matching the filter.
+        /// </summary>
+        /// <typeparam name="TDocument">The type of the document.</typeparam>
         /// <param name="collection">The collection.</param>
         /// <param name="filter">The filter.</param>
         /// <param name="options">The options.</param>
@@ -1064,6 +1104,46 @@ namespace MongoDB.Driver
             Ensure.IsNotNull(filter, nameof(filter));
 
             return collection.FindAsync<TDocument>(session, new ExpressionFilterDefinition<TDocument>(filter), options, cancellationToken);
+        }
+
+        /// <summary>
+        /// Finds the documents matching the filter.
+        /// </summary>
+        /// <typeparam name="TDocument">The type of the document.</typeparam>
+        /// <typeparam name="TProjection">The type of the projection.</typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="filter">The filter.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>A Task whose result is a cursor.</returns>
+        public static Task<IAsyncCursor<TProjection>> FindAsync<TDocument, TProjection>(this IMongoCollection<TDocument> collection, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TProjection> options, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Ensure.IsNotNull(collection, nameof(collection));
+            Ensure.IsNotNull(filter, nameof(filter));
+
+            return collection.FindAsync(new ExpressionFilterDefinition<TDocument>(filter), options, cancellationToken);
+        }
+
+        /// <summary>
+        /// Finds the documents matching the filter.
+        /// </summary>
+        /// <typeparam name="TDocument">The type of the document.</typeparam>
+        /// <typeparam name="TProjection">The type of the projection.</typeparam>
+        /// <param name="collection">The collection.</param>
+        /// <param name="session">The session.</param>
+        /// <param name="filter">The filter.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        /// <returns>
+        /// A Task whose result is a cursor.
+        /// </returns>
+        public static Task<IAsyncCursor<TProjection>> FindAsync<TDocument, TProjection>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TProjection> options, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            Ensure.IsNotNull(collection, nameof(collection));
+            Ensure.IsNotNull(session, nameof(session));
+            Ensure.IsNotNull(filter, nameof(filter));
+
+            return collection.FindAsync(session, new ExpressionFilterDefinition<TDocument>(filter), options, cancellationToken);
         }
 
         /// <summary>
