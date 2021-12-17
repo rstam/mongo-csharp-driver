@@ -841,7 +841,7 @@ namespace MongoDB.Driver
 
         private static IFindFluent<TDocument, TDocument> FindHelper<TDocument>(IClientSessionHandle session, IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, FindOptions options)
         {
-            FindOptions<TDocument, TDocument> genericOptions;
+            FindOptions<TDocument> genericOptions;
             if (options == null)
             {
                 genericOptions = new FindOptions<TDocument>();
@@ -923,7 +923,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A Task whose result is a cursor.</returns>
-        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(filter, nameof(filter));
@@ -940,7 +940,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A Task whose result is a cursor.</returns>
-        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(filter, nameof(filter));
@@ -960,7 +960,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A Task whose result is a cursor.
         /// </returns>
-        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(session, nameof(session));
@@ -981,7 +981,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A Task whose result is a cursor.
         /// </returns>
-        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static IAsyncCursor<TDocument> FindSync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(session, nameof(session));
@@ -1039,7 +1039,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A Task whose result is a cursor.</returns>
-        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, FilterDefinition<TDocument> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(filter, nameof(filter));
@@ -1056,7 +1056,7 @@ namespace MongoDB.Driver
         /// <param name="options">The options.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>A Task whose result is a cursor.</returns>
-        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(filter, nameof(filter));
@@ -1076,7 +1076,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A Task whose result is a cursor.
         /// </returns>
-        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(session, nameof(session));
@@ -1097,7 +1097,7 @@ namespace MongoDB.Driver
         /// <returns>
         /// A Task whose result is a cursor.
         /// </returns>
-        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument, TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
+        public static Task<IAsyncCursor<TDocument>> FindAsync<TDocument>(this IMongoCollection<TDocument> collection, IClientSessionHandle session, Expression<Func<TDocument, bool>> filter, FindOptions<TDocument> options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             Ensure.IsNotNull(collection, nameof(collection));
             Ensure.IsNotNull(session, nameof(session));
