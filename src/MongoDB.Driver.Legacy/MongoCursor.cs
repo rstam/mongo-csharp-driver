@@ -413,35 +413,7 @@ namespace MongoDB.Driver
         /// <returns>An explanation of thow the query was executed.</returns>
         public virtual BsonDocument Explain(bool verbose)
         {
-            _isFrozen = true;
-            var clone = Clone<BsonDocument>(BsonDocumentSerializer.Instance);
-            clone.SetOption("$explain", true);
-            clone._limit = -clone._limit; // TODO: should this be -1?
-            var explanation = clone.FirstOrDefault();
-            if (!verbose)
-            {
-                explanation.Remove("allPlans");
-                explanation.Remove("oldPlan");
-                if (explanation.Contains("shards"))
-                {
-                    var shards = explanation["shards"];
-                    if (shards.BsonType == BsonType.Array)
-                    {
-                        foreach (BsonDocument shard in shards.AsBsonArray)
-                        {
-                            shard.Remove("allPlans");
-                            shard.Remove("oldPlan");
-                        }
-                    }
-                    else
-                    {
-                        var shard = shards.AsBsonDocument;
-                        shard.Remove("allPlans");
-                        shard.Remove("oldPlan");
-                    }
-                }
-            }
-            return explanation;
+            throw new NotSupportedException("The MongoCursor.Explain method in the Legacy API is no longer supported.");
         }
 
         /// <summary>
