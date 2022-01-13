@@ -18,6 +18,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
@@ -413,8 +414,21 @@ namespace MongoDB.Driver
         /// <returns>An explanation of thow the query was executed.</returns>
         public virtual BsonDocument Explain(bool verbose)
         {
-            throw new NotSupportedException("The MongoCursor.Explain method in the Legacy API is no longer supported.");
+            var verbosity = verbose ? ExplainVerbosity.AllPlansExecution : ExplainVerbosity.QueryPlanner;
+            var explainOperation = CreateExplainOperation(verbosity);
+            return Collection.UsingImplicitSession(session => ExecuteExplainOperation(session));
+
+            BsonDocument ExecuteExplainOperation(IClientSessionHandle session)
+            {
+                return Collection.ExecuteReadOperation(session, explainOperation, ReadPreference);
+            }
         }
+
+        /// <summary>
+        /// Creates an explain operation for this cursor.
+        /// </summary>
+        /// <returns>An explain operation.</returns>
+        protected abstract ExplainOperation CreateExplainOperation(ExplainVerbosity verbosity);
 
         /// <summary>
         /// Sets the collation.
@@ -805,6 +819,13 @@ namespace MongoDB.Driver
         {
             IsFrozen = true;
 
+            var findOperation = CreateFindOperation();
+            var cursor = Collection.ExecuteReadOperation(session, findOperation, ReadPreference);
+            return cursor.ToEnumerable().GetEnumerator();
+        }
+
+        private FindOperation<TDocument> CreateFindOperation()
+        {
             var queryDocument = Query == null ? new BsonDocument() : Query.ToBsonDocument();
             var messageEncoderSettings = Collection.GetMessageEncoderSettings();
 
@@ -848,8 +869,21 @@ namespace MongoDB.Driver
                 Skip = Skip
             };
 
-            var cursor = Collection.ExecuteReadOperation(session, operation, ReadPreference);
-            return cursor.ToEnumerable().GetEnumerator();
+            return operation;
+        }
+
+        /// <inheritdoc/>
+        protected override ExplainOperation CreateExplainOperation(ExplainVerbosity verbosity)
+        {
+            var findOperation = CreateFindOperation();
+            var explainOperation = new ExplainOperation(
+                new DatabaseNamespace(Database.Name),
+                explainableOperation: findOperation,
+                findOperation.MessageEncoderSettings)
+            {
+                Verbosity = verbosity
+            };
+            return explainOperation;
         }
 
         /// <summary>
