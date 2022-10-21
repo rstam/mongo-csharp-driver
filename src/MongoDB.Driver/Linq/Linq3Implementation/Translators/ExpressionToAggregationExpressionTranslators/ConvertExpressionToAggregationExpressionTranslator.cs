@@ -15,10 +15,12 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
+using System.Xml.Schema;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
-using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
 {
@@ -46,6 +48,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     }
                 }
 
+                if (expressionType == typeof(BsonValue))
+                {
+                    return TranslateConvertToBsonValue(expression, operandTranslation.Ast);
+                }
+
                 var ast = operandTranslation.Ast;
                 IBsonSerializer serializer;
                 if (expressionType.IsInterface)
@@ -64,6 +71,43 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             }
 
             throw new ExpressionNotSupportedException(expression);
+        }
+
+        private static AggregationExpression TranslateConvertToBsonValue(UnaryExpression expression, AstExpression operandAst)
+        {
+            var operandType = expression.Operand.Type;
+            if (operandType.IsGenericType && operandType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                operandType = operandType.GetGenericArguments()[0];
+            }
+
+            var convertedOperandAst = Type.GetTypeCode(operandType) switch
+            {
+                TypeCode.Object when operandType == typeof(byte[]) => ErrorIfUnexpectedDataType(operandAst, expectedType: "binData"),
+                TypeCode.Boolean => AstExpression.ToBool(operandAst),
+                TypeCode.DateTime => AstExpression.ToDate(operandAst),
+                TypeCode.Decimal => AstExpression.ToDecimal(operandAst),
+                TypeCode.Object when operandType == typeof(Decimal128) => AstExpression.ToDecimal(operandAst),
+                TypeCode.Double => AstExpression.ToDouble(operandAst),
+                TypeCode.Object when operandType == typeof(Guid) => ErrorIfUnexpectedDataType(operandAst, expectedType: "binData"),
+                TypeCode.Int32 => AstExpression.ToInt(operandAst),
+                TypeCode.Int64 => AstExpression.ToLong(operandAst),
+                TypeCode.Object when operandType == typeof(ObjectId) => AstExpression.ToObjectId(operandAst),
+                TypeCode.Object when operandType == typeof(Regex) => ErrorIfUnexpectedDataType(operandAst, expectedType: "regex"),
+                TypeCode.String => AstExpression.ToString(operandAst),
+                _ => throw new ExpressionNotSupportedException(expression, because: $"conversion from {expression.Operand.Type} to {expression.Type} is not supported")
+            };
+
+            return new AggregationExpression(expression, convertedOperandAst, BsonValueSerializer.Instance);
+
+            static AstExpression ErrorIfUnexpectedDataType(AstExpression operandAst, string expectedType)
+            {
+                // this expression is designed to fail server side if the data encountered is not null or of the expected type
+                return AstExpression.Cond(
+                    AstExpression.In(AstExpression.Type(operandAst), AstExpression.ComputedArray(new AstExpression[] { "null", expectedType })),
+                    operandAst,
+                    AstExpression.Convert(operandAst, expectedType)); // will fail server side
+            }
         }
     }
 }
