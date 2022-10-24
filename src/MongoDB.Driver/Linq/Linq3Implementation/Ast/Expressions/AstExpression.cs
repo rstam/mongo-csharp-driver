@@ -797,36 +797,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Sum, array);
         }
 
-        public static AstExpression ToBool(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToBool, arg);
-        }
-
-        public static AstExpression ToDate(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToDate, arg);
-        }
-
-        public static AstExpression ToDecimal(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToDecimal, arg);
-        }
-
-        public static AstExpression ToDouble(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToDouble, arg);
-        }
-
-        public static AstExpression ToInt(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToInt, arg);
-        }
-
-        public static AstExpression ToLong(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToLong, arg);
-        }
-
         public static AstExpression ToLower(AstExpression arg)
         {
             if (arg is AstConstantExpression constantExpression && constantExpression.Value.BsonType == BsonType.String)
@@ -836,11 +806,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             }
 
             return new AstUnaryExpression(AstUnaryOperator.ToLower, arg);
-        }
-
-        public static AstExpression ToObjectId(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.ToObjectId, arg);
         }
 
         public static AstExpression ToString(AstExpression arg)
@@ -867,11 +832,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstExpression Trunc(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Trunc, arg);
-        }
-
-        public static AstExpression Type(AstExpression arg)
-        {
-            return new AstUnaryExpression(AstUnaryOperator.Type, arg);
         }
 
         public static AstAccumulatorExpression UnaryAccumulator(AstUnaryAccumulatorOperator @operator, AstExpression arg)

@@ -30,10 +30,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
         {
             if (expression.NodeType == ExpressionType.Convert)
             {
+                var expressionType = expression.Type;
+                if (expressionType == typeof(BsonValue))
+                {
+                    return TranslateConvertToBsonValue(context, expression, expression.Operand);
+                }
+
                 var operandExpression = expression.Operand;
                 var operandTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, operandExpression);
 
-                var expressionType = expression.Type;
                 if (expressionType.IsConstructedGenericType && expressionType.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
                     var valueType = expressionType.GetGenericArguments()[0];
@@ -46,11 +51,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                         var nullableSerializer = (IBsonSerializer)constructorInfo.Invoke(new[] { operandTranslation.Serializer });
                         return new AggregationExpression(expression, operandTranslation.Ast, nullableSerializer);
                     }
-                }
-
-                if (expressionType == typeof(BsonValue))
-                {
-                    return TranslateConvertToBsonValue(expression, operandTranslation.Ast);
                 }
 
                 var ast = operandTranslation.Ast;
@@ -73,41 +73,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             throw new ExpressionNotSupportedException(expression);
         }
 
-        private static AggregationExpression TranslateConvertToBsonValue(UnaryExpression expression, AstExpression operandAst)
+        private static AggregationExpression TranslateConvertToBsonValue(TranslationContext context, UnaryExpression expression, Expression operand)
         {
-            var operandType = expression.Operand.Type;
-            if (operandType.IsGenericType && operandType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            // handle double conversions like `(BsonValue)(object)x.Anything`
+            if (operand is UnaryExpression unaryExpression &&
+                unaryExpression.NodeType == ExpressionType.Convert &&
+                unaryExpression.Type == typeof(object))
             {
-                operandType = operandType.GetGenericArguments()[0];
+                operand = unaryExpression.Operand;
             }
 
-            var convertedOperandAst = Type.GetTypeCode(operandType) switch
-            {
-                TypeCode.Object when operandType == typeof(byte[]) => ErrorIfUnexpectedDataType(operandAst, expectedType: "binData"),
-                TypeCode.Boolean => AstExpression.ToBool(operandAst),
-                TypeCode.DateTime => AstExpression.ToDate(operandAst),
-                TypeCode.Decimal => AstExpression.ToDecimal(operandAst),
-                TypeCode.Object when operandType == typeof(Decimal128) => AstExpression.ToDecimal(operandAst),
-                TypeCode.Double => AstExpression.ToDouble(operandAst),
-                TypeCode.Object when operandType == typeof(Guid) => ErrorIfUnexpectedDataType(operandAst, expectedType: "binData"),
-                TypeCode.Int32 => AstExpression.ToInt(operandAst),
-                TypeCode.Int64 => AstExpression.ToLong(operandAst),
-                TypeCode.Object when operandType == typeof(ObjectId) => AstExpression.ToObjectId(operandAst),
-                TypeCode.Object when operandType == typeof(Regex) => ErrorIfUnexpectedDataType(operandAst, expectedType: "regex"),
-                TypeCode.String => AstExpression.ToString(operandAst),
-                _ => throw new ExpressionNotSupportedException(expression, because: $"conversion from {expression.Operand.Type} to {expression.Type} is not supported")
-            };
+            var operandTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, operand);
 
-            return new AggregationExpression(expression, convertedOperandAst, BsonValueSerializer.Instance);
-
-            static AstExpression ErrorIfUnexpectedDataType(AstExpression operandAst, string expectedType)
-            {
-                // this expression is designed to fail server side if the data encountered is not null or of the expected type
-                return AstExpression.Cond(
-                    AstExpression.In(AstExpression.Type(operandAst), AstExpression.ComputedArray(new AstExpression[] { "null", expectedType })),
-                    operandAst,
-                    AstExpression.Convert(operandAst, expectedType)); // will fail server side
-            }
+            return new AggregationExpression(expression, operandTranslation.Ast, BsonValueSerializer.Instance);
         }
     }
 }
