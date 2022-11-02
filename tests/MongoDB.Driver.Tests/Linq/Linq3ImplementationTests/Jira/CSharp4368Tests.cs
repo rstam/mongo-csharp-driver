@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using FluentAssertions;
@@ -51,234 +52,84 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
                 });
         }
 
+        public static TestCase[] __testCases = new TestCase[]
+        {
+//            CreateTestCase<Anything>(new Anything(), "{ X : 1 }", x => (BsonValue)(object)x.V),
+//            CreateTestCase<Anything>(new Anything(), "null", x => (BsonValue)(object)x.V),
+//            CreateTestCase<byte[]>(new byte[0], "BinData(0, 'AQID')'", x => (BsonValue)x.V),
+//            CreateTestCase<byte[]>(new byte[0], "null", x => (BsonValue)x.V),
+//            CreateTestCase<bool>(false, "true", x => (BsonValue)x.V),
+//            CreateTestCase<bool?>(false, "true", x => (BsonValue)x.V),
+//            CreateTestCase<bool?>(false, "null", x => (BsonValue)x.V),
+//            CreateTestCase<DateTime>(new DateTime(), "ISODate('2021-01-02T03:04:05.123')", x => (BsonValue)x.V),
+//            CreateTestCase<DateTime?>(new DateTime(), "ISODate('2021-01-02T03:04:05.123')", x => (BsonValue)x.V),
+//            CreateTestCase<DateTime?>(new DateTime(), "null", x => (BsonValue)x.V),
+//            CreateTestCase<decimal>(0.0M, "'1'", x => (BsonValue)x.V),
+//            CreateTestCase<decimal?>(0.0M, "'1'", x => (BsonValue)x.V),
+//            CreateTestCase<decimal?>(0.0M, "null", x => (BsonValue)x.V),
+//            CreateTestCase<Decimal128>(0.0M, "'1'", x => (BsonValue)x.V),
+//            CreateTestCase<Decimal128?>(0.0M, "'1'", x => (BsonValue)x.V),
+//            CreateTestCase<Decimal128?>(0.0M, "null", x => (BsonValue)x.V),
+//            CreateTestCase<double>(0.0, "{ $numberDouble : '1.0' }", x => (BsonValue)x.V),
+//            CreateTestCase<double?>(0.0, "{ $numberDouble : '1.0' }", x => (BsonValue)x.V),
+//            CreateTestCase<double?>(0.0, "null", x => (BsonValue)x.V),
+//#pragma warning disable CS0618 // Type or member is obsolete
+//            CreateTestCase<Guid>(Guid.Empty, "UUID('01020304-0506-0708-090a-0b0c0d0e0f10')", x => (BsonValue)x.V),
+//            CreateTestCase<Guid?>(Guid.Empty, "UUID('01020304-0506-0708-090a-0b0c0d0e0f10')", x => (BsonValue)x.V),
+//            CreateTestCase<Guid?>(Guid.Empty, "null", x => (BsonValue)x.V),
+//#pragma warning restore CS0618 // Type or member is obsolete
+//            CreateTestCase<Guid>(Guid.Empty, "UUID('01020304-0506-0708-090a-0b0c0d0e0f10')", x => (BsonValue)(object)x.V),
+//            CreateTestCase<Guid?>(Guid.Empty, "UUID('01020304-0506-0708-090a-0b0c0d0e0f10')", x => (BsonValue)(object)x.V),
+//            CreateTestCase<Guid?>(Guid.Empty, "null", x => (BsonValue)(object)x.V),
+//            CreateTestCase<int>(0, "1", x => (BsonValue)x.V),
+//            CreateTestCase<int?>(0, "1", x => (BsonValue)x.V),
+//            CreateTestCase<int?>(0, "null", x => (BsonValue)x.V),
+//            CreateTestCase<long>(0L, "{ $numberLong : '1' }", x => (BsonValue)x.V),
+//            CreateTestCase<long?>(0L, "{ $numberlong : '1' }", x => (BsonValue)x.V),
+//            CreateTestCase<long?>(0L, "null", x => (BsonValue)x.V),
+//            CreateTestCase<ObjectId>(ObjectId.Empty, "ObjectId('0102030405060708090a0b0c')", x => (BsonValue)x.V),
+//            CreateTestCase<ObjectId?>(ObjectId.Empty, "ObjectId('0102030405060708090a0b0c')", x => (BsonValue)x.V),
+//            CreateTestCase<ObjectId?>(ObjectId.Empty, "null", x => (BsonValue)x.V),
+//            CreateTestCase<Regex>(new Regex(""), "/abc/i", x => (BsonValue)x.V),
+//            CreateTestCase<Regex>(new Regex(""), "null", x => (BsonValue)x.V),
+//            CreateTestCase<string>("", "'abc'", x => (BsonValue)x.V),
+            CreateTestCase<string>("", "null", x => (BsonValue)x.V)
+        };
+
+        public class TestCase
+        {
+            public object Prototype { get; set; }
+            public string ValueAsJson { get; set; }
+            public LambdaExpression Projection { get; set; }
+        }
+
+        public static TestCase CreateTestCase<TValue>(
+            TValue prototype,
+            string valueAsJson,
+            Expression<Func<Document<TValue>, BsonValue>> projection)
+        {
+            return new TestCase { Prototype = prototype, ValueAsJson = valueAsJson, Projection = projection };
+        }
+
+        public static IEnumerable<object[]> Convert_to_BsonValue_from_TValue_should_work_MemberData()
+        {
+            for (var i = 0; i < __testCases.Length; i++)
+            {
+                var prototype = __testCases[i].Prototype;
+                var valueAsJson = __testCases[i].ValueAsJson;
+                var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
+                var projectionAsString = __testCases[i].Projection.ToString();
+                yield return new object[] { prototype, i, valueAsJson, expectedResult, projectionAsString };
+            }
+        }
+
         [Theory]
-        [InlineData("{ X : 1 }")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_anything_using_double_cast_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<Anything>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<Anything>(value, valueAsJson, expectedResult, x => (BsonValue)(object)x.V);
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_bool_should_work()
-        {
-            Convert_to_BsonValue_from_TValue_should_work<bool>(true, "true", true, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("BinData(0, 'AQID')")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_byte_array_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<byte[]>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<byte[]>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_date_should_work()
-        {
-            var valueAsJson = "ISODate('2021-01-02T03:04:05.123Z')";
-            var value = BsonSerializer.Deserialize<DateTime>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<DateTime>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_decimal_should_work()
-        {
-            Convert_to_BsonValue_from_TValue_should_work<decimal>(1M, "'1'", "1", x => (BsonValue)x.V); // note: default representation of decimal is string
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_decimal128_should_work()
-        {
-            Convert_to_BsonValue_from_TValue_should_work<Decimal128>(1M, "'1'", "1", x => (BsonValue)x.V); // note: default representation of Decimal128 is string
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_double_should_work()
-        {
-            Convert_to_BsonValue_from_TValue_should_work<double>(1D, "1.0", 1D, x => (BsonValue)x.V);
-        }
-
-        [Fact]
+        [MemberData(nameof(Convert_to_BsonValue_from_TValue_should_work_MemberData))]
         [ResetGuidModeAfterTest]
-        public void Convert_to_BsonValue_from_Guid_should_work()
+        public void Convert_to_BsonValue_from_TValue_should_work<TValue>(TValue prototype, int i, string valueAsJson, BsonValue expectedResult, string projectionAsString)
         {
-            GuidMode.Set(GuidRepresentationMode.V3);
-
-            var valueAsJson = "HexData(4, '0102030405060708090a0b0c0d0e0f10')";
-            var value = Deserialize(__guidSerializerWithStandardRepresentation, valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-#pragma warning disable CS0618 // Type or member is obsolete
-            Convert_to_BsonValue_from_TValue_should_work<Guid>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-#pragma warning restore CS0618 // Type or member is obsolete
-        }
-
-        [Fact]
-        [ResetGuidModeAfterTest]
-        public void Convert_to_BsonValue_from_Guid_using_double_cast_should_work()
-        {
-            GuidMode.Set(GuidRepresentationMode.V3);
-
-            var valueAsJson = "HexData(4, '0102030405060708090a0b0c0d0e0f10')";
-            var value = Deserialize(__guidSerializerWithStandardRepresentation, valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<Guid>(value, valueAsJson, expectedResult, x => (BsonValue)(object)x.V);
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_int_should_work()
-        {
-            Convert_to_BsonValue_from_TValue_should_work<int>(1, "1", 1, x => (BsonValue)x.V);
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_long_should_work()
-        {
-            Convert_to_BsonValue_from_TValue_should_work<long>(1L, "{ $numberLong : '1' }", 1L, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData(true, "true")]
-        [InlineData(null, "null")]
-        public void Convert_to_BsonValue_from_nullable_bool_should_work(bool? value, string valueAsJson)
-        {
-            Convert_to_BsonValue_from_TValue_should_work<bool?>(value, valueAsJson, (BsonValue)value, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("ISODate('2021-01-02T03:04:05.123')")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_date_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<DateTime?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<DateTime?>(value, valueAsJson, (BsonValue)value, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("'1'")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_decimal_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<decimal?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<decimal?>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("'1'")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_decimal128_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<Decimal128?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<Decimal128?>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("1.0")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_double_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<double?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<double?>(value, valueAsJson, (BsonValue)value, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("UUID('01020304-0506-0708-090a-0b0c0d0e0f10')")]
-        [InlineData("null")]
-        [ResetGuidModeAfterTest]
-        public void Convert_to_BsonValue_from_nullable_Guid_should_work(string valueAsJson)
-        {
-            GuidMode.Set(GuidRepresentationMode.V3);
-
-            var value = Deserialize(__nullableGuidSerializerWithStandardRepresentation, valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-#pragma warning disable CS0618 // Type or member is obsolete
-            Convert_to_BsonValue_from_TValue_should_work<Guid?>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-#pragma warning restore CS0618 // Type or member is obsolete
-        }
-
-        [Theory]
-        [InlineData("UUID('01020304-0506-0708-090a-0b0c0d0e0f10')")]
-        [InlineData("null")]
-        [ResetGuidModeAfterTest]
-        public void Convert_to_BsonValue_from_nullable_Guid_using_double_cast_should_work(string valueAsJson)
-        {
-            GuidMode.Set(GuidRepresentationMode.V3);
-
-            var value = Deserialize(__nullableGuidSerializerWithStandardRepresentation, valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<Guid?>(value, valueAsJson, expectedResult, x => (BsonValue)(object)x.V);
-        }
-
-        [Theory]
-        [InlineData("1")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_int_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<int?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<int?>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("{ $numberLong : '1' }")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_long_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<long?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<long?>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("ObjectId('0102030405060708090a0b0c')")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_nullable_ObjectId_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<ObjectId?>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<ObjectId?>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Fact]
-        public void Convert_to_BsonValue_from_ObjectId_should_work()
-        {
-            var valueAsJson = "ObjectId('0102030405060708090a0b0c')";
-            var value = BsonSerializer.Deserialize<ObjectId>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<ObjectId>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("/abc/i")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_Regex_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<Regex>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<Regex>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        [Theory]
-        [InlineData("'abc'")]
-        [InlineData("null")]
-        public void Convert_to_BsonValue_from_string_should_work(string valueAsJson)
-        {
-            var value = BsonSerializer.Deserialize<string>(valueAsJson);
-            var expectedResult = BsonSerializer.Deserialize<BsonValue>(valueAsJson);
-            Convert_to_BsonValue_from_TValue_should_work<string>(value, valueAsJson, expectedResult, x => (BsonValue)x.V);
-        }
-
-        private void Convert_to_BsonValue_from_TValue_should_work<TValue>(TValue value, string valueAsJson, BsonValue expectedResult, Expression<Func<Document<TValue>, BsonValue>> projection)
-        {
+            var value = BsonSerializer.Deserialize<TValue>(valueAsJson);
+            var projection = (Expression<Func<Document<TValue>, BsonValue>>)__testCases[i].Projection;
             var database = GetDatabase();
 
             var aggregate = database
@@ -306,21 +157,12 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             wrappedValueSerializer.ValueSerializer.Should().Be(expectedSerializer);
         }
 
-        private TValue Deserialize<TValue>(IBsonSerializer<TValue> serializer, string json)
-        {
-            using (var reader = new JsonReader(json))
-            {
-                var context = BsonDeserializationContext.CreateRoot(reader);
-                return serializer.Deserialize(context);
-            }
-        }
-
-        private class Document<TValue>
+        public class Document<TValue>
         {
             public TValue V { get; set; }
         }
 
-        private class Anything
+        public class Anything
         {
             public int X { get; set; }
         }
