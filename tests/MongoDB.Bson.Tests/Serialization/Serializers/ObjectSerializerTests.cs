@@ -292,7 +292,7 @@ namespace MongoDB.Bson.Tests.Serialization
         [Fact]
         public void constructor_with_discriminator_convention_should_throw_when_discriminator_convention_is_null()
         {
-            var exception = Record.Exception(() => new ObjectSerializer(null));
+            var exception = Record.Exception(() => new ObjectSerializer(discriminatorConvention: null));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("discriminatorConvention");

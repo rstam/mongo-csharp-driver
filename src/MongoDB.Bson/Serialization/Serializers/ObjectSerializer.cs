@@ -24,10 +24,39 @@ namespace MongoDB.Bson.Serialization.Serializers
     /// </summary>
     public class ObjectSerializer : ClassSerializerBase<object>
     {
+        #region static
         // private static fields
-        private static readonly ObjectSerializer __instance = new ObjectSerializer();
+        private static readonly Func<Type, bool> __allTypesAllowed;
+        private static readonly Func<Type, bool> __defaultAllowedTypes;
+        private static readonly IDiscriminatorConvention __defaultDiscriminatorConvention;
+        private static readonly  GuidRepresentation __defaultGuidRepresentation;
+        private static readonly ObjectSerializer __instance;
+        private static readonly Func<Type, bool> __noTypesAllowed;
+
+        static ObjectSerializer()
+        {
+            // use a static constructor to control the order of initializations
+            __allTypesAllowed = t => true;
+            __noTypesAllowed = t => false;
+            __defaultAllowedTypes = __allTypesAllowed; ;
+            __defaultGuidRepresentation = GuidRepresentation.Unspecified;
+            __defaultDiscriminatorConvention = BsonSerializer.LookupDiscriminatorConvention(typeof(object));
+            __instance = new ObjectSerializer();
+        }
+
+        /// <summary>
+        /// An allowed types function that returns true for all types.
+        /// </summary>
+        public static Func<Type, bool> AllTypesAllowed => __allTypesAllowed;
+
+        /// <summary>
+        /// An allowed types function that returns false for all types.
+        /// </summary>
+        public static Func<Type, bool> NoTypesAllowed => __noTypesAllowed;
+        #endregion
 
         // private fields
+        private readonly Func<Type, bool> _allowedTypes;
         private readonly IDiscriminatorConvention _discriminatorConvention;
         private readonly GuidRepresentation _guidRepresentation;
         private readonly GuidSerializer _guidSerializer;
@@ -37,7 +66,7 @@ namespace MongoDB.Bson.Serialization.Serializers
         /// Initializes a new instance of the <see cref="ObjectSerializer"/> class.
         /// </summary>
         public ObjectSerializer()
-            : this(BsonSerializer.LookupDiscriminatorConvention(typeof(object)))
+            : this(__defaultDiscriminatorConvention)
         {
         }
 
@@ -47,7 +76,7 @@ namespace MongoDB.Bson.Serialization.Serializers
         /// <param name="discriminatorConvention">The discriminator convention.</param>
         /// <exception cref="System.ArgumentNullException">discriminatorConvention</exception>
         public ObjectSerializer(IDiscriminatorConvention discriminatorConvention)
-            : this(discriminatorConvention, GuidRepresentation.Unspecified)
+            : this(discriminatorConvention, __defaultGuidRepresentation)
         {
         }
 
@@ -57,15 +86,50 @@ namespace MongoDB.Bson.Serialization.Serializers
         /// <param name="discriminatorConvention">The discriminator convention.</param>
         /// <param name="guidRepresentation">The Guid representation.</param>
         public ObjectSerializer(IDiscriminatorConvention discriminatorConvention, GuidRepresentation guidRepresentation)
+            : this(discriminatorConvention, guidRepresentation, __defaultAllowedTypes)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectSerializer"/> class.
+        /// </summary>
+        /// <param name="allowedTypes">A delegate that determines what types are allowed.</param>
+        public ObjectSerializer(Func<Type, bool> allowedTypes)
+            : this(__defaultDiscriminatorConvention, allowedTypes)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectSerializer"/> class.
+        /// </summary>
+        /// <param name="discriminatorConvention">The discriminator convention.</param>
+        /// <param name="allowedTypes">A delegate that determines what types are allowed.</param>
+        public ObjectSerializer(IDiscriminatorConvention discriminatorConvention, Func<Type, bool> allowedTypes)
+            : this(discriminatorConvention, __defaultGuidRepresentation, allowedTypes)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ObjectSerializer"/> class.
+        /// </summary>
+        /// <param name="discriminatorConvention">The discriminator convention.</param>
+        /// <param name="guidRepresentation">The Guid representation.</param>
+        /// <param name="allowedTypes">A delegate that determines what types are allowed.</param>
+        public ObjectSerializer(IDiscriminatorConvention discriminatorConvention, GuidRepresentation guidRepresentation, Func<Type, bool> allowedTypes)
         {
             if (discriminatorConvention == null)
             {
                 throw new ArgumentNullException("discriminatorConvention");
             }
+            if (allowedTypes == null)
+            {
+                throw new ArgumentNullException(nameof(allowedTypes));
+            }
 
             _discriminatorConvention = discriminatorConvention;
             _guidRepresentation = guidRepresentation;
             _guidSerializer = new GuidSerializer(_guidRepresentation);
+            _allowedTypes = allowedTypes;
         }
 
         // public static properties
@@ -270,6 +334,11 @@ namespace MongoDB.Bson.Serialization.Serializers
             var bsonReader = context.Reader;
 
             var actualType = _discriminatorConvention.GetActualType(bsonReader, typeof(object));
+            if (!_allowedTypes(actualType))
+            {
+                throw new BsonSerializationException($"Type {actualType.FullName} is not configured as an allowed type for this instance of ObjectSerializer.");
+            }
+
             if (actualType == typeof(object))
             {
                 var type = bsonReader.GetCurrentBsonType();
@@ -333,6 +402,11 @@ namespace MongoDB.Bson.Serialization.Serializers
 
         private void SerializeDiscriminatedValue(BsonSerializationContext context, BsonSerializationArgs args, object value, Type actualType)
         {
+            if (!_allowedTypes(actualType))
+            {
+                throw new BsonSerializationException($"Type {actualType.FullName} is not configured as an allowed type for this instance of ObjectSerializer.");
+            }
+
             var serializer = BsonSerializer.LookupSerializer(actualType);
 
             var polymorphicSerializer = serializer as IBsonPolymorphicSerializer;
