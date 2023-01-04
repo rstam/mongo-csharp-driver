@@ -753,6 +753,33 @@ namespace MongoDB.Driver.MqlApi
         public TResult Result { get; set; }
     }
 
+    public class MqlHighlightOptions
+    {
+        public int? MaxCharsToExamine { get; set; }
+        public int? MaxNumPassages { get; set; }
+        public string Path { get; set; }
+    }
+
+    public class MqlSearchArgs
+    {
+        public int? Count { get; set; }
+        public MqlHighlightOptions Highlight { get; set; }
+        public string Index { get; set; }
+        public bool? ReturnStoredSource { get; set; }
+    }
+
+    public abstract class MqlSearchOperation
+    {
+    }
+
+    public class MqlSearchOperator : MqlSearchOperation
+    {
+    }
+
+    public class MqlSearchCollector : MqlSearchOperation
+    {
+    }
+
     public class MqlTextArgs
     {
         public string Language { get; set; }

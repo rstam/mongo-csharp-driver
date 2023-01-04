@@ -80,6 +80,11 @@ namespace MongoDB.Driver.MqlApi
             throw new NotImplementedException();
         }
 
+        public static MqlStage<TInput, TInput> Search<TInput>()
+        {
+            throw new NotImplementedException();
+        }
+
         public static MqlStage<TInput, BsonDocument> Set<TInput, TFields>(Expression<Func<TInput, TFields>> fields)
         {
             throw new NotImplementedException();
