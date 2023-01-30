@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
+using MongoDB.Driver;
 using MongoDB.Driver.MqlApi;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.MqlApi
+namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
 {
     public class MqlPipelineExamples : MqlIntegrationTest
     {
@@ -41,7 +42,7 @@ namespace MongoDB.Driver.Tests.MqlApi
             _ = Mql.Pipeline(collection).Project(x => new { V = x.X }); // [{ $project : { V : '$X', _id : 0 } }]
             // TODO: $redact
             _ = Mql.Pipeline(collection).ReplaceRoot(x => new { V = x.X }); // [{ $replaceRoot : { newRoot : { V : '$X' } } }]
-            _ = Mql.Pipeline(collection).ReplaceWith(x => new { V = x.X }); // [{ $replaceWith : { newRoot : { V : '$X' } } }]
+            _ = Mql.Pipeline(collection).ReplaceWith(x => new { V = x.X }); // [{ $replaceWith : { V : '$X' } }]
             _ = Mql.Pipeline(collection).Sample(100); // [{ $sample : { size : 100 } }]
             // TODO: $search
             // TODO: $searchMeta

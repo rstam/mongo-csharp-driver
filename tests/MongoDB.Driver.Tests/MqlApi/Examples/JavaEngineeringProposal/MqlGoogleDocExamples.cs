@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
+using MongoDB.Driver;
 using MongoDB.Driver.MqlApi;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.MqlApi
+namespace MongoDB.Driver.Tests.MqlApi.Examples.JavaEngineeringProposal
 {
     public class MqlGoogleDocExamples : MqlIntegrationTest
     {
@@ -16,7 +17,8 @@ namespace MongoDB.Driver.Tests.MqlApi
                     x =>
                         new
                         {
-                            result = x.NumList
+                            result =
+                                x.NumList
                                 .Filter(n => n % 2 == 0)
                                 .Map(n => n * 10)
                                 .Reduce(0, (a, i) => a + i)
@@ -33,10 +35,11 @@ namespace MongoDB.Driver.Tests.MqlApi
                     x =>
                         new
                         {
-                            result = Mql.Switch(
-                                Mql.Case(x.S == "F", "A"),
-                                Mql.Case(x.S == "T", "C"),
-                                Mql.Default("D"))
+                            result =
+                                Mql.Switch(
+                                    Mql.Case(x.S == "F", "A"),
+                                    Mql.Case(x.S == "T", "C"),
+                                    Mql.Default("D"))
                         });
         }
 

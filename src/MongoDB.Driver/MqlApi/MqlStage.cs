@@ -29,9 +29,8 @@ namespace MongoDB.Driver.MqlApi
             throw new NotImplementedException();
         }
 
-        public static MqlStage<TInput, BsonDocument> Group<TInput, TId, TFields>(
-            Expression<Func<TInput, TId>> id,
-            Expression<Func<TId, TInput, TFields>> fields)
+        public static MqlStage<TInput, TResult> Group<TInput, TResult>(
+            Expression<Func<TInput, TResult>> fields)
         {
             throw new NotImplementedException();
         }
@@ -114,6 +113,15 @@ namespace MongoDB.Driver.MqlApi
         public static MqlStage<TInput, TInput> UnionWith<TInput, TForeign>(
             IMongoCollection<TForeign> foreignCollection,
             MqlPipeline<TForeign, TInput> foreignPipeline)
+        {
+            throw new NotImplementedException();
+        }
+
+        public static MqlStage<TInput, TOutput> Unwind<TInput, TField, TOutput>(
+            Expression<Func<TInput, TField>> field,
+            TOutput prototype, // for type inference
+            string includeArrayIndex = null,
+            bool preserverNullAndEmptyArrays = false)
         {
             throw new NotImplementedException();
         }

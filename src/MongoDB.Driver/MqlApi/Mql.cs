@@ -615,6 +615,11 @@ namespace MongoDB.Driver.MqlApi
             throw new InvalidOperationException();
         }
 
+        public static decimal SumAccumulator(decimal value)
+        {
+            throw new InvalidOperationException();
+        }
+
         public static long Sum(IEnumerable<int> value)
         {
             throw new InvalidOperationException();

@@ -5,7 +5,7 @@ using MongoDB.Driver.Linq;
 using MongoDB.Driver.MqlApi;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.MqlApi
+namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
 {
     public class MqlOperatorExamples : MqlIntegrationTest
     {
@@ -178,8 +178,8 @@ namespace MongoDB.Driver.Tests.MqlApi
 
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#type-expression-operators
             _ = Mql.Pipeline(collection).Project(x => Mql.Convert<string>(x.X)); // [{ $project : { _v : { $convert : { input : '$X', to : 'string' } }, _id : 0 } }]
-            _ = Mql.Pipeline(collection).Project(x => Mql.Convert<string>(x.X, "null")); // [{ $project : { _v : { $convert : { input : '$X', to : 'string', onNull : 'null' } }, _id : 0 } }]
-            _ = Mql.Pipeline(collection).Project(x => Mql.Convert<string>(x.X, "null", "error")); // [{ $project : { _v : { $convert : { input : '$X', to : 'string', onNull : 'null', onError : 'error' } }, _id : 0 } }]
+            _ = Mql.Pipeline(collection).Project(x => Mql.Convert(x.X, "null")); // [{ $project : { _v : { $convert : { input : '$X', to : 'string', onNull : 'null' } }, _id : 0 } }]
+            _ = Mql.Pipeline(collection).Project(x => Mql.Convert(x.X, "null", "error")); // [{ $project : { _v : { $convert : { input : '$X', to : 'string', onNull : 'null', onError : 'error' } }, _id : 0 } }]
             _ = Mql.Pipeline(collection).Project(x => Mql.IsNumber(x.X)); // [{ $project : { _v : { $isNumber : '$X' }, _id : 0 } }]
             _ = Mql.Pipeline(collection).Project(x => Mql.ToBool(x.X)); // [{ $project : { _v : { $toString : '$X' }, _id : 0 } }]
             _ = Mql.Pipeline(collection).Project(x => Mql.ToDate(x.X)); // [{ $project : { _v : { $toDate : '$X' }, _id : 0 } }]
@@ -193,24 +193,24 @@ namespace MongoDB.Driver.Tests.MqlApi
 
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#accumulators---group---bucket---bucketauto---setwindowfields-
             // TODO: $accumulator
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.AddToSetAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $addToSet : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.AvgAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $avg : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.AddToSetAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $addToSet : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.AvgAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $avg : '$Y' } } } }]
             // TODO: $bottom
             // TODO: $bottomN
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.CountAccumulator() }); // [{ $group : { _id : '$X', R : { $count : { } } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.FirstAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $first : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.FirstNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $firstN : { input : '$Y', n : 10 } } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.LastAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $last : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.LastNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $lastN : { input : '$Y', n : 10 } } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.MaxAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $max : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.MaxNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $maxN : { input : '$Y', n : 10 } } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.CountAccumulator() }); // [{ $group : { _id : '$X', R : { $count : { } } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.FirstAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $first : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.FirstNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $firstN : { input : '$Y', n : 10 } } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.LastAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $last : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.LastNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $lastN : { input : '$Y', n : 10 } } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.MaxAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $max : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.MaxNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $maxN : { input : '$Y', n : 10 } } } } }]
             // TODO: $mergeObjects
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.MinAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $min : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.MinNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $minN : { input : '$Y', n : 10 } } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.PushAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $push : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.StdDevPopAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $stdDevPop : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.StdDevSampAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $stdDevSamp : '$Y' } } } }]
-            _ = Mql.Pipeline(collection).Group(x => x.X, (id, x) => new { R = Mql.SumAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $sum : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.MinAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $min : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.MinNAccumulator(x.Y, 10) }); // [{ $group : { _id : '$X', R : { $minN : { input : '$Y', n : 10 } } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.PushAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $push : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.StdDevPopAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $stdDevPop : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.StdDevSampAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $stdDevSamp : '$Y' } } } }]
+            _ = Mql.Pipeline(collection).Group(x => new { _id = x.X, R = Mql.SumAccumulator(x.Y) }); // [{ $group : { _id : '$X', R : { $sum : '$Y' } } } }]
             // TODO: $top
             // TODO: $topN
 

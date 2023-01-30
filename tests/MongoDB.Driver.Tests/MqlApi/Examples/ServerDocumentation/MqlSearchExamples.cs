@@ -3,7 +3,7 @@ using System.Globalization;
 using MongoDB.Driver.MqlApi;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.MqlApi
+namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
 {
     public class MqlSearchExamples : MqlIntegrationTest
     {
@@ -12,8 +12,7 @@ namespace MongoDB.Driver.Tests.MqlApi
         {
             var collection = CreateCollection();
 
-            var stage = MqlStage.Search(
-                MqlSearch.Near("released", DateTime.Parse("2011-09-01T00:00:00.00+00:00", null, DateTimeStyles.AdjustToUniversal), 7776000000));
+            // var stage = MqlStage.Search();
         }
 
         private IMongoCollection<C> CreateCollection()

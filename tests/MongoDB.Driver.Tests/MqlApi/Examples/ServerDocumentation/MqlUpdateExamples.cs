@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
+using MongoDB.Driver;
 using MongoDB.Driver.MqlApi;
 using Xunit;
 
-namespace MongoDB.Driver.Tests.MqlApi
+namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
 {
     public class MqlUpdateExamples : MqlIntegrationTest
     {

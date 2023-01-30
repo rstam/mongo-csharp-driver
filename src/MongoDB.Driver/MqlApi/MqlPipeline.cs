@@ -27,6 +27,11 @@ namespace MongoDB.Driver.MqlApi
             throw new NotImplementedException();
         }
 
+        public MqlPipeline<TInput, TAs> As<TAs>(IBsonSerializer<TAs> serializer = null)
+        {
+            throw new NotImplementedException();
+        }
+
         public List<BsonDocument> Translate()
         {
             throw new NotImplementedException();
@@ -69,12 +74,11 @@ namespace MongoDB.Driver.MqlApi
             return pipeline.Append(MqlStage.Documents(documents));
         }
 
-        public static MqlPipeline<TInput, BsonDocument> Group<TInput, TOutput, TId, TFields>(
+        public static MqlPipeline<TInput, TResult> Group<TInput, TOutput, TResult>(
             this MqlPipeline<TInput, TOutput> pipeline,
-            Expression<Func<TOutput, TId>> id,
-            Expression<Func<TId, TOutput, TFields>> fields)
+            Expression<Func<TOutput, TResult>> fields)
         {
-            return pipeline.Append(MqlStage.Group(id, fields));
+            return pipeline.Append(MqlStage.Group(fields));
         }
 
         public static MqlPipeline<TInput, TOutput> Limit<TInput, TOutput>(
@@ -185,6 +189,16 @@ namespace MongoDB.Driver.MqlApi
             params Expression<Func<TOutput, object>>[] fields)
         {
             return pipeline.Append(MqlStage.Unset(fields));
+        }
+
+        public static MqlPipeline<TInput, TNewOutput> Unwind<TInput, TOutput, TField, TNewOutput>(
+            this MqlPipeline<TInput, TOutput> pipeline,
+            Expression<Func<TOutput, TField>> field,
+            TNewOutput prototype, // for type inference only
+            string includeArrayIndex = null,
+            bool preserveNullAndEmptyArrays = false)
+        {
+            return pipeline.Append(MqlStage.Unwind(field, prototype, includeArrayIndex, preserveNullAndEmptyArrays));
         }
     }
 
