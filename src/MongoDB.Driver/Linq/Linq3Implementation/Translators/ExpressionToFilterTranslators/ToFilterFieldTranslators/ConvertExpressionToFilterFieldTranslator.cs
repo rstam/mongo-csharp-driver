@@ -147,7 +147,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
 
         private static AstFilterField TranslateConvertToBaseType(AstFilterField field, Type targetType)
         {
-            var targetSerializer = BsonSerializer.LookupSerializer(targetType);
+            var baseType = targetType;
+            var derivedType = field.Serializer.ValueType;
+            var derivedTypeSerializer = field.Serializer;
+            var targetSerializer = DowncastingSerializer.Create(baseType, derivedType, derivedTypeSerializer);
             return AstFilter.Field(field.Path, targetSerializer);
         }
 

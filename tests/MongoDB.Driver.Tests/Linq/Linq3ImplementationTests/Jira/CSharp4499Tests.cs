@@ -28,6 +28,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
         {
             var collection = CreateCollection(linqProvider);
             var fieldDefinition = new ExpressionFieldDefinition<ConcreteClass, object>(x => x.InternalId);
+            //var fieldDefinition = new ExpressionFieldDefinition<ConcreteClass>((ConcreteClass x) => x.InternalId);
+            //var fieldDefinition = new ExpressionFieldDefinition<ConcreteClass, ObjectId>(x => x.InternalId);
 
             var queryable = collection.Aggregate()
                 .Sort(Builders<ConcreteClass>.Sort.Ascending(fieldDefinition));
