@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.MqlApi;
@@ -63,6 +64,92 @@ namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-miscellaneous/
             // TODO: all
+        }
+
+        [Fact]
+        public void Eq_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X == 1),
+                "{ X : 1 }");
+        }
+
+        [Fact]
+        public void Gt_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X > 1),
+                "{ X : { $gt : 1 } }");
+        }
+
+        [Fact]
+        public void Gte_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X >= 1),
+                "{ X : { $gte : 1 } }");
+        }
+
+        [Fact]
+        public void In_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X.In(1, 2, 3)),
+                "{ X: { $in : [1, 2, 3] } }");
+        }
+
+        [Fact]
+        public void Lt_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X < 1),
+                "{ X : { $lt : 1 } }");
+        }
+
+        [Fact]
+        public void Lte_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X <= 1),
+                "{ X : { $lte : 1 } }");
+        }
+
+        [Fact]
+        public void Ne_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X != 1),
+                "{ X : { $ne : 1 } }");
+        }
+
+        [Fact]
+        public void Nin_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X.Nin(1, 2, 3)),
+                "{ X: { $nin : [1, 2, 3] } }");
+        }
+
+        private void Assert<TDocument>(MqlFilter<TDocument> filter, string expectedTranslation)
+        {
+            var translatedFilter = TranslateFilter(filter);
+            translatedFilter.Should().Be(expectedTranslation);
         }
 
         private IMongoCollection<C> CreateCollection()
