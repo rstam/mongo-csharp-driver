@@ -25,6 +25,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         private static readonly MethodInfo __exists;
         private static readonly MethodInfo __expr;
         private static readonly MethodInfo __in;
+        private static readonly MethodInfo __jsonSchema;
         private static readonly MethodInfo __nin;
         private static readonly MethodInfo __nor;
         private static readonly MethodInfo __notExists;
@@ -37,6 +38,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
             __exists = ReflectionInfo.Method((object field) => Mql.Exists(field));
             __expr = ReflectionInfo.Method((bool expr) => Mql.Expr(expr));
             __in = ReflectionInfo.Method((object value, object[] values) => value.In(values));
+            __jsonSchema = ReflectionInfo.Method((BsonDocument schema) => Mql.JsonSchema(schema));
             __nin = ReflectionInfo.Method((object value, object[] values) => value.Nin(values));
             __nor = ReflectionInfo.Method((bool[] clauses) => Mql.Nor(clauses));
             __notExists = ReflectionInfo.Method((object field) => Mql.NotExists(field));
@@ -48,6 +50,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         public static MethodInfo Exists => __exists;
         public static MethodInfo Expr => __expr;
         public static MethodInfo In => __in;
+        public static MethodInfo JsonSchema => __jsonSchema;
         public static MethodInfo Nin => __nin;
         public static MethodInfo Nor => __nor;
         public static MethodInfo NotExists => __notExists;

@@ -152,6 +152,17 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void JsonSchema_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-evaluation/
+            var collection = CreateCollection();
+            var schema = new BsonDocument("X", 1);
+            Assert(
+                Mql.Filter(collection, x => Mql.JsonSchema(schema)),
+                "{ $jsonSchema :  { X : 1 } }");
+        }
+
+        [Fact]
         public void Lt_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/

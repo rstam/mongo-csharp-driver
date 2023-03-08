@@ -14,31 +14,26 @@
 */
 
 using System.Linq.Expressions;
+using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlBuilder.Translators.Context;
 
 namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlMethodCallExpressionToFilterTranslator
+    internal static class MqlJsonSchemaMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
+            var arguments = expression.Arguments;
 
-            switch (method.Name)
+            if (method.Is(MqlMethod.JsonSchema))
             {
-                case "Expr": return MqlExprMethodToFilterTranslator.Translate(context, expression);
-                case "JsonSchema": return MqlJsonSchemaMethodToFilterTranslator.Translate(context, expression);
-                case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
-                case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
+                var schemaExpression = arguments[0];
+                var schema = MqlExpressionToConstantTranslator.Translate<BsonDocument>(schemaExpression, expression);
 
-                case "Exists":
-                case "NotExists":
-                    return MqlExistsMethodToFilterTranslator.Translate(context, expression);
-
-                case "In":
-                case "Nin":
-                    return MqlInMethodToFilterTranslator.Translate(context, expression);
+                return AstFilter.JsonSchema(schema);
             }
 
             throw new MqlExpressionNotSupportedException(expression);

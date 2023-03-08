@@ -214,7 +214,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
                 var result = base.VisitMethodCall(node);
 
                 var method = node.Method;
-                if (IsCustomLinqExtensionMethod(method))
+                if (IsCustomLinqExtensionMethod(method) || IsMqlBuilderMethod(method))
                 {
                     _cannotBeEvaluated = true;
                 }
@@ -225,6 +225,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             private bool IsCustomLinqExtensionMethod(MethodInfo method)
             {
                 return __customLinqExtensionMethodClasses.Contains(method.DeclaringType);
+            }
+
+            private bool IsMqlBuilderMethod(MethodInfo method)
+            {
+                return method.DeclaringType.FullName.StartsWith("MongoDB.Driver.MqlBuilder");
             }
         }
     }

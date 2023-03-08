@@ -120,6 +120,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
             return new AstFieldOperationFilter(field, new AstInFilterOperation(values));
         }
 
+        public static AstFilter JsonSchema(BsonDocument schema)
+        {
+            return new AstJsonSchemaFilter(schema);
+        }
+
         public static AstFilter MatchesEverything()
         {
             return new AstMatchesEverythingFilter();
