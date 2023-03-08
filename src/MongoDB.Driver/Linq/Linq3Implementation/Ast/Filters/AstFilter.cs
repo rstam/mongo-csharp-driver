@@ -100,6 +100,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
             return new AstFieldOperationFilter(field, new AstComparisonFilterOperation(AstComparisonFilterOperator.Eq, value));
         }
 
+        public static AstFieldOperationFilter Exists(AstFilterField field)
+        {
+            return new AstFieldOperationFilter(field, new AstExistsFilterOperation(exists: true));
+        }
+
         public static AstFilter Expr(AstExpression expression)
         {
             return new AstExprFilter(expression);
@@ -190,6 +195,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
             return new AstNorFilter(new[] { filter });
         }
 
+        public static AstFieldOperationFilter NotExists(AstFilterField field)
+        {
+            return new AstFieldOperationFilter(field, new AstExistsFilterOperation(exists: false));
+        }
+
         public static AstFilter Or(params AstFilter[] filters)
         {
             Ensure.IsNotNull(filters, nameof(filters));
@@ -216,6 +226,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
             return new AstOrFilter(filters);
         }
 
+        public static AstFilter Nor(params AstFilter[] filters)
+        {
+            Ensure.IsNotNull(filters, nameof(filters));
+            Ensure.That(filters.Length > 0, "filters cannot be empty.", nameof(filters));
+            Ensure.That(!filters.Contains(null), "filters cannot contain null.", nameof(filters));
+
+            return new AstNorFilter(filters);
+        }
+
         public static AstRawFilter Raw(BsonDocument filter)
         {
             return new AstRawFilter(filter);
@@ -229,6 +248,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
         public static AstFieldOperationFilter Size(AstFilterField field, BsonValue size)
         {
             return new AstFieldOperationFilter(field, new AstSizeFilterOperation(size));
+        }
+
+        public static AstFieldOperationFilter Type(AstFilterField field, BsonType[] types)
+        {
+            return new AstFieldOperationFilter(field, new AstTypeFilterOperation(types));
         }
         #endregion
 

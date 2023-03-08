@@ -1,4 +1,19 @@
-﻿using System.Linq;
+﻿/* Copyright 2010-present MongoDB Inc.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+* http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -23,12 +38,12 @@ namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
             filter = Mql.Filter(collection, x => x.X < 1); // { X : { $lt : 1 } }
             filter = Mql.Filter(collection, x => x.X <= 1); // { X : { $lte : 1 } }
             filter = Mql.Filter(collection, x => x.X != 1); // { X : { $ne : 1 } }
-            filter = Mql.Filter(collection, x => x.X.Nin(1, 2, 3)); // { X : { $nin : [1, 2, 3] } }\
+            filter = Mql.Filter(collection, x => x.X.Nin(1, 2, 3)); // { X : { $nin : [1, 2, 3] } }
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-logical/
             filter = Mql.Filter(collection, x => x.X == 1 && x.Y == 2); // { X : { $and : [{ X : { $eq : 1} }, { Y : { $eq : 2 } }] } }
-            filter = Mql.Filter(collection, x => !(x.X == 1)); // { X : { $not : { $eq : 1 } } }
             filter = Mql.Filter(collection, x => Mql.Nor(x.X == 1, x.Y == 2)); // { X : { $nor : [{ X : { $eq : 1} }, { Y : { $eq : 2 } }] } }
+            filter = Mql.Filter(collection, x => !(x.X == 1)); // { X : { $not : { $eq : 1 } } }
             filter = Mql.Filter(collection, x => x.X == 1 || x.Y == 2); // { X : { $or : [{ X : { $eq : 1} }, { Y : { $eq : 2 } }] } }
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-element/
@@ -67,6 +82,16 @@ namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void And_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-logical/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X == 1 && x.Y == 2),
+                "{ X : 1, Y : 2 }");
+        }
+
+        [Fact]
         public void Eq_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
@@ -74,6 +99,26 @@ namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
             Assert(
                 Mql.Filter(collection, x => x.X == 1),
                 "{ X : 1 }");
+        }
+
+        [Fact]
+        public void Exists_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-element/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Exists(x.X)),
+                "{ X : { $exists : true } }");
+        }
+
+        [Fact]
+        public void Expr_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-evaluation/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Expr(x.X == 1)),
+                "{ X : { $expr : { $eq : ['$X', 1] } } }");
         }
 
         [Fact]
@@ -144,6 +189,66 @@ namespace MongoDB.Driver.Tests.MqlApi.Examples.ServerDocumentation
             Assert(
                 Mql.Filter(collection, x => x.X.Nin(1, 2, 3)),
                 "{ X: { $nin : [1, 2, 3] } }");
+        }
+
+        [Fact]
+        public void Nor_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-logical/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Nor(x.X == 1, x.Y == 2)),
+                "{ $nor : [{ X : 1 }, { Y : 2 }] }");
+        }
+
+        [Fact]
+        public void Not_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-logical/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => !(x.X == 1)),
+                "{ X : { $ne : 1 } }");
+        }
+
+        [Fact]
+        public void NotExists_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-element/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.NotExists(x.X)),
+                "{ X : { $exists : false } }");
+        }
+
+        [Fact]
+        public void Or_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-logical/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X == 1 || x.Y == 2),
+                "{ $or : [{ X : 1 }, { Y : 2 }] }");
+        }
+
+        [Fact]
+        public void Type_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-element/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Type(x.X, BsonType.Int32)),
+                "{ X : { $type : 'int' } }");
+        }
+
+        [Fact]
+        public void Type_with_array_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-element/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Type(x.X, BsonType.Int32, BsonType.Int64)),
+                "{ X : { $type : ['int', 'long'] } }");
         }
 
         private void Assert<TDocument>(MqlFilter<TDocument> filter, string expectedTranslation)

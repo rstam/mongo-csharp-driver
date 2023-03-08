@@ -19,14 +19,14 @@ using MongoDB.Driver.MqlApi.Translators.Context;
 
 namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
 {
-    internal static class MqlComparisonExpressionToFilterTranslator
+    internal static class MqlComparisonOperatorExpressionToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, BinaryExpression expression)
         {
             if (TryGetComparisonOperator(expression, out var comparisonOperator))
             {
                 var field = MqlExpressionToFilterFieldTranslator.Translate(context, expression.Left);
-                var value = MqlExpressionToConstantTranslator.Translate(context, expression.Right, expression, field.Serializer);
+                var value = MqlExpressionToSerializedConstantTranslator.Translate(expression.Right, expression, field.Serializer);
                 return AstFilter.Compare(field, comparisonOperator, value);
             }
 

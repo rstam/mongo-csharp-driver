@@ -19,27 +19,26 @@ using MongoDB.Driver.MqlApi.Translators.Context;
 
 namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
 {
-    internal static class MqlMethodCallExpressionToFilterTranslator
+    internal static class MqlUnaryLogicalOperatorExpressionToFilterTranslator
     {
-        public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
+        public static AstFilter Translate(MqlTranslationContext context, UnaryExpression expression)
         {
-            var method = expression.Method;
-
-            switch (method.Name)
+            if (IsUnaryLogicalOperatorExpression(expression))
             {
-                case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
-                case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
-
-                case "Exists":
-                case "NotExists":
-                    return MqlExistsMethodToFilterTranslator.Translate(context, expression);
-
-                case "In":
-                case "Nin":
-                    return MqlInMethodToFilterTranslator.Translate(context, expression);
+                var filter = MqlExpressionToFilterTranslator.Translate(context, expression.Operand);
+                return AstFilter.Not(filter);
             }
 
             throw new MqlExpressionNotSupportedException(expression);
+        }
+
+        private static bool IsUnaryLogicalOperatorExpression(Expression expression)
+        {
+            return expression.NodeType switch
+            {
+                ExpressionType.Not => true,
+                _ => false
+            };
         }
     }
 }

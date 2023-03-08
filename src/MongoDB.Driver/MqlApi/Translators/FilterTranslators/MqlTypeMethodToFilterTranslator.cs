@@ -14,29 +14,39 @@
 */
 
 using System.Linq.Expressions;
+using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
 namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
 {
-    internal static class MqlMethodCallExpressionToFilterTranslator
+    internal static class MqlTypeMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
+            var arguments = expression.Arguments;
 
-            switch (method.Name)
+            if (method.IsOneOf(MqlMethod.Type, MqlMethod.TypeWithArray))
             {
-                case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
-                case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
+                var fieldExpression = arguments[0];
+                var field = MqlExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
 
-                case "Exists":
-                case "NotExists":
-                    return MqlExistsMethodToFilterTranslator.Translate(context, expression);
+                BsonType[] typesArray;
+                if (method.Is(MqlMethod.Type))
+                {
+                    var typeExpression = arguments[1];
+                    var type = MqlExpressionToConstantTranslator.Translate<BsonType>(typeExpression, expression);
+                    typesArray = new[] { type };
+                }
+                else
+                {
+                    var typesExpression = arguments[1];
+                    typesArray = MqlExpressionToConstantTranslator.Translate<BsonType[]>(typesExpression, expression);
+                }
 
-                case "In":
-                case "Nin":
-                    return MqlInMethodToFilterTranslator.Translate(context, expression);
+                return AstFilter.Type(field, typesArray);
             }
 
             throw new MqlExpressionNotSupportedException(expression);

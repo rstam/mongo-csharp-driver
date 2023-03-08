@@ -26,6 +26,11 @@ namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
             switch (expression.NodeType)
             {
                 case ExpressionType.Call: return MqlMethodCallExpressionToFilterTranslator.Translate(context, (MethodCallExpression)expression);
+                case ExpressionType.Not: return MqlUnaryLogicalOperatorExpressionToFilterTranslator.Translate(context, (UnaryExpression)expression);
+
+                case ExpressionType.AndAlso:
+                case ExpressionType.OrElse:
+                    return MqlBinaryLogicalOperatorExpressionToFilterTranslator.Translate(context, (BinaryExpression)expression);
 
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual:
@@ -33,7 +38,7 @@ namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
                 case ExpressionType.LessThanOrEqual:
                 case ExpressionType.GreaterThan:
                 case ExpressionType.GreaterThanOrEqual:
-                    return MqlComparisonExpressionToFilterTranslator.Translate(context, (BinaryExpression)expression);
+                    return MqlComparisonOperatorExpressionToFilterTranslator.Translate(context, (BinaryExpression)expression);
 
                 default:
                     throw new MqlExpressionNotSupportedException(expression);

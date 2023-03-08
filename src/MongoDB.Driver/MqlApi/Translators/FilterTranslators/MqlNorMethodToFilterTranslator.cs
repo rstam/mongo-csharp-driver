@@ -13,30 +13,36 @@
 * limitations under the License.
 */
 
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
 namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
 {
-    internal static class MqlMethodCallExpressionToFilterTranslator
+    internal static class MqlNorMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
+            var arguments = expression.Arguments;
 
-            switch (method.Name)
+            if (method.Is(MqlMethod.Nor))
             {
-                case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
-                case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
+                if (arguments.Count == 1 && arguments[0] is NewArrayExpression newArrayExpression)
+                {
+                    arguments = newArrayExpression.Expressions;
+                }
 
-                case "Exists":
-                case "NotExists":
-                    return MqlExistsMethodToFilterTranslator.Translate(context, expression);
+                var filters = new List<AstFilter>();
+                foreach (var clauseExpression in arguments)
+                {
+                    var filter = MqlExpressionToFilterTranslator.Translate(context, clauseExpression);
+                    filters.Add(filter);
+                }
 
-                case "In":
-                case "Nin":
-                    return MqlInMethodToFilterTranslator.Translate(context, expression);
+                return AstFilter.Nor(filters.ToArray());
             }
 
             throw new MqlExpressionNotSupportedException(expression);

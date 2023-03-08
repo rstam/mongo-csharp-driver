@@ -14,6 +14,7 @@
 */
 
 using System.Reflection;
+using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
 
 namespace MongoDB.Driver.MqlApi.Translators
@@ -21,18 +22,33 @@ namespace MongoDB.Driver.MqlApi.Translators
     internal static class MqlMethod
     {
         // private static fields
+        private static readonly MethodInfo __exists;
         private static readonly MethodInfo __in;
         private static readonly MethodInfo __nin;
+        private static readonly MethodInfo __nor;
+        private static readonly MethodInfo __notExists;
+        private static readonly MethodInfo __type;
+        private static readonly MethodInfo __typeWithArray;
 
         // static constructor
         static MqlMethod()
         {
+            __exists = ReflectionInfo.Method((object field) => Mql.Exists(field));
             __in = ReflectionInfo.Method((object value, object[] values) => value.In(values));
             __nin = ReflectionInfo.Method((object value, object[] values) => value.Nin(values));
+            __nor = ReflectionInfo.Method((bool[] clauses) => Mql.Nor(clauses));
+            __notExists = ReflectionInfo.Method((object field) => Mql.NotExists(field));
+            __type = ReflectionInfo.Method((object field, BsonType type) => Mql.Type(field, type));
+            __typeWithArray = ReflectionInfo.Method((object field, BsonType[] types) => Mql.Type(field, types));
         }
 
         // public properties
+        public static MethodInfo Exists => __exists;
         public static MethodInfo In => __in;
         public static MethodInfo Nin => __nin;
+        public static MethodInfo Nor => __nor;
+        public static MethodInfo NotExists => __notExists;
+        public static MethodInfo Type => __type;
+        public static MethodInfo TypeWithArray => __typeWithArray;
     }
 }

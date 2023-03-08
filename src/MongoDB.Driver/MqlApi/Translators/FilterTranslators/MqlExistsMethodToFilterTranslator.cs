@@ -15,28 +15,24 @@
 
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
 namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
 {
-    internal static class MqlMethodCallExpressionToFilterTranslator
+    internal static class MqlExistsMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
+            var arguments = expression.Arguments;
 
-            switch (method.Name)
+            if (method.IsOneOf(MqlMethod.Exists, MqlMethod.NotExists))
             {
-                case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
-                case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
+                var fieldExpression = arguments[0];
+                var field = MqlExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
 
-                case "Exists":
-                case "NotExists":
-                    return MqlExistsMethodToFilterTranslator.Translate(context, expression);
-
-                case "In":
-                case "Nin":
-                    return MqlInMethodToFilterTranslator.Translate(context, expression);
+                return method.Is(MqlMethod.Exists) ? AstFilter.Exists(field) : AstFilter.NotExists(field);
             }
 
             throw new MqlExpressionNotSupportedException(expression);
