@@ -15,25 +15,27 @@
 
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.MqlBuilder.Translators.Context;
 
-namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
+namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressionTranslators
 {
-    internal static class MqlMemberExpressionToFilterFieldTranslator
+    internal class MqlMemberAccessToAggregationExpressionTranslator
     {
-        public static AstFilterField Translate(MqlTranslationContext context, MemberExpression expression)
+        public static MqlAggregationExpression Translate(MqlTranslationContext context, MemberExpression expression)
         {
             var objectExpression = expression.Expression;
-            var objectField = MqlExpressionToFilterFieldTranslator.Translate(context, objectExpression);
-            if (objectField.Serializer is IBsonDocumentSerializer documentSerializer)
+            var objectTranslation = MqlExpressionToAggregationExpressionTranslator.Translate(context, objectExpression);
+
+            if (objectTranslation.Serializer is IBsonDocumentSerializer documentSerializer)
             {
                 var member = expression.Member;
                 if (documentSerializer.TryGetMemberSerializationInfo(member.Name, out var memberSerializationInfo))
                 {
                     var elementName = memberSerializationInfo.ElementName;
                     var subFieldSerializer = memberSerializationInfo.Serializer;
-                    return objectField.SubField(elementName, subFieldSerializer);
+                    var subField = AstExpression.GetField(objectTranslation.Ast, elementName);
+                    return new MqlAggregationExpression(expression, subField, subFieldSerializer);
                 }
 
                 throw new MqlExpressionNotSupportedException(expression, because: $"the serializer for {objectExpression.Type} did not provide any serialization info for member {member.Name}");

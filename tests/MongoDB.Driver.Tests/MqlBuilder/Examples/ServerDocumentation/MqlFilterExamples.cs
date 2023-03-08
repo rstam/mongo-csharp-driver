@@ -118,7 +118,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Filter(collection, x => Mql.Expr(x.X == 1)),
-                "{ X : { $expr : { $eq : ['$X', 1] } } }");
+                "{ $expr : { $eq : ['$X', 1] } }");
         }
 
         [Fact]

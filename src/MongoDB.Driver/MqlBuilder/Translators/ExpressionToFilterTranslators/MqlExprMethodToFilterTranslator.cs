@@ -33,7 +33,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
                 var exprExpression = arguments[0];
                 var exprTranslation = MqlExpressionToAggregationExpressionTranslator.Translate(context, exprExpression);
 
-                return AstFilter.Expr(exprTranslation);
+                return AstFilter.Expr(exprTranslation.Ast);
             }
 
             throw new MqlExpressionNotSupportedException(expression);

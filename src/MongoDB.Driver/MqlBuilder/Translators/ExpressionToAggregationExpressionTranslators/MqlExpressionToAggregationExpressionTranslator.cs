@@ -14,17 +14,27 @@
 */
 
 using System.Linq.Expressions;
-using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.MqlBuilder.Translators.Context;
 
 namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressionTranslators
 {
     internal static class MqlExpressionToAggregationExpressionTranslator
     {
-        public static AstExpression Translate(MqlTranslationContext context, Expression expression)
+        public static MqlAggregationExpression Translate(MqlTranslationContext context, Expression expression)
         {
             switch (expression.NodeType)
             {
+                case ExpressionType.MemberAccess: return MqlMemberAccessToAggregationExpressionTranslator.Translate(context, (MemberExpression)expression);
+                case ExpressionType.Parameter: return MqlParameterToAggregationExpressionTranslator.Translate(context, (ParameterExpression)expression);
+
+                case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
+                case ExpressionType.LessThan:
+                case ExpressionType.LessThanOrEqual:
+                case ExpressionType.GreaterThan:
+                case ExpressionType.GreaterThanOrEqual:
+                    return MqlComparisonOperatorToAggregationExpressionTranslator.Translate(context, (BinaryExpression)expression);
+
                 default:
                     throw new MqlExpressionNotSupportedException(expression);
             }

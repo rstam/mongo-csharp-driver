@@ -14,20 +14,22 @@
 */
 
 using System.Linq.Expressions;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
-namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
+namespace MongoDB.Driver.MqlBuilder.Translators
 {
-    internal static class MqlExpressionToSerializedConstantTranslator
+    internal static class MqlExpressionToConstantTranslator
     {
-        public static BsonValue Translate(Expression expression, Expression containingExpression, IBsonSerializer serializer)
+        public static TValue Translate<TValue>(Expression expression, Expression containingExpression)
         {
             if (expression is ConstantExpression constantExpression)
             {
                 var value = constantExpression.Value;
-                return SerializationHelper.SerializeValue(serializer, value);
+                if (value == null || value.GetType() == typeof(TValue))
+                {
+                    return (TValue)value;
+                }
+
+                throw new MqlExpressionNotSupportedException(expression, containingExpression, because: $"expression is not a constant of type {typeof(TValue)}");
             }
 
             throw new MqlExpressionNotSupportedException(expression, containingExpression, because: "expression is not a constant");

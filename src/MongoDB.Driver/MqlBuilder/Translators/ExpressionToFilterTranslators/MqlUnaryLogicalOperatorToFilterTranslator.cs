@@ -19,7 +19,7 @@ using MongoDB.Driver.MqlBuilder.Translators.Context;
 
 namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlUnaryLogicalOperatorExpressionToFilterTranslator
+    internal static class MqlUnaryLogicalOperatorToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, UnaryExpression expression)
         {

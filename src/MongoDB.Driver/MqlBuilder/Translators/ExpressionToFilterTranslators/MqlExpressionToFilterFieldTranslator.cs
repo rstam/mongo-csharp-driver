@@ -25,8 +25,8 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
         {
             switch (expression.NodeType)
             {
-                case ExpressionType.MemberAccess: return MqlMemberExpressionToFilterFieldTranslator.Translate(context, (MemberExpression)expression);
-                case ExpressionType.Parameter: return MqlParameterExpressionToFilterFieldTranslator.Translate(context, (ParameterExpression)expression);
+                case ExpressionType.MemberAccess: return MqlMemberAccessToFilterFieldTranslator.Translate(context, (MemberExpression)expression);
+                case ExpressionType.Parameter: return MqlParameterToFilterFieldTranslator.Translate(context, (ParameterExpression)expression);
                 default: throw new MqlExpressionNotSupportedException(expression, because: "the expression cannot be translated to a filter field");
             }
         }
