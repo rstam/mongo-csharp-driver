@@ -14,39 +14,25 @@
 */
 
 using System.Linq.Expressions;
-using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlTypeMethodToFilterTranslator
+    internal static class MqlExistsMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.IsOneOf(MqlMethod.Type, MqlMethod.TypeWithArray))
+            if (method.IsOneOf(MqlMethod.Exists, MqlMethod.NotExists))
             {
                 var fieldExpression = arguments[0];
                 var field = MqlExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
 
-                BsonType[] typesArray;
-                if (method.Is(MqlMethod.Type))
-                {
-                    var typeExpression = arguments[1];
-                    var type = MqlExpressionToConstantTranslator.Translate<BsonType>(typeExpression, expression);
-                    typesArray = new[] { type };
-                }
-                else
-                {
-                    var typesExpression = arguments[1];
-                    typesArray = MqlExpressionToConstantTranslator.Translate<BsonType[]>(typesExpression, expression);
-                }
-
-                return AstFilter.Type(field, typesArray);
+                return method.Is(MqlMethod.Exists) ? AstFilter.Exists(field) : AstFilter.NotExists(field);
             }
 
             throw new MqlExpressionNotSupportedException(expression);

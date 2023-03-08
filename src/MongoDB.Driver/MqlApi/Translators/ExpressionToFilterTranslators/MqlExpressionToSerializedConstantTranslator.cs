@@ -18,7 +18,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
     internal static class MqlExpressionToSerializedConstantTranslator
     {

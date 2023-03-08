@@ -17,7 +17,7 @@ using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
     internal static class MqlComparisonOperatorExpressionToFilterTranslator
     {

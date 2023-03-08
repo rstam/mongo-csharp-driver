@@ -15,7 +15,7 @@
 
 using MongoDB.Bson;
 using MongoDB.Driver.MqlApi;
-using MongoDB.Driver.MqlApi.Translators.FilterTranslators;
+using MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators;
 
 namespace MongoDB.Driver.Tests.MqlApi
 {

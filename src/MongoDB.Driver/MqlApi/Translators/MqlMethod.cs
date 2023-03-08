@@ -23,6 +23,7 @@ namespace MongoDB.Driver.MqlApi.Translators
     {
         // private static fields
         private static readonly MethodInfo __exists;
+        private static readonly MethodInfo __expr;
         private static readonly MethodInfo __in;
         private static readonly MethodInfo __nin;
         private static readonly MethodInfo __nor;
@@ -34,6 +35,7 @@ namespace MongoDB.Driver.MqlApi.Translators
         static MqlMethod()
         {
             __exists = ReflectionInfo.Method((object field) => Mql.Exists(field));
+            __expr = ReflectionInfo.Method((bool expr) => Mql.Expr(expr));
             __in = ReflectionInfo.Method((object value, object[] values) => value.In(values));
             __nin = ReflectionInfo.Method((object value, object[] values) => value.Nin(values));
             __nor = ReflectionInfo.Method((bool[] clauses) => Mql.Nor(clauses));
@@ -44,6 +46,7 @@ namespace MongoDB.Driver.MqlApi.Translators
 
         // public properties
         public static MethodInfo Exists => __exists;
+        public static MethodInfo Expr => __expr;
         public static MethodInfo In => __in;
         public static MethodInfo Nin => __nin;
         public static MethodInfo Nor => __nor;

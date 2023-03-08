@@ -18,7 +18,7 @@ using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
     internal static class MqlParameterExpressionToFilterFieldTranslator
     {

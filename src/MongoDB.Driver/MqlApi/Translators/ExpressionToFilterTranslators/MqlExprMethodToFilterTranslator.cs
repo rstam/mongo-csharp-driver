@@ -13,36 +13,27 @@
 * limitations under the License.
 */
 
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
+using MongoDB.Driver.MqlApi.Translators.ExpressionToAggregationExpressionTranslators;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlNorMethodToFilterTranslator
+    internal static class MqlExprMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.Is(MqlMethod.Nor))
+            if (method.Is(MqlMethod.Expr))
             {
-                if (arguments.Count == 1 && arguments[0] is NewArrayExpression newArrayExpression)
-                {
-                    arguments = newArrayExpression.Expressions;
-                }
+                var exprExpression = arguments[0];
+                var exprTranslation = MqlExpressionToAggregationExpressionTranslator.Translate(context, exprExpression);
 
-                var filters = new List<AstFilter>();
-                foreach (var clauseExpression in arguments)
-                {
-                    var filter = MqlExpressionToFilterTranslator.Translate(context, clauseExpression);
-                    filters.Add(filter);
-                }
-
-                return AstFilter.Nor(filters.ToArray());
+                return AstFilter.Expr(exprTranslation);
             }
 
             throw new MqlExpressionNotSupportedException(expression);

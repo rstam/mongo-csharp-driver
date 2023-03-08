@@ -17,7 +17,7 @@ using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
     internal static class MqlMethodCallExpressionToFilterTranslator
     {
@@ -27,6 +27,7 @@ namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
 
             switch (method.Name)
             {
+                case "Expr": return MqlExprMethodToFilterTranslator.Translate(context, expression);
                 case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
                 case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
 

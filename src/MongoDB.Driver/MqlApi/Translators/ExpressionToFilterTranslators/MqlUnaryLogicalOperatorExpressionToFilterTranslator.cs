@@ -15,27 +15,30 @@
 
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
-using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlExistsMethodToFilterTranslator
+    internal static class MqlUnaryLogicalOperatorExpressionToFilterTranslator
     {
-        public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
+        public static AstFilter Translate(MqlTranslationContext context, UnaryExpression expression)
         {
-            var method = expression.Method;
-            var arguments = expression.Arguments;
-
-            if (method.IsOneOf(MqlMethod.Exists, MqlMethod.NotExists))
+            if (IsUnaryLogicalOperatorExpression(expression))
             {
-                var fieldExpression = arguments[0];
-                var field = MqlExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
-
-                return method.Is(MqlMethod.Exists) ? AstFilter.Exists(field) : AstFilter.NotExists(field);
+                var filter = MqlExpressionToFilterTranslator.Translate(context, expression.Operand);
+                return AstFilter.Not(filter);
             }
 
             throw new MqlExpressionNotSupportedException(expression);
+        }
+
+        private static bool IsUnaryLogicalOperatorExpression(Expression expression)
+        {
+            return expression.NodeType switch
+            {
+                ExpressionType.Not => true,
+                _ => false
+            };
         }
     }
 }

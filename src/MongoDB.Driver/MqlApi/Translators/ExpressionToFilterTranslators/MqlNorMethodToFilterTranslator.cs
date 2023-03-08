@@ -13,37 +13,36 @@
 * limitations under the License.
 */
 
-using System.Collections;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.MqlApi.Translators.Context;
 
-namespace MongoDB.Driver.MqlApi.Translators.FilterTranslators
+namespace MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlInMethodToFilterTranslator
+    internal static class MqlNorMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.IsOneOf(MqlMethod.In, MqlMethod.Nin))
+            if (method.Is(MqlMethod.Nor))
             {
-                var valueExpression = arguments[0];
-                var field = MqlExpressionToFilterFieldTranslator.Translate(context, valueExpression);
-
-                var valuesExpression = arguments[1];
-                if (valuesExpression is ConstantExpression constantValuesExpression)
+                if (arguments.Count == 1 && arguments[0] is NewArrayExpression newArrayExpression)
                 {
-                    var values = (IEnumerable)constantValuesExpression.Value;
-                    var serializedValues = SerializationHelper.SerializeValues(field.Serializer, values);
-                    return method.Is(MqlMethod.In) ?
-                        AstFilter.In(field, serializedValues) :
-                        AstFilter.Nin(field, serializedValues);
+                    arguments = newArrayExpression.Expressions;
                 }
 
-                throw new MqlExpressionNotSupportedException(expression, because: "values must be a constant array");
+                var filters = new List<AstFilter>();
+                foreach (var clauseExpression in arguments)
+                {
+                    var filter = MqlExpressionToFilterTranslator.Translate(context, clauseExpression);
+                    filters.Add(filter);
+                }
+
+                return AstFilter.Nor(filters.ToArray());
             }
 
             throw new MqlExpressionNotSupportedException(expression);

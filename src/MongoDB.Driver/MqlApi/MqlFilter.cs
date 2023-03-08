@@ -17,7 +17,7 @@ using System;
 using System.Linq.Expressions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
-using MongoDB.Driver.MqlApi.Translators.FilterTranslators;
+using MongoDB.Driver.MqlApi.Translators.ExpressionToFilterTranslators;
 
 namespace MongoDB.Driver.MqlApi
 {
