@@ -25,7 +25,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
         {
             switch (expression.NodeType)
             {
-                case ExpressionType.Call: return MqlMethodCallExpressionToFilterTranslator.Translate(context, (MethodCallExpression)expression);
+                case ExpressionType.Call: return MqlMethodCallToFilterTranslator.Translate(context, (MethodCallExpression)expression);
                 case ExpressionType.Not: return MqlUnaryLogicalOperatorToFilterTranslator.Translate(context, (UnaryExpression)expression);
 
                 case ExpressionType.AndAlso:

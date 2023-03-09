@@ -19,7 +19,7 @@ using MongoDB.Driver.MqlBuilder.Translators.Context;
 
 namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlMethodCallExpressionToFilterTranslator
+    internal static class MqlMethodCallToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {
@@ -34,7 +34,14 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
                 case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
                 case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
                 case "Regex": return MqlRegexMethodToFilterTranslator.Translate(context, expression);
+                case "Size": return MqlSizeMethodToFilterTranslator.Translate(context, expression);
                 case "Text": return MqlTextMethodToFilterTranslator.Translate(context, expression);
+
+                case "BitsAllClear":
+                case "BitsAllSet":
+                case "BitsAnyClear":
+                case "BitsAnySet":
+                    return MqlBitsMethodToFilterTranslator.Translate(context, expression);
 
                 case "Exists":
                 case "NotExists":

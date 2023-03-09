@@ -25,6 +25,10 @@ namespace MongoDB.Driver.MqlBuilder.Translators
     {
         // private static fields
         private static readonly MethodInfo __all;
+        private static readonly MethodInfo __bitsAllClear;
+        private static readonly MethodInfo __bitsAllSet;
+        private static readonly MethodInfo __bitsAnyClear;
+        private static readonly MethodInfo __bitsAnySet;
         private static readonly MethodInfo __elemMatch;
         private static readonly MethodInfo __exists;
         private static readonly MethodInfo __expr;
@@ -34,6 +38,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         private static readonly MethodInfo __nor;
         private static readonly MethodInfo __notExists;
         private static readonly MethodInfo __regex;
+        private static readonly MethodInfo __size;
         private static readonly MethodInfo __text;
         private static readonly MethodInfo __type;
         private static readonly MethodInfo __typeWithArray;
@@ -42,6 +47,10 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         static MqlMethod()
         {
             __all = ReflectionInfo.Method((IEnumerable<object> field, object[] values) => Mql.All(field, values));
+            __bitsAllClear = ReflectionInfo.Method((int value, int mask) => Mql.BitsAllClear(value, mask));
+            __bitsAllSet = ReflectionInfo.Method((int value, int mask) => Mql.BitsAllSet(value, mask));
+            __bitsAnyClear = ReflectionInfo.Method((int value, int mask) => Mql.BitsAnyClear(value, mask));
+            __bitsAnySet = ReflectionInfo.Method((int value, int mask) => Mql.BitsAnySet(value, mask));
             __elemMatch = ReflectionInfo.Method((IEnumerable<object> field, Func<object, bool> predicate) => Mql.ElemMatch(field, predicate));
             __exists = ReflectionInfo.Method((object field) => Mql.Exists(field));
             __expr = ReflectionInfo.Method((bool expr) => Mql.Expr(expr));
@@ -51,6 +60,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
             __nor = ReflectionInfo.Method((bool[] clauses) => Mql.Nor(clauses));
             __notExists = ReflectionInfo.Method((object field) => Mql.NotExists(field));
             __regex = ReflectionInfo.Method((string field, string pattern, string options) => Mql.Regex(field, pattern, options));
+            __size = ReflectionInfo.Method((IEnumerable<object> field, int size) => Mql.Size(field, size));
             __text = ReflectionInfo.Method((string field, MqlTextArgs args) => Mql.Text(field, args));
             __type = ReflectionInfo.Method((object field, BsonType type) => Mql.Type(field, type));
             __typeWithArray = ReflectionInfo.Method((object field, BsonType[] types) => Mql.Type(field, types));
@@ -58,6 +68,10 @@ namespace MongoDB.Driver.MqlBuilder.Translators
 
         // public properties
         public static MethodInfo All => __all;
+        public static MethodInfo BitsAllClear => __bitsAllClear;
+        public static MethodInfo BitsAllSet => __bitsAllSet;
+        public static MethodInfo BitsAnyClear => __bitsAnyClear;
+        public static MethodInfo BitsAnySet => __bitsAnySet;
         public static MethodInfo ElemMatch => __elemMatch;
         public static MethodInfo Exists => __exists;
         public static MethodInfo Expr => __expr;
@@ -66,6 +80,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         public static MethodInfo Nin => __nin;
         public static MethodInfo Nor => __nor;
         public static MethodInfo NotExists => __notExists;
+        public static MethodInfo Size => __size;
         public static MethodInfo Text => __text;
         public static MethodInfo Type => __type;
         public static MethodInfo Regex => __regex;

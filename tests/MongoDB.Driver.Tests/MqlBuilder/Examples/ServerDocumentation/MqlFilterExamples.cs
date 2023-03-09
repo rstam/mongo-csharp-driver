@@ -102,6 +102,46 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void BitsAllClear_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-bitwise/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X.BitsAllClear(1)),
+                "{ X : { $bitsAllClear : 1 } }");
+        }
+
+        [Fact]
+        public void BitsAllSet_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-bitwise/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X.BitsAllSet(1)),
+                "{ X : { $bitsAllSet : 1 } }");
+        }
+
+        [Fact]
+        public void BitsAnyClear_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-bitwise/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X.BitsAnyClear(1)),
+                "{ X : { $bitsAnyClear : 1 } }");
+        }
+
+        [Fact]
+        public void BitsAnySet_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-bitwise/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X.BitsAnySet(1)),
+                "{ X : { $bitsAnySet : 1 } }");
+        }
+
+        [Fact]
         public void ElemMatch_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/query-array/
@@ -280,6 +320,16 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Filter(collection, x => Mql.Regex(x.S, "pattern", "is")),
                 "{ S : /pattern/is }");
+        }
+
+        [Fact]
+        public void Size_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-array/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.A.Size(2)),
+                "{ A : { $size : 2 } }");
         }
 
         [Fact]

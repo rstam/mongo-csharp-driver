@@ -99,12 +99,12 @@ namespace MongoDB.Driver.MqlBuilder
             throw new InvalidOperationException();
         }
 
-        public static bool BinarySize( object value)
+        public static bool BinarySize(object value)
         {
             throw new InvalidOperationException();
         }
 
-        public static bool BitsAllClear( this int value, int mask)
+        public static bool BitsAllClear(this int value, int mask)
         {
             throw new InvalidOperationException();
         }
@@ -568,7 +568,7 @@ namespace MongoDB.Driver.MqlBuilder
             throw new InvalidOperationException();
         }
 
-        public static bool Size<TValue>(this IEnumerable<TValue> array, int size)
+        public static bool Size<TValue>(this IEnumerable<TValue> field, int size)
         {
             throw new InvalidOperationException();
         }
