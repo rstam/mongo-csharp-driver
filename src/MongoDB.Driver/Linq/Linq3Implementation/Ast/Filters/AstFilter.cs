@@ -255,6 +255,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters
             return new AstFieldOperationFilter(field, new AstSizeFilterOperation(size));
         }
 
+        public static AstFilter Text(string search, string language = null, bool? caseSensitive = null, bool? diacriticSensitive = null)
+        {
+            return new AstTextFilter(search, language, caseSensitive, diacriticSensitive);
+        }
+
         public static AstFieldOperationFilter Type(AstFilterField field, BsonType[] types)
         {
             return new AstFieldOperationFilter(field, new AstTypeFilterOperation(types));

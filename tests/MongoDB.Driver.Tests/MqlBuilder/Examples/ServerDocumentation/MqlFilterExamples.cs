@@ -53,11 +53,11 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             filter = Mql.Filter(collection, x => Mql.Type(x.X, BsonType.Int32, BsonType.Int64)); // { X : { $type : ['int', 'long'] } }
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-evaluation/
-            filter = Mql.Filter(collection, x => Mql.Expr(x.X == 1)); //{ X : { $expr : { $eq : ['$X', 1] } } }
-            filter = Mql.Filter(collection, x => Mql.JsonSchema(new BsonDocument())); //{ X : { $jsonSchema : { } } }
+            filter = Mql.Filter(collection, x => Mql.Expr(x.X == 1)); //{ $expr : { $eq : ['$X', 1] } }
+            filter = Mql.Filter(collection, x => Mql.JsonSchema(new BsonDocument())); //{ $jsonSchema : { } }
             filter = Mql.Filter(collection, x => x.X % 2 == 1); // { X : { $mod : [2, 1] } }
-            filter = Mql.Filter(collection, x => Mql.Regex(x.S, "pattern", "options")); // { S : { $regex : /pattern/options  } }
-            filter = Mql.Filter(collection, x => Mql.Text("abc", new MqlTextArgs { Language = "english", CaseSensitive = false, DiacriticSensitive = false })); // { $text : { $search : 'abc', $language : 'english, $caseSensitive : false, $diacriticSensitive : false } }
+            filter = Mql.Filter(collection, x => Mql.Regex(x.S, "pattern", "options")); // { S : { $regex : /pattern/options } }
+            filter = Mql.Filter(collection, x => Mql.Text("abc", new MqlTextArgs { Language = "english", CaseSensitive = true, DiacriticSensitive = false })); // { $text : { $search : 'abc', $language : 'english, $caseSensitive : true, $diacriticSensitive : false } }
             // $where is deprecated
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-geospatial/
@@ -65,7 +65,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-array/
             filter = Mql.Filter(collection, x => x.A.All(1, 2, 3)); // { A : { $all : [1, 2, 3] } }
-            filter = Mql.Filter(collection, x => x.A.ElemMatch(e => e >= 1 && e <= 2)); // { A : { $elemMatch : { $gt : 1, $lt : 2 } } }
+            filter = Mql.Filter(collection, x => x.A.ElemMatch(e => e >= 1 && e <= 2)); // { A : { $elemMatch : { $gte : 1, $lte : 2 } } }
             filter = Mql.Filter(collection, x => x.A.Size(2)); // { A : { $size : 2 } }
 
             // https://www.mongodb.com/docs/manual/reference/operator/query-bitwise/
@@ -82,6 +82,16 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void All_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-array/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.A.All(1, 2, 3)),
+                "{ A : { $all : [1, 2, 3] } }");
+        }
+
+        [Fact]
         public void And_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/query-logical/
@@ -89,6 +99,16 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Filter(collection, x => x.X == 1 && x.Y == 2),
                 "{ X : 1, Y : 2 }");
+        }
+
+        [Fact]
+        public void ElemMatch_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-array/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.A.ElemMatch(e => e >= 1 && e <= 2)),
+                "{ A : { $elemMatch : { $gte : 1, $lte : 2 } } }");
         }
 
         [Fact]
@@ -183,6 +203,16 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void Mod_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-evaluation/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => x.X % 2 == 1),
+                "{ X : { $mod : [2, 1] } }");
+        }
+
+        [Fact]
         public void Ne_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/query-comparison/
@@ -240,6 +270,26 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Filter(collection, x => x.X == 1 || x.Y == 2),
                 "{ $or : [{ X : 1 }, { Y : 2 }] }");
+        }
+
+        [Fact]
+        public void Regex_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-evaluation/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Regex(x.S, "pattern", "is")),
+                "{ S : /pattern/is }");
+        }
+
+        [Fact]
+        public void Text_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/query-evaluation/
+            var collection = CreateCollection();
+            Assert(
+                Mql.Filter(collection, x => Mql.Text("abc", new MqlTextArgs { Language = "english", CaseSensitive = true, DiacriticSensitive = false })),
+                "{ $text : { $search : 'abc', $language : 'english', $caseSensitive : true, $diacriticSensitive : false } }");
         }
 
         [Fact]

@@ -34,7 +34,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
                     ExpressionType.AndAlso => AstFilter.And(filter1, filter2),
                     ExpressionType.OrElse => AstFilter.Or(filter1, filter2),
                     _ => throw new Exception()
-                }; ;
+                };
             }
 
             throw new MqlExpressionNotSupportedException(expression);

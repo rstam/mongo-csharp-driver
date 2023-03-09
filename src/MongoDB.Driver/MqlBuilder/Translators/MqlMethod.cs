@@ -13,6 +13,8 @@
 * limitations under the License.
 */
 
+using System;
+using System.Collections.Generic;
 using System.Reflection;
 using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
@@ -22,6 +24,8 @@ namespace MongoDB.Driver.MqlBuilder.Translators
     internal static class MqlMethod
     {
         // private static fields
+        private static readonly MethodInfo __all;
+        private static readonly MethodInfo __elemMatch;
         private static readonly MethodInfo __exists;
         private static readonly MethodInfo __expr;
         private static readonly MethodInfo __in;
@@ -29,12 +33,16 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         private static readonly MethodInfo __nin;
         private static readonly MethodInfo __nor;
         private static readonly MethodInfo __notExists;
+        private static readonly MethodInfo __regex;
+        private static readonly MethodInfo __text;
         private static readonly MethodInfo __type;
         private static readonly MethodInfo __typeWithArray;
 
         // static constructor
         static MqlMethod()
         {
+            __all = ReflectionInfo.Method((IEnumerable<object> field, object[] values) => Mql.All(field, values));
+            __elemMatch = ReflectionInfo.Method((IEnumerable<object> field, Func<object, bool> predicate) => Mql.ElemMatch(field, predicate));
             __exists = ReflectionInfo.Method((object field) => Mql.Exists(field));
             __expr = ReflectionInfo.Method((bool expr) => Mql.Expr(expr));
             __in = ReflectionInfo.Method((object value, object[] values) => value.In(values));
@@ -42,11 +50,15 @@ namespace MongoDB.Driver.MqlBuilder.Translators
             __nin = ReflectionInfo.Method((object value, object[] values) => value.Nin(values));
             __nor = ReflectionInfo.Method((bool[] clauses) => Mql.Nor(clauses));
             __notExists = ReflectionInfo.Method((object field) => Mql.NotExists(field));
+            __regex = ReflectionInfo.Method((string field, string pattern, string options) => Mql.Regex(field, pattern, options));
+            __text = ReflectionInfo.Method((string field, MqlTextArgs args) => Mql.Text(field, args));
             __type = ReflectionInfo.Method((object field, BsonType type) => Mql.Type(field, type));
             __typeWithArray = ReflectionInfo.Method((object field, BsonType[] types) => Mql.Type(field, types));
         }
 
         // public properties
+        public static MethodInfo All => __all;
+        public static MethodInfo ElemMatch => __elemMatch;
         public static MethodInfo Exists => __exists;
         public static MethodInfo Expr => __expr;
         public static MethodInfo In => __in;
@@ -54,7 +66,9 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         public static MethodInfo Nin => __nin;
         public static MethodInfo Nor => __nor;
         public static MethodInfo NotExists => __notExists;
+        public static MethodInfo Text => __text;
         public static MethodInfo Type => __type;
+        public static MethodInfo Regex => __regex;
         public static MethodInfo TypeWithArray => __typeWithArray;
     }
 }

@@ -51,10 +51,56 @@ namespace MongoDB.Driver.MqlBuilder.Translators.Context
             return new MqlSymbol(parameter, name, ast, rootSerializer, isCurrent: true);
         }
 
+        public MqlSymbol CreateSymbol(ParameterExpression parameter, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            var parameterName = _nameGenerator.GetParameterName(parameter);
+            return CreateSymbol(parameter, name: parameterName, serializer, isCurrent);
+        }
+
+        public MqlSymbol CreateSymbol(ParameterExpression parameter, string name, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            var varName = _nameGenerator.GetVarName(name);
+            return CreateSymbol(parameter, name, varName, serializer, isCurrent);
+        }
+
+        public MqlSymbol CreateSymbol(ParameterExpression parameter, string name, string varName, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            var varAst = AstExpression.Var(varName, isCurrent);
+            return CreateSymbol(parameter, name, varAst, serializer, isCurrent);
+        }
+
+        public MqlSymbol CreateSymbol(ParameterExpression parameter, AstExpression ast, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            var parameterName = _nameGenerator.GetParameterName(parameter);
+            return CreateSymbol(parameter, name: parameterName, ast, serializer, isCurrent);
+        }
+
+        public MqlSymbol CreateSymbol(ParameterExpression parameter, string name, AstExpression ast, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            return new MqlSymbol(parameter, name, ast, serializer, isCurrent);
+        }
+
+        public MqlSymbol CreateSymbolWithVarName(ParameterExpression parameter, string varName, IBsonSerializer serializer, bool isCurrent = false)
+        {
+            var parameterName = _nameGenerator.GetParameterName(parameter);
+            return CreateSymbol(parameter, name: parameterName, varName, serializer, isCurrent);
+        }
+
+        public MqlTranslationContext WithSingleSymbol(MqlSymbol newSymbol)
+        {
+            var newSymbolTable = new MqlSymbolTable(newSymbol);
+            return WithSymbolTable(newSymbolTable);
+        }
+
         public MqlTranslationContext WithSymbol(MqlSymbol newSymbol)
         {
             var newSymbolTable = _symbolTable.WithSymbol(newSymbol);
             return new MqlTranslationContext(newSymbolTable, _nameGenerator);
+        }
+
+        public MqlTranslationContext WithSymbolTable(MqlSymbolTable symbolTable)
+        {
+            return new MqlTranslationContext(symbolTable, _nameGenerator);
         }
     }
 }

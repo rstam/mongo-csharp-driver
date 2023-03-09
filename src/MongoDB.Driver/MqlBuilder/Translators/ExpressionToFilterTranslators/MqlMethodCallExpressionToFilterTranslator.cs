@@ -27,10 +27,14 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
 
             switch (method.Name)
             {
+                case "All": return MqlAllMethodToFilterTranslator.Translate(context, expression);
+                case "ElemMatch": return MqlElemMatchMethodToFilterTranslator.Translate(context, expression);
                 case "Expr": return MqlExprMethodToFilterTranslator.Translate(context, expression);
                 case "JsonSchema": return MqlJsonSchemaMethodToFilterTranslator.Translate(context, expression);
                 case "Nor": return MqlNorMethodToFilterTranslator.Translate(context, expression);
                 case "Type": return MqlTypeMethodToFilterTranslator.Translate(context, expression);
+                case "Regex": return MqlRegexMethodToFilterTranslator.Translate(context, expression);
+                case "Text": return MqlTextMethodToFilterTranslator.Translate(context, expression);
 
                 case "Exists":
                 case "NotExists":

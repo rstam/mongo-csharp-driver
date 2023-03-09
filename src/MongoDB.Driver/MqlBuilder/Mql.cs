@@ -44,7 +44,7 @@ namespace MongoDB.Driver.MqlBuilder
             throw new InvalidOperationException();
         }
 
-        public static bool All<TValue>(this IEnumerable<TValue> array, params TValue[] values)
+        public static bool All<TValue>(this IEnumerable<TValue> field, params TValue[] values)
         {
             throw new InvalidOperationException();
         }
@@ -199,7 +199,7 @@ namespace MongoDB.Driver.MqlBuilder
             throw new InvalidOperationException();
         }
 
-        public static bool ElemMatch<TValue>(this IEnumerable<TValue> array, Func<TValue, bool> predicate)
+        public static bool ElemMatch<TValue>(this IEnumerable<TValue> field, Func<TValue, bool> predicate)
         {
             throw new InvalidOperationException();
         }
