@@ -14,16 +14,15 @@
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 
 namespace MongoDB.Driver.MqlBuilder
 {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-    public static class MqlStage
+    public abstract class MqlStage
     {
+        #region static
         public static MqlStage<TInput, BsonDocument> AddFields<TInput, TFields>(Expression<Func<TInput, TFields>> fields)
         {
             throw new NotImplementedException();
@@ -76,7 +75,7 @@ namespace MongoDB.Driver.MqlBuilder
 
         public static MqlStage<TInput, TOutput> Project<TInput, TOutput>(Expression<Func<TInput, TOutput>> projection)
         {
-            throw new NotImplementedException();
+            return new MqlProjectStage<TInput, TOutput>(projection);
         }
 
         public static MqlStage<TInput, TOutput> ReplaceRoot<TInput, TOutput>(Expression<Func<TInput, TOutput>> replacement)
@@ -146,26 +145,18 @@ namespace MongoDB.Driver.MqlBuilder
         {
             throw new NotImplementedException();
         }
+        #endregion
+
+        public abstract MqlStageType StageType { get; }
     }
 
-    public abstract class MqlStage<TInput, TOutput>
+    public abstract class MqlStage<TInput, TOutput> : MqlStage
     {
-        private readonly IBsonSerializer<TInput> _inputSerializer;
-        private readonly IBsonSerializer<TOutput> _outputSerializer;
+    }
 
-        public MqlStage(IBsonSerializer<TInput> inputSerializer, IBsonSerializer<TOutput> outputSerializer)
-        {
-            _inputSerializer = inputSerializer;
-            _outputSerializer = outputSerializer;
-        }
-
-        public IBsonSerializer<TInput> InputSerializer => _inputSerializer;
-        public IBsonSerializer<TOutput> OutputSerializer => _outputSerializer;
-
-        public List<BsonDocument> Translate()
-        {
-            throw new NotImplementedException();
-        }
+    public enum MqlStageType
+    {
+        Project
     }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 }

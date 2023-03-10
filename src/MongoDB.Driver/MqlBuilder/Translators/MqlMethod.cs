@@ -24,6 +24,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
     internal static class MqlMethod
     {
         // private static fields
+        private static readonly MethodInfo __abs;
         private static readonly MethodInfo __all;
         private static readonly MethodInfo __bitsAllClear;
         private static readonly MethodInfo __bitsAllSet;
@@ -46,6 +47,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         // static constructor
         static MqlMethod()
         {
+            __abs = ReflectionInfo.Method((int value) => Mql.Abs(value));
             __all = ReflectionInfo.Method((IEnumerable<object> field, object[] values) => Mql.All(field, values));
             __bitsAllClear = ReflectionInfo.Method((int value, int mask) => Mql.BitsAllClear(value, mask));
             __bitsAllSet = ReflectionInfo.Method((int value, int mask) => Mql.BitsAllSet(value, mask));
@@ -67,6 +69,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         }
 
         // public properties
+        public static MethodInfo Abs => __abs;
         public static MethodInfo All => __all;
         public static MethodInfo BitsAllClear => __bitsAllClear;
         public static MethodInfo BitsAllSet => __bitsAllSet;

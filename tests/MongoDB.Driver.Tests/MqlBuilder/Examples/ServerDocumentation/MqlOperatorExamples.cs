@@ -15,6 +15,7 @@
 
 using System;
 using System.Linq;
+using FluentAssertions;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MongoDB.Driver.MqlBuilder;
@@ -242,6 +243,22 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
 
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#window-operators
             // TODO: all
+        }
+
+        [Fact]
+        public void Abs_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Abs(x.X)),
+                "{ $project : { _v : { $abs : '$X' }, _id : 0 } }");
+        }
+
+        private void Assert<TInput, TOutput>(MqlPipeline<TInput, TOutput> pipeline, params string[] expectedStages)
+        {
+            var stages = TranslatePipeline(pipeline);
+            AssertStages(stages, expectedStages);
         }
 
         private IMongoCollection<C> CreateCollection()

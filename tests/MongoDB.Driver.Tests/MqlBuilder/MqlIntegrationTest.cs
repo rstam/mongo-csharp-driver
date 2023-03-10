@@ -13,7 +13,10 @@
 * limitations under the License.
 */
 
+using System.Linq;
+using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers;
 using MongoDB.Driver.MqlBuilder;
 using MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators;
 
@@ -21,6 +24,11 @@ namespace MongoDB.Driver.Tests.MqlBuilder
 {
     public abstract class MqlIntegrationTest
     {
+        public void AssertStages(BsonDocument[] stages, params string[] expectedStages)
+        {
+            stages.Should().Equal(expectedStages.Select(s => BsonDocument.Parse(s)));
+        }
+
         public void CreateCollection<TDocument>(
             IMongoCollection<TDocument> collection,
             params TDocument[] documents)
@@ -40,6 +48,14 @@ namespace MongoDB.Driver.Tests.MqlBuilder
         {
             var translatedFilter = MqlFilterTranslator.Translate(filter);
             return (BsonDocument)translatedFilter.Render();
+        }
+
+        public static BsonDocument[] TranslatePipeline<TInput, TOutput>(MqlPipeline<TInput, TOutput> pipeline)
+        {
+            var translatedPipeline = MqlPipelineTranslator.Translate(pipeline);
+            var optimizedPipeline = AstPipelineOptimizer.Optimize(translatedPipeline);
+            var renderedPipeline = optimizedPipeline.Render();
+            return ((BsonArray)renderedPipeline).Cast<BsonDocument>().ToArray();
         }
     }
 }

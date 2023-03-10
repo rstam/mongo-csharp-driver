@@ -19,7 +19,7 @@ using MongoDB.Driver.MqlBuilder.Translators.Context;
 
 namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
 {
-    internal static class MqlMethodCallToFilterTranslator
+    internal static class MqlMethodToFilterTranslator
     {
         public static AstFilter Translate(MqlTranslationContext context, MethodCallExpression expression)
         {

@@ -24,6 +24,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressio
         {
             switch (expression.NodeType)
             {
+                case ExpressionType.Call: return MqlMethodToAggregationExpressionTranslator.Translate(context, (MethodCallExpression)expression);
                 case ExpressionType.MemberAccess: return MqlMemberAccessToAggregationExpressionTranslator.Translate(context, (MemberExpression)expression);
                 case ExpressionType.Parameter: return MqlParameterToAggregationExpressionTranslator.Translate(context, (ParameterExpression)expression);
 

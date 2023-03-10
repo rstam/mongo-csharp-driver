@@ -434,13 +434,13 @@ namespace MongoDB.Driver.MqlBuilder
         public static MqlPipeline<TDocument, TDocument> Pipeline<TDocument>(IMongoCollection<TDocument> collection)
         {
             var inputSerializer = collection.DocumentSerializer;
-            return new MqlPipeline<TDocument, TDocument>(inputSerializer, inputSerializer);
+            return new MqlPipeline<TDocument, TDocument>(inputSerializer);
         }
 
         public static MqlPipeline<NoPipelineInput, NoPipelineInput> Pipeline(IMongoDatabase database)
         {
             var inputSerializer = NoPipelineInputSerializer.Instance;
-            return new MqlPipeline<NoPipelineInput, NoPipelineInput>(inputSerializer, inputSerializer);
+            return new MqlPipeline<NoPipelineInput, NoPipelineInput>(inputSerializer);
         }
 
         public static double Pow(double number, double exponent)

@@ -15,10 +15,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators;
 
 namespace MongoDB.Driver.MqlBuilder
 {
@@ -26,20 +29,27 @@ namespace MongoDB.Driver.MqlBuilder
     public class MqlPipeline<TInput, TOutput>
     {
         private readonly IBsonSerializer<TInput> _inputSerializer;
-        private readonly IBsonSerializer<TOutput> _outputSerializer;
+        private readonly IReadOnlyList<MqlStage> _stages;
 
-        public MqlPipeline(IBsonSerializer<TInput> inputSerializer, IBsonSerializer<TOutput> outputSerializer)
+        public MqlPipeline(IBsonSerializer<TInput> inputSerializer)
         {
-            _inputSerializer = inputSerializer;
-            _outputSerializer = outputSerializer;
+            _inputSerializer = Ensure.IsNotNull(inputSerializer, nameof(inputSerializer));
+            _stages = new MqlStage[0];
+        }
+
+        public MqlPipeline(IBsonSerializer<TInput> inputSerializer, IEnumerable<MqlStage> stages)
+        {
+            _inputSerializer = Ensure.IsNotNull(inputSerializer, nameof(inputSerializer));
+            _stages = Ensure.IsNotNull(stages, nameof(stages)).ToArray();
         }
 
         public IBsonSerializer<TInput> InputSerializer => _inputSerializer;
-        public IBsonSerializer<TOutput> OutputSerializer => _outputSerializer;
+        public IReadOnlyList<MqlStage> Stages => _stages;
 
         public MqlPipeline<TInput, TNewOutput> Append<TNewOutput>(MqlStage<TOutput, TNewOutput> stage)
         {
-            throw new NotImplementedException();
+            var stages = _stages.Append(stage);
+            return new MqlPipeline<TInput, TNewOutput>(_inputSerializer, stages);
         }
 
         public MqlPipeline<TInput, TAs> As<TAs>(IBsonSerializer<TAs> serializer = null)
@@ -47,15 +57,12 @@ namespace MongoDB.Driver.MqlBuilder
             throw new NotImplementedException();
         }
 
-        public List<BsonDocument> Translate()
-        {
-            throw new NotImplementedException();
-        }
-
         public static implicit operator PipelineDefinition<TInput, TOutput>(MqlPipeline<TInput, TOutput> pipeline)
         {
-            var stages = pipeline.Translate();
-            return new BsonDocumentStagePipelineDefinition<TInput, TOutput>(stages, pipeline.OutputSerializer);
+            var translatedPipeline = MqlPipelineTranslator.Translate(pipeline);
+            var stages = translatedPipeline.Stages.Select(s => s.Render()).Cast<BsonDocument>();
+            var outputSerializer = (IBsonSerializer<TOutput>)translatedPipeline.OutputSerializer;
+            return new BsonDocumentStagePipelineDefinition<TInput, TOutput>(stages, outputSerializer);
         }
     }
 
