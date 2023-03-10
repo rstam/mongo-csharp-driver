@@ -255,6 +255,206 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
                 "{ $project : { _v : { $abs : '$X' }, _id : 0 } }");
         }
 
+        [Fact]
+        public void Add_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.X + x.Y),
+                "{ $project : { _v : { $add : ['$X', '$Y'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Ceil_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Ceil(x.D)),
+                "{ $project : { _v : { $ceil : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Divide_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.X / x.Y),
+                "{ $project : { _v : { $divide : ['$X', '$Y'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Exp_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Exp(x.X)),
+                "{ $project : { _v : { $exp : '$X' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Floor_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Floor(x.D)),
+                "{ $project : { _v : { $floor : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Ln_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Ln(x.D)),
+                "{ $project : { _v : { $ln : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Log_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Log(x.D, 10)),
+                "{ $project : { _v : { $log : ['$D', 10] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Log10_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Log10(x.D)),
+                "{ $project : { _v : { $log10 : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Mod_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.X % x.Y),
+                "{ $project : { _v : { $mod : ['$X', '$Y'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void MqlDivide_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Divide(x.X, x.Y)),
+                "{ $project : { _v : { $divide : ['$X', '$Y'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Multiply_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.X * x.Y),
+                "{ $project : { _v : { $multiply : ['$X', '$Y'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Pow_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Pow(x.D, x.X)),
+                "{ $project : { _v : { $pow : ['$D', '$X'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void RoundToDouble_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.RoundToDouble(x.D, 2)),
+                "{ $project : { _v : { $round : ['$D', 2] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void RoundToInteger_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.RoundToInteger(x.D)),
+                "{ $project : { _v : { $round : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void RoundToInteger_with_place_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.RoundToInteger(x.D, -2)),
+                "{ $project : { _v : { $round : ['$D', -2] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Sqrt_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Sqrt(x.D)),
+                "{ $project : { _v : { $sqrt : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Subtract_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.X - x.Y),
+                "{ $project : { _v : { $subtract : ['$X', '$Y'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void TruncToDouble_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.TruncToDouble(x.D, 2)),
+                "{ $project : { _v : { $trunc : ['$D', 2] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void TruncToInteger_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.TruncToInteger(x.D)),
+                "{ $project : { _v : { $trunc : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void TruncToInteger_with_place_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.TruncToInteger(x.D, -2)),
+                "{ $project : { _v : { $trunc : ['$D', -2] }, _id : 0 } }");
+        }
+
         private void Assert<TInput, TOutput>(MqlPipeline<TInput, TOutput> pipeline, params string[] expectedStages)
         {
             var stages = TranslatePipeline(pipeline);

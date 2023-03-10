@@ -15,11 +15,13 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
+using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
 using MongoDB.Driver.MqlBuilder.Translators.Context;
 using MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressionTranslators;
@@ -31,7 +33,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToFilterTranslators
         public static AstStage Translate(IMqlProjectStage stage, IBsonSerializer inputSerializer, out IBsonSerializer outputSerializer)
         {
             var context = MqlTranslationContext.Create();
-            var projection = stage.Projection;
+            var projection = (LambdaExpression)PartialEvaluator.EvaluatePartially(stage.Projection);
             var parameter = projection.Parameters.Single();
             var rootSymbol = context.CreateRootSymbol(parameter, inputSerializer);
             context = context.WithSymbol(rootSymbol);

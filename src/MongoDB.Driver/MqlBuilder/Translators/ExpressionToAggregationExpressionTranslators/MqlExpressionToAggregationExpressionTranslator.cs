@@ -14,6 +14,7 @@
 */
 
 using System.Linq.Expressions;
+using Amazon.Runtime.Internal.Util;
 using MongoDB.Driver.MqlBuilder.Translators.Context;
 
 namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressionTranslators
@@ -27,6 +28,13 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressio
                 case ExpressionType.Call: return MqlMethodToAggregationExpressionTranslator.Translate(context, (MethodCallExpression)expression);
                 case ExpressionType.MemberAccess: return MqlMemberAccessToAggregationExpressionTranslator.Translate(context, (MemberExpression)expression);
                 case ExpressionType.Parameter: return MqlParameterToAggregationExpressionTranslator.Translate(context, (ParameterExpression)expression);
+
+                case ExpressionType.Add:
+                case ExpressionType.Divide:
+                case ExpressionType.Modulo:
+                case ExpressionType.Multiply:
+                case ExpressionType.Subtract:
+                    return MqlBinaryOperatorToAggregationExpressionTranslator.Translate(context, (BinaryExpression)expression);
 
                 case ExpressionType.Equal:
                 case ExpressionType.NotEqual:

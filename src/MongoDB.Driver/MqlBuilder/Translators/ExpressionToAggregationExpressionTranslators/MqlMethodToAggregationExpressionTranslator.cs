@@ -25,6 +25,25 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressio
             switch (expression.Method.Name)
             {
                 case "Abs": return MqlAbsMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Divide": return MqlDivideMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Exp": return MqlExpMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Pow": return MqlPowMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Sqrt": return MqlSqrtMethodToAggregationExpressionTranslator.Translate(context, expression);
+
+                case "Ceil":
+                case "Floor":
+                    return MqlCeilOrFloorMethodToAggregationExpressionTranslator.Translate(context, expression);
+
+                case "Ln":
+                case "Log":
+                case "Log10":
+                    return MqlLogMethodToAggregationExpressionTranslator.Translate(context, expression);
+
+                case "RoundToDouble":
+                case "RoundToInteger":
+                case "TruncToDouble":
+                case "TruncToInteger":
+                    return MqlRoundOrTruncMethodToAggregationExpressionTranslator.Translate(context, expression);
             }
 
             throw new MqlExpressionNotSupportedException(expression);

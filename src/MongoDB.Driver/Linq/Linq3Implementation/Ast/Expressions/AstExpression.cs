@@ -579,6 +579,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstNaryExpression(AstNaryOperator.Multiply, args);
         }
 
+        public static AstExpression Nary(AstNaryOperator @operator, params AstExpression[] args)
+        {
+            return new AstNaryExpression(@operator, args);
+        }
+
         public static AstExpression Ne(AstExpression arg1, AstExpression arg2)
         {
             return new AstBinaryExpression(AstBinaryOperator.Ne, arg1, arg2);
@@ -653,6 +658,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstExpression ReverseArray(AstExpression array)
         {
             return new AstUnaryExpression(AstUnaryOperator.ReverseArray, array);
+        }
+
+        public static AstExpression Round(AstExpression number)
+        {
+            return new AstUnaryExpression(AstUnaryOperator.Round, number);
+        }
+
+        public static AstExpression Round(AstExpression number, AstExpression place)
+        {
+            return new AstBinaryExpression(AstBinaryOperator.Round, number, place);
         }
 
         public static AstExpression RTrim(AstExpression input, AstExpression chars = null)
@@ -845,6 +860,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstExpression Trunc(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Trunc, arg);
+        }
+
+        public static AstExpression Trunc(AstExpression number, AstExpression place)
+        {
+            return new AstBinaryExpression(AstBinaryOperator.Trunc, number, place);
         }
 
         public static AstExpression Unary(AstUnaryOperator @operator, AstExpression arg)
