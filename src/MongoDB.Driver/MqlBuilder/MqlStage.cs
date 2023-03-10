@@ -46,7 +46,7 @@ namespace MongoDB.Driver.MqlBuilder
         public static MqlStage<TInput, TResult> Group<TInput, TResult>(
             Expression<Func<TInput, TResult>> fields)
         {
-            throw new NotImplementedException();
+            return new MqlGroupStage<TInput, TResult>(fields);
         }
 
         public static MqlStage<TInput, TInput> Limit<TInput>(long limit)
@@ -65,7 +65,7 @@ namespace MongoDB.Driver.MqlBuilder
 
         public static MqlStage<TInput, TInput> Match<TInput>(Expression<Func<TInput, bool>> predicate)
         {
-            throw new NotImplementedException();
+            return new MqlMatchStage<TInput>(predicate);
         }
 
         public static MqlStage<TInput, NoPipelineOutput> Out<TInput>(string databaseName, string collectionName)
@@ -156,6 +156,8 @@ namespace MongoDB.Driver.MqlBuilder
 
     public enum MqlStageType
     {
+        Group,
+        Match,
         Project
     }
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

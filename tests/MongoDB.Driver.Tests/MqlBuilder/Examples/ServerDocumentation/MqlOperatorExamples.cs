@@ -322,7 +322,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => Mql.Log(x.D, 10)),
-                "{ $project : { _v : { $log : ['$D', 10] }, _id : 0 } }");
+                "{ $project : { _v : { $log : ['$D', { $numberLong : 10 }] }, _id : 0 } }");
         }
 
         [Fact]
