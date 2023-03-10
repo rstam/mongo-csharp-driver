@@ -25,8 +25,10 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressio
             switch (expression.Method.Name)
             {
                 case "Abs": return MqlAbsMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "ConcatArrays": return MqlConcatArraysMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Divide": return MqlDivideMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Exp": return MqlExpMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "Filter": return MqlFilterMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Pow": return MqlPowMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Sqrt": return MqlSqrtMethodToAggregationExpressionTranslator.Translate(context, expression);
 

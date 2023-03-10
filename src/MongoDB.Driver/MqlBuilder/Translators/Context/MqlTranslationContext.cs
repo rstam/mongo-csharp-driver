@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Core.Misc;
@@ -84,6 +85,14 @@ namespace MongoDB.Driver.MqlBuilder.Translators.Context
         {
             var parameterName = _nameGenerator.GetParameterName(parameter);
             return CreateSymbol(parameter, name: parameterName, varName, serializer, isCurrent);
+        }
+
+        public (MqlTranslationContext context, string varName) WithParameterSymbol(LambdaExpression lambdaExpression, IBsonSerializer parameterSerializer)
+        {
+            var parameter = lambdaExpression.Parameters.Single();
+            var newSymbol = CreateSymbol(parameter, parameterSerializer);
+            var newContext = WithSymbol(newSymbol);
+            return (newContext, newSymbol.Var.Name);
         }
 
         public MqlTranslationContext WithSingleSymbol(MqlSymbol newSymbol)

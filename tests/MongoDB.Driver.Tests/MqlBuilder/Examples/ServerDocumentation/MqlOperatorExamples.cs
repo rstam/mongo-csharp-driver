@@ -311,7 +311,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => x.A.Filter(i => i > 0)),
-                "{ $project : { _v : { $filter : { input : '$A', cond : { $gt : ['$$i', 0] }, as : 'i' } }, _id : 0 } }");
+                "{ $project : { _v : { $filter : { input : '$A', as : 'i', cond : { $gt : ['$$i', 0] } } }, _id : 0 } }");
         }
 
         [Fact]
@@ -321,7 +321,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => x.A.Filter(i => i > 0, 100)),
-                "{ $project : { _v : { $filter : { input : '$A', cond : { $gt : ['$$i', 0] }, as : 'i', limit : 100 } }, _id : 0 } }");
+                "{ $project : { _v : { $filter : { input : '$A', as : 'i', cond : { $gt : ['$$i', 0] }, limit : 100 } }, _id : 0 } }");
         }
 
         [Fact]
