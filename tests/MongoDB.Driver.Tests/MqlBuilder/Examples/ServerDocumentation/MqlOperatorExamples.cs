@@ -15,7 +15,6 @@
 
 using System;
 using System.Linq;
-using FluentAssertions;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MongoDB.Driver.MqlBuilder;
@@ -81,9 +80,9 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             _ = Mql.Pipeline(collection).Project(x => x.A.Slice(10)); // [{ $project : { _v : { $slice : ['$A', 10] }, _id : 0 } }]
             _ = Mql.Pipeline(collection).Project(x => x.A.Slice(5, 10)); // [{ $project : { _v : { $slice : ['$A', 5, 10] }, _id : 0 } }]
             // TODO: $sortArray
-            _ = Mql.Pipeline(collection).Project(x => x.A.ZipMql(x.B)); // [{ $project : { _v : { $zip : { inputs : ['$A', '$B' } }, _id : 0 } }]
-            _ = Mql.Pipeline(collection).Project(x => x.A.Zip(x.B, true)); // [{ $project : { _v : { $zip : { inputs : ['$A', '$B' }, useLongestLength : true }, _id : 0 } }]
-            _ = Mql.Pipeline(collection).Project(x => x.A.Zip(x.B, true, 0, 0)); // [{ $project : { _v : { $zip : { inputs : ['$A', '$B' }, useLongestLength : true, defaults : [0, 0] }, _id : 0 } }]
+            _ = Mql.Pipeline(collection).Project(x => Mql.Zip(x.A, x.B)); // [{ $project : { _v : { $zip : { inputs : ['$A', '$B' } }, _id : 0 } }]
+            _ = Mql.Pipeline(collection).Project(x => Mql.Zip(x.A, x.B, true)); // [{ $project : { _v : { $zip : { inputs : ['$A', '$B' }, useLongestLength : true }, _id : 0 } }]
+            _ = Mql.Pipeline(collection).Project(x => Mql.Zip(x.A, x.B, true, 0, 0)); // [{ $project : { _v : { $zip : { inputs : ['$A', '$B' }, useLongestLength : true, defaults : [0, 0] }, _id : 0 } }]
 
             //https://www.mongodb.com/docs/manual/reference/operator/aggregation/#boolean-expression-operators
             _ = Mql.Pipeline(collection).Project(x => x.X == 0 && x.Y == 0); // [{ $project : { _v : { $and : [{ $eq : ['$X', 0] }, { $eq : ['$Y', 0] }] }, _id : 0 } }]
@@ -266,6 +265,16 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void ConcatArrays_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.ConcatArrays(x.B)),
+                "{ $project : { _v : { $concatArrays : ['$A', '$B'] }, _id : 0 } }");
+        }
+
+        [Fact]
         public void Ceil_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
@@ -296,6 +305,46 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void Filter_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Filter(i => i > 0)),
+                "{ $project : { _v : { $filter : { input : '$A', cond : { $gt : ['$$i', 0] }, as : 'i' } }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Filter_with_limit_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Filter(i => i > 0, 100)),
+                "{ $project : { _v : { $filter : { input : '$A', cond : { $gt : ['$$i', 0] }, as : 'i', limit : 100 } }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void First_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.First()),
+                "{ $project : { _v : { $first : '$A' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void FirstN_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.FirstN(100)),
+                "{ $project : { _v : { $first : { n : 100, input : '$A' } }, _id : 0 } }");
+        }
+
+        [Fact]
         public void Floor_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
@@ -303,6 +352,76 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Pipeline(collection).Project(x => Mql.Floor(x.D)),
                 "{ $project : { _v : { $floor : '$D' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void In_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.X.In(x.A)),
+                "{ $project : { _v : { $in : ['$X', '$A'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void IndexOfArray_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.IndexOfArray(x.X)),
+                "{ $project : { _v : { $indexOfArray : ['$A', '$X'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void IndexOfArray_with_start_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.IndexOfArray(x.X, 1)),
+                "{ $project : { _v : { $indexOfArray : ['$A', '$X', 1] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void IndexOfArray_with_start_and_end_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.IndexOfArray(x.X, 1, 9)),
+                "{ $project : { _v : { $indexOfArray : ['$A', '$X', 1, 9] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void IsArray_with_start_and_end_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.IsArray(x.A)),
+                "{ $project : { _v : { $isArray : '$A' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Last_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Last()),
+                "{ $project : { _v : { $last : '$A' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void LastN_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.LastN(100)),
+                "{ $project : { _v : { $lastN : { n : 100, input : '$A' } }, _id : 0 } }");
         }
 
         [Fact]
@@ -336,6 +455,36 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void Map_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Map(i => i * 2)),
+                "{ $project : { _v : { $map : { input : '$A', a : 'i', in : { $multiply : ['$$i', 2] } } }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void MaxN_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.MaxN(100)),
+                "{ $project : { _v : { $maxN : { n : 100, input : '$A' } }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void MinN_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.MinN(100)),
+                "{ $project : { _v : { $minN : { n : 100, input : '$A' } }, _id : 0 } }");
+        }
+
+        [Fact]
         public void Mod_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
@@ -366,6 +515,16 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
         }
 
         [Fact]
+        public void ObjectToArray_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.ObjectToArray(x)),
+                "{ $project : { _v : { $objectToArray : '$$ROOT' }, _id : 0 } }");
+        }
+
+        [Fact]
         public void Pow_Example()
         {
             // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#arithmetic-expression-operators
@@ -373,6 +532,46 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Pipeline(collection).Project(x => Mql.Pow(x.D, x.X)),
                 "{ $project : { _v : { $pow : ['$D', '$X'] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Range_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Range(1, 10)),
+                "{ $project : { _v : { $range : [1, 10] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Range_with_step_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Range(1, 10, 2)),
+                "{ $project : { _v : { $range : [1, 10, 2] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Reduce_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Reduce(0, (value, item) => value + item)),
+                "{ $project : { _v : { $reduce : { input : '$A', initialValue : 0, in : { $add : ['$$value', '$$this'] } } }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void ReverseArray_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.ReverseArray()),
+                "{ $project : { _v : { $reduce : '$A' }, _id : 0 } }");
         }
 
         [Fact]
@@ -403,6 +602,36 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Pipeline(collection).Project(x => Mql.RoundToInteger(x.D, -2)),
                 "{ $project : { _v : { $round : ['$D', -2] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Size_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Size()),
+                "{ $project : { _v : { $size : '$A' }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Slice_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Slice(10)),
+                "{ $project : { _v : { $slice : ['$A', 10] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Slice_with_position_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => x.A.Slice(5, 10)),
+                "{ $project : { _v : { $slice : ['$A', 5, 10] }, _id : 0 } }");
         }
 
         [Fact]
@@ -453,6 +682,36 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             Assert(
                 Mql.Pipeline(collection).Project(x => Mql.TruncToInteger(x.D, -2)),
                 "{ $project : { _v : { $trunc : ['$D', -2] }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Zip_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Zip(x.A, x.B)),
+                "{ $project : { _v : { $zip : { inputs : ['$A', '$B' } }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Zip_with_useLongestLength_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Zip(x.A, x.B, true)),
+                "{ $project : { _v : { $zip : { inputs : ['$A', '$B' }, useLongestLength : true }, _id : 0 } }");
+        }
+
+        [Fact]
+        public void Zip_with_useLongestLength_and_defaults_Example()
+        {
+            // https://www.mongodb.com/docs/manual/reference/operator/aggregation/#array-expression-operators
+            var collection = CreateCollection();
+            Assert(
+                Mql.Pipeline(collection).Project(x => Mql.Zip(x.A, x.B, true, 0, 0)),
+                "{ $project : { _v : { $zip : { inputs : ['$A', '$B' }, useLongestLength : true, defaults : [0, 0] }, _id : 0 } }");
         }
 
         private void Assert<TInput, TOutput>(MqlPipeline<TInput, TOutput> pipeline, params string[] expectedStages)

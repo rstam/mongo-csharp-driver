@@ -750,18 +750,18 @@ namespace MongoDB.Driver.MqlBuilder
             return new MqlUpdate<TDocument>(collection.DocumentSerializer);
         }
 
-        // Unfortunately not named Zip because of conflicts with LINQ on some target frameworks
-        public static IEnumerable<(TItem1, TItem2)> ZipMql<TItem1, TItem2>(this IEnumerable<TItem1> array1, IEnumerable<TItem2> array2)
+        // the Zip methods are not extensions methods because of partial conflicts with similar LINQ methods
+        public static IEnumerable<(TItem1, TItem2)> Zip<TItem1, TItem2>(IEnumerable<TItem1> array1, IEnumerable<TItem2> array2)
         {
             throw new InvalidOperationException();
         }
 
-        public static IEnumerable<(TItem1, TItem2)> Zip<TItem1, TItem2>(this IEnumerable<TItem1> array1, IEnumerable<TItem2> array2, bool useLongestLength)
+        public static IEnumerable<(TItem1, TItem2)> Zip<TItem1, TItem2>(IEnumerable<TItem1> array1, IEnumerable<TItem2> array2, bool useLongestLength)
         {
             throw new InvalidOperationException();
         }
 
-        public static IEnumerable<(TItem1, TItem2)> Zip<TItem1, TItem2>(this IEnumerable<TItem1> array1, IEnumerable<TItem2> array2, bool useLongestLength, TItem1 default1, TItem2 default2)
+        public static IEnumerable<(TItem1, TItem2)> Zip<TItem1, TItem2>(IEnumerable<TItem1> array1, IEnumerable<TItem2> array2, bool useLongestLength, TItem1 default1, TItem2 default2)
         {
             throw new InvalidOperationException();
         }
