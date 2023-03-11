@@ -39,9 +39,11 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         private static readonly MethodInfo __expr;
         private static readonly MethodInfo __filter;
         private static readonly MethodInfo __filterWithLimit;
+        private static readonly MethodInfo __firstN;
         private static readonly MethodInfo __floor;
         private static readonly MethodInfo __in;
         private static readonly MethodInfo __jsonSchema;
+        private static readonly MethodInfo __lastN;
         private static readonly MethodInfo __ln;
         private static readonly MethodInfo __log;
         private static readonly MethodInfo __log10;
@@ -80,9 +82,11 @@ namespace MongoDB.Driver.MqlBuilder.Translators
             __expr = ReflectionInfo.Method((bool expr) => Mql.Expr(expr));
             __filter = ReflectionInfo.Method((IEnumerable<object> input, Func<object, bool> cond) => Mql.Filter(input, cond));
             __filterWithLimit = ReflectionInfo.Method((IEnumerable<object> input, Func<object, bool> cond, long limit) => Mql.Filter(input, cond, limit));
+            __firstN = ReflectionInfo.Method((IEnumerable<object> input, long n) => Mql.FirstN(input, n));
             __floor = ReflectionInfo.Method((double value) => Mql.Floor(value));
             __in = ReflectionInfo.Method((object value, object[] values) => value.In(values));
             __jsonSchema = ReflectionInfo.Method((BsonDocument schema) => Mql.JsonSchema(schema));
+            __lastN = ReflectionInfo.Method((IEnumerable<object> input, long n) => Mql.LastN(input, n));
             __ln = ReflectionInfo.Method((double value) => Mql.Ln(value));
             __log = ReflectionInfo.Method((double value, long @base) => Mql.Log(value, @base));
             __log10 = ReflectionInfo.Method((double value) => Mql.Log10(value));
@@ -120,9 +124,11 @@ namespace MongoDB.Driver.MqlBuilder.Translators
         public static MethodInfo Expr => __expr;
         public static MethodInfo Filter => __filter;
         public static MethodInfo FilterWithLimit => __filterWithLimit;
+        public static MethodInfo FirstN => __firstN;
         public static MethodInfo Floor => __floor;
         public static MethodInfo In => __in;
         public static MethodInfo JsonSchema => __jsonSchema;
+        public static MethodInfo LastN => __lastN;
         public static MethodInfo Ln => __ln;
         public static MethodInfo Log => __log;
         public static MethodInfo Log10 => __log10;

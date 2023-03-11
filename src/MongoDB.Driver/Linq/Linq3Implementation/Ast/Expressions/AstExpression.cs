@@ -408,6 +408,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.First, array);
         }
 
+        public static AstExpression FirstN(AstExpression array, AstExpression n)
+        {
+            return new AstPickExpression(AstPickOperator.FirstNArray, array, sortBy: null, @as: null, selector: null, n);
+        }
+
         public static AstExpression Floor(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Floor, arg);
@@ -451,6 +456,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstExpression Last(AstExpression array)
         {
             return new AstUnaryExpression(AstUnaryOperator.Last, array);
+        }
+
+        public static AstExpression LastN(AstExpression array, AstExpression n)
+        {
+            return new AstPickExpression(AstPickOperator.LastNArray, array, sortBy: null, @as: null, selector: null, n);
         }
 
         public static AstExpression Let(AstVarBinding var, AstExpression @in)

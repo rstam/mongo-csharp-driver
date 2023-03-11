@@ -331,7 +331,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => x.A.First()),
-                "{ $project : { _v : { $first : '$A' }, _id : 0 } }");
+                "{ $project : { _v : { $arrayElemAt : ['$A', 0] }, _id : 0 } }");
         }
 
         [Fact]
@@ -341,7 +341,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => x.A.FirstN(100)),
-                "{ $project : { _v : { $first : { n : 100, input : '$A' } }, _id : 0 } }");
+                "{ $project : { _v : { $firstN : { input : '$A', n : NumberLong(100) } }, _id : 0 } }");
         }
 
         [Fact]
@@ -411,7 +411,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => x.A.Last()),
-                "{ $project : { _v : { $last : '$A' }, _id : 0 } }");
+                "{ $project : { _v : { $arrayElemAt : ['$A', -1] }, _id : 0 } }");
         }
 
         [Fact]
@@ -421,7 +421,7 @@ namespace MongoDB.Driver.Tests.MqlBuilder.Examples.ServerDocumentation
             var collection = CreateCollection();
             Assert(
                 Mql.Pipeline(collection).Project(x => x.A.LastN(100)),
-                "{ $project : { _v : { $lastN : { n : 100, input : '$A' } }, _id : 0 } }");
+                "{ $project : { _v : { $lastN : { input : '$A', n : NumberLong(100) } }, _id : 0 } }");
         }
 
         [Fact]

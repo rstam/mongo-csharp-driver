@@ -36,6 +36,12 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressio
                 case "Floor":
                     return MqlCeilOrFloorMethodToAggregationExpressionTranslator.Translate(context, expression);
 
+                case "First":
+                case "FirstN":
+                case "Last":
+                case "LastN":
+                    return MqlFirstOrLastMethodToAggregationExpressionTranslator.Translate(context, expression);
+
                 case "Ln":
                 case "Log":
                 case "Log10":
