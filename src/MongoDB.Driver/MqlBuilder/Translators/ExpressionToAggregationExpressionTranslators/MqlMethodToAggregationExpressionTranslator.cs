@@ -29,6 +29,7 @@ namespace MongoDB.Driver.MqlBuilder.Translators.ExpressionToAggregationExpressio
                 case "Divide": return MqlDivideMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Exp": return MqlExpMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Filter": return MqlFilterMethodToAggregationExpressionTranslator.Translate(context, expression);
+                case "In": return MqlInMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Pow": return MqlPowMethodToAggregationExpressionTranslator.Translate(context, expression);
                 case "Sqrt": return MqlSqrtMethodToAggregationExpressionTranslator.Translate(context, expression);
 
