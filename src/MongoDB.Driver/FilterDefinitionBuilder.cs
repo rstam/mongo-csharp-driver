@@ -1674,9 +1674,10 @@ namespace MongoDB.Driver
         #region static
         private static readonly string[] __operatorsThatCannotBeCombined = new[]
         {
+            "$expr",
+            "$geoIntersects",
             "$geoWithin",
             "$near",
-            "$geoIntersects",
             "$nearSphere"
         };
         #endregion
