@@ -95,6 +95,15 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests
             return Translate<TDocument, TResult>(queryable, out outputSerializer);
         }
 
+        protected List<BsonDocument> Translate<TDocument, TResult>(
+            IMongoCollection<TDocument> collection,
+            PipelineDefinition<TDocument, TResult> pipelineDefinition)
+        {
+            var linqProvider = collection.Database.Client.Settings.LinqProvider;
+            var documentSerializer = collection.DocumentSerializer;
+            return Translate(pipelineDefinition, documentSerializer, linqProvider);
+        }
+
         protected static List<BsonDocument> Translate<TResult>(IMongoDatabase database, IAggregateFluent<TResult> aggregate)
         {
             var pipelineDefinition = ((AggregateFluent<NoPipelineInput, TResult>)aggregate).Pipeline;
