@@ -13,17 +13,41 @@
 * limitations under the License.
 */
 
+using System;
 using System.Collections;
 using System.Linq.Expressions;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 {
     internal static class SerializationHelper
     {
+        public static IBsonSerializer GetInputSerializer(
+            Expression expression,
+            IBsonSerializer outputSerializer, // the output serializer of the previous stage
+            Type inputType) // the input type of the current stage
+        {
+            var outputType = outputSerializer.ValueType;
+
+            if (outputType == inputType)
+            {
+                return outputSerializer;
+            }
+
+            if (inputType.IsAssignableFrom(outputSerializer.ValueType))
+            {
+                var baseType = inputType;
+                var derivedType = outputSerializer.ValueType;
+                return DowncastingSerializer.Create(baseType, derivedType, outputSerializer);
+            }
+
+            throw new ExpressionNotSupportedException(expression, because: $"output type {outputType} is not compatible with input type {inputType}");
+        }
+
         public static BsonValue SerializeValue(IBsonSerializer serializer, ConstantExpression constantExpression, Expression containingExpression)
         {
             var value = constantExpression.Value;

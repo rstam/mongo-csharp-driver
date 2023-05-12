@@ -61,13 +61,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         // public methods
         public override IAsyncCursor<TOutput> Execute()
         {
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, this);
             return executableQuery.Execute(_provider.Session, CancellationToken.None);
         }
 
         public override Task<IAsyncCursor<TOutput>> ExecuteAsync()
         {
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, this);
             return executableQuery.ExecuteAsync(_provider.Session, CancellationToken.None);
         }
 
@@ -89,13 +89,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
 
         public IAsyncCursor<TOutput> ToCursor(CancellationToken cancellationToken = default)
         {
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, this);
             return executableQuery.Execute(_provider.Session, cancellationToken);
         }
 
         public Task<IAsyncCursor<TOutput>> ToCursorAsync(CancellationToken cancellationToken = default)
         {
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, this);
             return executableQuery.ExecuteAsync(_provider.Session, cancellationToken);
         }
 
@@ -103,7 +103,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         {
             try
             {
-                var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, _expression);
+                var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(_provider, this);
                 return executableQuery.ToString();
             }
             catch (ExpressionNotSupportedException ex)

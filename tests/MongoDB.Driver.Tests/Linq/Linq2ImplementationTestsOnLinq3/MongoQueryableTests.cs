@@ -1852,7 +1852,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3
         private List<T> Assert<T>(IMongoQueryable<T> queryable, int resultCount, params string[] expectedStages)
         {
             var provider = (MongoQueryProvider<Root>)queryable.Provider;
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Root, T>(provider, queryable.Expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Root, T>(provider, queryable);
 
             var stages = executableQuery.Pipeline.Stages.Select(s => s.Render());
             stages.Should().Equal(expectedStages.Select(x => BsonDocument.Parse(x)));

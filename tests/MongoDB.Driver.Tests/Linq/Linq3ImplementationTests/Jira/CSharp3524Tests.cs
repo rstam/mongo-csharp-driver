@@ -45,7 +45,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
                         });
             var provider = (MongoQueryProvider<Item>)queryable.Provider;
 
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Item, ProjectedItem>(provider, queryable.Expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Item, ProjectedItem>(provider, queryable);
 
             var stages = executableQuery.Pipeline.Stages.Select(s => s.Render());
             var expectedStages = new string[]

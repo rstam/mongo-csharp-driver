@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
@@ -36,10 +37,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 var pipeline = ExpressionToPipelineTranslator.Translate(context, sourceExpression);
 
                 var predicateLambda = ExpressionHelper.UnquoteLambda(arguments[1]);
-                var predicateFilter = ExpressionToFilterTranslator.TranslateLambda(context, predicateLambda, parameterSerializer: pipeline.OutputSerializer, asRoot: true);
+                var parameter = predicateLambda.Parameters.Single();
+                var parameterSerializer = SerializationHelper.GetInputSerializer(expression, pipeline.OutputSerializer, parameter.Type);
+                var predicateFilter = ExpressionToFilterTranslator.TranslateLambda(context, predicateLambda, parameterSerializer, asRoot: true);
 
                 pipeline = pipeline.AddStages(
-                    pipeline.OutputSerializer,
+                    parameterSerializer,
                     AstStage.Match(predicateFilter));
 
                 return pipeline;

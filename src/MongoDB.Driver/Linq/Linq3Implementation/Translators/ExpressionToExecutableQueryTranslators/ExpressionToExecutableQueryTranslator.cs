@@ -1,4 +1,4 @@
-﻿/* Copyright 2010-present MongoDB Inc.
+﻿/* Copyright 2010-present MongoDB  Inc.
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -13,9 +13,13 @@
 * limitations under the License.
 */
 
+using System;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipelineTranslators;
 
@@ -24,11 +28,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecut
     internal static class ExpressionToExecutableQueryTranslator
     {
         // public static methods
-        public static ExecutableQuery<TDocument, IAsyncCursor<TOutput>> Translate<TDocument, TOutput>(MongoQueryProvider<TDocument> provider, Expression expression)
+        public static ExecutableQuery<TDocument, IAsyncCursor<TOutput>> Translate<TDocument, TOutput>(MongoQueryProvider<TDocument> provider, IQueryable queryable)
         {
-            expression = PartialEvaluator.EvaluatePartially(expression);
-
-            var context = TranslationContext.Create(expression, provider.PipelineInputSerializer);
+            var expression = PartialEvaluator.EvaluatePartially(queryable.Expression);
+            var inputSerializer = SerializationHelper.GetInputSerializer(queryable.Expression, provider.PipelineInputSerializer, queryable.ElementType);
+            var context = TranslationContext.Create(expression, inputSerializer);
             var pipeline = ExpressionToPipelineTranslator.Translate(context, expression);
 
             return ExecutableQuery.Create(

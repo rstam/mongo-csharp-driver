@@ -134,7 +134,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests
             else
             {
                 var linq3QueryProvider = (MongoQueryProvider<TDocument>)queryable.Provider;
-                var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TResult>(linq3QueryProvider, queryable.Expression);
+                var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TResult>(linq3QueryProvider, queryable);
                 var stages = executableQuery.Pipeline.Stages;
                 outputSerializer = (IBsonSerializer<TResult>)executableQuery.Pipeline.OutputSerializer;
                 return stages.Select(s => s.Render().AsBsonDocument).ToList();

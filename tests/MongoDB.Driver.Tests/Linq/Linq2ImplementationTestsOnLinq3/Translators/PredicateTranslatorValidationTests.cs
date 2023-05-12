@@ -288,7 +288,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3.Translators
         private IEnumerable<BsonDocument> Translate<T>(IQueryable<T> queryable)
         {
             var provider = (MongoQueryProvider<TestObject>)queryable.Provider;
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TestObject, T>(provider, queryable.Expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TestObject, T>(provider, queryable);
             return executableQuery.Pipeline.Stages.Select(s => (BsonDocument)s.Render()).ToArray();
         }
 

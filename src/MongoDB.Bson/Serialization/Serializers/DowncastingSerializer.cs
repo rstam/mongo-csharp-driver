@@ -94,12 +94,14 @@ namespace MongoDB.Bson.Serialization.Serializers
         /// <inheritdoc/>
         public override TBase Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
         {
+            args.NominalType = typeof(TDerived);
             return _derivedSerializer.Deserialize(context, args);
         }
 
         /// <inheritdoc/>
         public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, TBase value)
         {
+            args.NominalType = typeof(TDerived);
             _derivedSerializer.Serialize(context, args, (TDerived)value);
         }
 

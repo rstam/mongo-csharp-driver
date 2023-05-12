@@ -1766,7 +1766,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq2ImplementationTestsOnLinq3.Translators
             var query = __collection.AsQueryable().Select(projector);
 
             var provider = (MongoQueryProvider<Root>)query.Provider;
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Root, TResult>(provider, query.Expression);
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Root, TResult>(provider, query);
             var projection = executableQuery.Pipeline.Stages.First().Render()["$project"].AsBsonDocument;
             var value = query.Take(1).FirstOrDefault();
 
