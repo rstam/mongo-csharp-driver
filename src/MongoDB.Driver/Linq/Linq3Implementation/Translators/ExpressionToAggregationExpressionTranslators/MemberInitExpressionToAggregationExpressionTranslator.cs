@@ -28,28 +28,28 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
     {
         public static AggregationExpression Translate(TranslationContext context, MemberInitExpression expression)
         {
-            var computedFields = new List<AstComputedField>();
             var newExpression = expression.NewExpression;
             var constructorInfo = newExpression.Constructor;
-            var classMap = CreateClassMap(expression.Type, newExpression.Constructor);
-            var creatorMap = classMap.CreatorMaps.Single(x => x.MemberInfo == constructorInfo);
-            if (constructorInfo.GetParameters().Length > 0 && creatorMap.Arguments == null )
+            var constructorArguments = newExpression.Arguments;
+
+            var classMap = CreateClassMap(expression.Type, constructorInfo, out var creatorMap);
+            var creatorMapParameters = creatorMap.Arguments?.ToArray();
+            if (constructorInfo.GetParameters().Length > 0 && creatorMapParameters == null )
             {
-                throw new ExpressionNotSupportedException(expression, because: $"can't find matching properties for constructor parameters.");
+                throw new ExpressionNotSupportedException(expression, because: $"couldn't find matching properties for constructor parameters.");
             }
 
-            var constructorArguments = newExpression.Arguments;
-            var parameterIndex = -1;
-            var creatorArguments = creatorMap.Arguments ?? Array.Empty<MemberInfo>();
-            foreach (var argument in creatorArguments)
+            var computedFields = new List<AstComputedField>();
+            for (var i = 0; i < creatorMapParameters.Length; i++)
             {
-                parameterIndex++;
-                var valueExpression = constructorArguments[parameterIndex];
-                var valueTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, valueExpression);
-                var valueType = valueExpression.Type;
-                var memberMap = EnsureMemberMap(expression, classMap, argument);
-                memberMap.SetSerializer(valueTranslation.Serializer ?? BsonSerializer.LookupSerializer(valueType));
-                computedFields.Add(AstExpression.ComputedField(memberMap.ElementName, valueTranslation.Ast));
+                var creatorMapParameter = creatorMapParameters[i];
+                var constructorArgumentExpression = constructorArguments[i];
+                var constructorArgumentTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, constructorArgumentExpression);
+                var constructorArgumentType = constructorArgumentExpression.Type;
+                var constructorArgumentSerializer = constructorArgumentTranslation.Serializer ?? BsonSerializer.LookupSerializer(constructorArgumentType);
+                var memberMap = EnsureMemberMap(expression, classMap, creatorMapParameter);
+                memberMap.SetSerializer(constructorArgumentSerializer);
+                computedFields.Add(AstExpression.ComputedField(memberMap.ElementName, constructorArgumentTranslation.Ast));
             }
 
             foreach (var binding in expression.Bindings)
@@ -73,20 +73,24 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             return new AggregationExpression(expression, ast, serializer);
         }
 
-        private static BsonClassMap CreateClassMap(Type classType, ConstructorInfo constructor)
+        private static BsonClassMap CreateClassMap(Type classType, ConstructorInfo constructorInfo, out BsonCreatorMap creatorMap)
         {
             BsonClassMap baseClassMap = null;
             if (classType.BaseType  != null)
             {
-                baseClassMap = CreateClassMap(classType.BaseType, null);
+                baseClassMap = CreateClassMap(classType.BaseType, null, out _);
             }
 
             var classMapType = typeof(BsonClassMap<>).MakeGenericType(classType);
-            var constructorInfo = classMapType.GetConstructor(new Type[] { typeof(BsonClassMap) });
-            var classMap = (BsonClassMap)constructorInfo.Invoke(new object[] { baseClassMap });
-            if (constructor != null)
+            var classMapConstructorInfo = classMapType.GetConstructor(new Type[] { typeof(BsonClassMap) });
+            var classMap = (BsonClassMap)classMapConstructorInfo.Invoke(new object[] { baseClassMap });
+            if (constructorInfo != null)
             {
-                classMap.MapConstructor(constructor);
+                creatorMap = classMap.MapConstructor(constructorInfo);
+            }
+            else
+            {
+                creatorMap = null;
             }
 
             classMap.AutoMap();
@@ -95,28 +99,36 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             return classMap;
         }
 
-        private static BsonMemberMap EnsureMemberMap(Expression expression, BsonClassMap classMap, MemberInfo memberInfo)
+        private static BsonMemberMap EnsureMemberMap(Expression expression, BsonClassMap classMap, MemberInfo creatorMapParameter)
         {
             var declaringClassMap = classMap;
-            while (declaringClassMap.ClassType != memberInfo.DeclaringType)
+            while (declaringClassMap.ClassType != creatorMapParameter.DeclaringType)
             {
-                if (declaringClassMap.BaseClassMap == null)
-                {
-                    throw new ExpressionNotSupportedException(expression, because: $"can't find matching property for constructor parameter : {memberInfo.Name}");
-                }
-
                 declaringClassMap = declaringClassMap.BaseClassMap;
+
+                if (declaringClassMap == null)
+                {
+                    throw new ExpressionNotSupportedException(expression, because: $"couldn't find matching property for constructor parameter: {creatorMapParameter.Name}");
+                }
             }
 
-            var result = declaringClassMap.DeclaredMemberMaps
-                .SingleOrDefault(x => x.MemberInfo.MemberType == memberInfo.MemberType && x.MemberInfo.Name == memberInfo.Name);
-
-            if (result == null)
+            foreach (var memberMap in declaringClassMap.DeclaredMemberMaps)
             {
-                result = declaringClassMap.MapMember(memberInfo);
+                if (MemberMapMatchesCreatorMapParameter(memberMap, creatorMapParameter))
+                {
+                    return memberMap;
+                }
             }
 
-            return result;
+            return declaringClassMap.MapMember(creatorMapParameter);
+
+            static bool MemberMapMatchesCreatorMapParameter(BsonMemberMap memberMap, MemberInfo creatorMapParameter)
+            {
+                var memberInfo = memberMap.MemberInfo;
+                return
+                    memberInfo.MemberType == creatorMapParameter.MemberType &&
+                    memberInfo.Name.Equals(creatorMapParameter.Name, StringComparison.OrdinalIgnoreCase);
+            }
         }
 
         private static BsonMemberMap FindMemberMap(Expression expression, BsonClassMap classMap, string memberName)
