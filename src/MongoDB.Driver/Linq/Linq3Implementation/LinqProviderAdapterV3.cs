@@ -14,14 +14,14 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text.RegularExpressions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
-using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilterTranslators;
@@ -141,39 +141,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             Expression<Func<TSource, TProjection>> expression,
             IBsonSerializer<TSource> sourceSerializer,
             IBsonSerializerRegistry serializerRegistry)
-        {
-            var renderedProjection = TranslateExpressionToProjectionInternal(expression, sourceSerializer, new AstFindProjectionSimplifier());
-
-            // { _v : '$field', _id : 0 } => { field : 1, _id : 0 } or { _id : 1 } for compatibility with older servers
-            if (renderedProjection.ProjectionSerializer is IWrappedValueSerializer wrappedValueSerializer)
-            {
-                var projectionDocument = renderedProjection.Document;
-                var elements = projectionDocument.Elements.ToArray();
-                if (elements.Length == 2)
-                {
-                    if (elements[0].Name == wrappedValueSerializer.FieldName &&
-                        elements[0].Value is BsonString wrappedValueExpression &&
-                        elements[1].Name == "_id" &&
-                        elements[1].Value == 0)
-                    {
-                        var fieldPath = wrappedValueExpression.AsString;
-                        if (Regex.IsMatch(fieldPath, @"^\$[^.$]+"))
-                        {
-                            var fieldName = fieldPath.Substring(1);
-                            var newProjectionDocument = new BsonDocument(fieldName, 1);
-                            if (fieldName != "_id")
-                            {
-                                newProjectionDocument.Add("_id", 0);
-                            }
-                            var newWrappedValueSerializer = (IBsonSerializer<TProjection>)WrappedValueSerializer.Create(fieldName, wrappedValueSerializer.ValueSerializer);
-                            return new RenderedProjectionDefinition<TProjection>(newProjectionDocument, newWrappedValueSerializer);
-                        }
-                    }
-                }
-            }
-
-            return renderedProjection;
-        }
+            => TranslateExpressionToProjection(expression, sourceSerializer, ProjectionHelper.CreateFindProjection);
 
         internal override RenderedProjectionDefinition<TOutput> TranslateExpressionToGroupProjection<TInput, TKey, TOutput>(
             Expression<Func<TInput, TKey>> idExpression,
@@ -190,20 +158,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             IBsonSerializer<TInput> inputSerializer,
             IBsonSerializerRegistry serializerRegistry,
             ExpressionTranslationOptions translationOptions)
-            => TranslateExpressionToProjectionInternal(expression, inputSerializer, new AstSimplifier());
+            => TranslateExpressionToProjection(expression, inputSerializer, ProjectionHelper.CreateAggregationProjection);
 
-        private RenderedProjectionDefinition<TOutput> TranslateExpressionToProjectionInternal<TInput, TOutput>(
+        private RenderedProjectionDefinition<TOutput> TranslateExpressionToProjection<TInput, TOutput>(
             Expression<Func<TInput, TOutput>> expression,
             IBsonSerializer<TInput> inputSerializer,
-            AstSimplifier simplifier)
+            Func<AggregationExpression, (List<AstProjectStageSpecification>, IBsonSerializer)> specificationsCreator)
         {
             expression = (Expression<Func<TInput, TOutput>>)PartialEvaluator.EvaluatePartially(expression);
             var context = TranslationContext.Create(expression, inputSerializer);
             var translation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, expression, inputSerializer, asRoot: true);
-            var (projectStage, projectionSerializer) = ProjectionHelper.CreateProjectStage(translation);
-            var simplifiedProjectStage =  simplifier.Visit(projectStage);
-            var renderedProjection = simplifiedProjectStage.Render().AsBsonDocument["$project"].AsBsonDocument;
-
+            var (specifications, projectionSerializer) = specificationsCreator(translation);
+            var renderedProjection = new BsonDocument(specifications.Select(specification => specification.RenderAsElement()));
             return new RenderedProjectionDefinition<TOutput>(renderedProjection, (IBsonSerializer<TOutput>)projectionSerializer);
         }
     }
