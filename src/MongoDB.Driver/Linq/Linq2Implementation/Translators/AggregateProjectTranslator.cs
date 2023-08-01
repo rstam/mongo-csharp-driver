@@ -27,12 +27,6 @@ namespace MongoDB.Driver.Linq.Linq2Implementation.Translators
     {
         public static RenderedProjectionDefinition<TResult> Translate<TDocument, TResult>(Expression<Func<TDocument, TResult>> projector, IBsonSerializer<TDocument> parameterSerializer, IBsonSerializerRegistry serializerRegistry, ExpressionTranslationOptions translationOptions)
         {
-            if (projector.Parameters.Count == 1 && projector.Body == projector.Parameters[0])
-            {
-                // handle x => x as a special case
-                return new RenderedProjectionDefinition<TResult>(null, (IBsonSerializer<TResult>)parameterSerializer);
-            }
-
             var bindingContext = new PipelineBindingContext(serializerRegistry);
             var parameterExpression = new DocumentExpression(parameterSerializer);
             bindingContext.AddExpressionMapping(projector.Parameters[0], parameterExpression);
