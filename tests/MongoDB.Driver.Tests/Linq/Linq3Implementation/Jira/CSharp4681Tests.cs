@@ -51,6 +51,34 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             renderedProjection.Document.Should().Be("{ _id : 1 }");
         }
 
+        [Theory]
+        [ParameterAttributeData]
+        public void FindExpressionProjectionDefinition_with_field_projection_Render_should_work(
+            [Values(LinqProvider.V2, LinqProvider.V3)] LinqProvider linqProvider)
+        {
+            var projectionDefinition = new FindExpressionProjectionDefinition<C, int>(x => x.Id);
+            var serializerRegistry = BsonSerializer.SerializerRegistry;
+            var sourceSerializer = serializerRegistry.GetSerializer<C>();
+
+            var renderedProjection = projectionDefinition.Render(sourceSerializer, serializerRegistry, linqProvider);
+
+            renderedProjection.Document.Should().Be("{ _id : 1 }");
+        }
+
+        [Theory]
+        [ParameterAttributeData]
+        public void FindExpressionProjectionDefinition_with_field_projection_RenderForFind_should_work(
+            [Values(LinqProvider.V2, LinqProvider.V3)] LinqProvider linqProvider)
+        {
+            var projectionDefinition = new FindExpressionProjectionDefinition<C, int>(x => x.Id);
+            var serializerRegistry = BsonSerializer.SerializerRegistry;
+            var sourceSerializer = serializerRegistry.GetSerializer<C>();
+
+            var renderedProjection = projectionDefinition.RenderForFind(sourceSerializer, serializerRegistry, linqProvider);
+
+            renderedProjection.Document.Should().Be("{ _id : 1 }");
+        }
+
         private class C
         {
             public int Id { get; set; }
