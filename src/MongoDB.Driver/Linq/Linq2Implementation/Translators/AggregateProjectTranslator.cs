@@ -43,7 +43,8 @@ namespace MongoDB.Driver.Linq.Linq2Implementation.Translators
 
         public static BsonDocument TranslateProject(Expression expression, ExpressionTranslationOptions translationOptions)
         {
-            var projection = (BsonDocument)AggregateLanguageTranslator.Translate(expression, translationOptions);
+            var translation = AggregateLanguageTranslator.Translate(expression, translationOptions);
+            var projection = (BsonDocument)translation;
             if (!projection.Contains("_id"))
             {
                 projection.Add("_id", 0);
