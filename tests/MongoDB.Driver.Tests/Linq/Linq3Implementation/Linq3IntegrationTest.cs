@@ -208,6 +208,14 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation
 
         protected BsonDocument TranslateFindProjection<TDocument, TProjection>(
             IMongoCollection<TDocument> collection,
+            ProjectionDefinition<TDocument, TProjection> projection)
+        {
+            var linqProvider = collection.Database.Client.Settings.LinqProvider;
+            return TranslateFindProjection(collection, projection, linqProvider);
+        }
+
+        protected BsonDocument TranslateFindProjection<TDocument, TProjection>(
+            IMongoCollection<TDocument> collection,
             ProjectionDefinition<TDocument, TProjection> projection,
             LinqProvider linqProvider)
         {
