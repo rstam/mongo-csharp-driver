@@ -116,6 +116,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 return AstFilter.Field(field.Path, valueSerializer);
             }
 
+            if (fieldSerializer is IClassRepresentedAsScalarSerializer classRepresentedAsScalarSerializer &&
+                memberExpression.Member.Name == "Value")
+            {
+                var scalarSerializer = classRepresentedAsScalarSerializer.ScalarSerializer;
+                return AstFilter.Field(field.Path, scalarSerializer);
+            }
+
             if (fieldExpression.Type.IsTupleOrValueTuple())
             {
                 if (field.Serializer is IBsonTupleSerializer tupleSerializer)
