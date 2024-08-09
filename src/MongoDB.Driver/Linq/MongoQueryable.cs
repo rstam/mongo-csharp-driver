@@ -20,9 +20,9 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Core.Misc;
-using MongoDB.Driver.Linq;
 using MongoDB.Driver.Search;
 
 namespace MongoDB.Driver.Linq
@@ -96,7 +96,7 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(AppendStage, source, stage, resultSerializer),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Constant(stage),
                     Expression.Constant(resultSerializer, typeof(IBsonSerializer<TResult>))));
         }
@@ -122,7 +122,7 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(As, source, resultSerializer),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Constant(resultSerializer, typeof(IBsonSerializer<TResult>))));
         }
 
@@ -633,7 +633,7 @@ namespace MongoDB.Driver.Linq
             return (IQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
                     GetMethodInfo(MongoQueryable.Densify, source, field, range, partitionByFields),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(field),
                     Expression.Constant(range),
                     quotedPartitionByFields));
@@ -657,7 +657,7 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(Documents, source, documents),
-                    Expression.Convert(source.Expression, typeof(IQueryable<NoPipelineInput>)),
+                    source.Expression,
                     Expression.Constant(documents, typeof(TDocument[]))));
         }
 
@@ -681,7 +681,7 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(Documents, source, documents, documentSerializer),
-                    Expression.Convert(source.Expression, typeof(IQueryable<NoPipelineInput>)),
+                    source.Expression,
                     Expression.Constant(documents, typeof(IEnumerable<TDocument>)),
                     Expression.Constant(documentSerializer, typeof(IBsonSerializer<TDocument>))));
         }
@@ -770,6 +770,18 @@ namespace MongoDB.Driver.Linq
                     source.Expression,
                     Expression.Quote(predicate)),
                 cancellationToken);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TDocument"></typeparam>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static BsonDocument[] GetLoggedStages<TDocument>(this IQueryable<TDocument> source)
+        {
+            var provider = GetMongoQueryProvider(source, nameof(GetLoggedStages));
+            return provider.LoggedStages;
         }
 
         /// <summary>
@@ -972,7 +984,7 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(Sample, source, count),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Constant(count)));
         }
 
@@ -1156,7 +1168,7 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(Skip, source, count),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Constant(count)));
         }
 
@@ -1174,7 +1186,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1191,7 +1203,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1208,7 +1220,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1225,7 +1237,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1242,7 +1254,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1259,7 +1271,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1276,7 +1288,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1293,7 +1305,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1310,7 +1322,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1327,7 +1339,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1347,7 +1359,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1368,7 +1380,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1389,7 +1401,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1410,7 +1422,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1431,7 +1443,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1452,7 +1464,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1473,7 +1485,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1494,7 +1506,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1515,7 +1527,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1536,7 +1548,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -1555,7 +1567,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1574,7 +1586,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1593,7 +1605,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1612,7 +1624,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1631,7 +1643,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1650,7 +1662,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1669,7 +1681,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1688,7 +1700,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1707,7 +1719,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1726,7 +1738,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -1748,7 +1760,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1771,7 +1783,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1794,7 +1806,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1817,7 +1829,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1840,7 +1852,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1863,7 +1875,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1886,7 +1898,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1909,7 +1921,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1932,7 +1944,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1955,7 +1967,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationPopulation, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -1974,7 +1986,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -1991,7 +2003,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2008,7 +2020,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2025,7 +2037,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2042,7 +2054,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2059,7 +2071,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2076,7 +2088,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2093,7 +2105,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2110,7 +2122,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2127,7 +2139,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal?>))));
+                    source.Expression));
         }
 
         /// <summary>
@@ -2147,7 +2159,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2168,7 +2180,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2189,7 +2201,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2210,7 +2222,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2231,7 +2243,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2252,7 +2264,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2273,7 +2285,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2294,7 +2306,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2315,7 +2327,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2336,7 +2348,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)));
         }
 
@@ -2355,7 +2367,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2374,7 +2386,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<int?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2393,7 +2405,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2412,7 +2424,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<long?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2431,7 +2443,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2450,7 +2462,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<float?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2469,7 +2481,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2488,7 +2500,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<double?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2507,7 +2519,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2526,7 +2538,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source),
-                    Expression.Convert(source.Expression, typeof(IQueryable<decimal?>))),
+                    source.Expression),
                 cancellationToken);
         }
 
@@ -2548,7 +2560,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2571,7 +2583,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2594,7 +2606,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2617,7 +2629,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2640,7 +2652,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2663,7 +2675,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<float?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2686,7 +2698,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2709,7 +2721,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<double?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2732,7 +2744,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -2755,7 +2767,7 @@ namespace MongoDB.Driver.Linq
             return source.Provider.ExecuteAsync<decimal?>(
                 Expression.Call(
                     GetMethodInfo(StandardDeviationSample, source, selector),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Quote(selector)),
                 cancellationToken);
         }
@@ -3186,8 +3198,21 @@ namespace MongoDB.Driver.Linq
                 Expression.Call(
                     null,
                     GetMethodInfo(Take, source, count),
-                    Expression.Convert(source.Expression, typeof(IQueryable<TSource>)),
+                    source.Expression,
                     Expression.Constant(count)));
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TDocument"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public static Task<List<TDocument>> ToListAsync<TDocument>(this IQueryable<TDocument> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var cursorSource = GetCursorSource(source, nameof(ToListAsync));
+            return cursorSource.ToListAsync(cancellationToken);
         }
 
         /// <summary>
@@ -3240,6 +3265,17 @@ namespace MongoDB.Driver.Linq
                 PipelineStageDefinitionBuilder.VectorSearch(field, queryVector, limit, options));
         }
 
+        private static IAsyncCursorSource<TDocument> GetCursorSource<TDocument>(IQueryable<TDocument> source, string methodName)
+        {
+            var cursorSource = source as IAsyncCursorSource<TDocument>;
+            if (cursorSource == null)
+            {
+                throw new NotSupportedException($"Method {methodName} requires that the source argument be a MongoDB IQueryable.");
+            }
+
+            return cursorSource;
+        }
+
         private static MethodInfo GetMethodInfo<T1, T2>(Func<T1, T2> f, T1 unused)
         {
             return f.GetMethodInfo();
@@ -3258,6 +3294,17 @@ namespace MongoDB.Driver.Linq
         private static MethodInfo GetMethodInfo<T1, T2, T3, T4, T5>(Func<T1, T2, T3, T4, T5> f, T1 unused1, T2 unused2, T3 unused3, T4 unused4)
         {
             return f.GetMethodInfo();
+        }
+
+        private static IMongoQueryProvider GetMongoQueryProvider<TDocument>(IQueryable<TDocument> source, string methodName)
+        {
+            var provider = source.Provider as IMongoQueryProvider;
+            if (provider == null)
+            {
+                throw new NotSupportedException($"Method {methodName} requires that the source argument be a MongoDB IQueryable.");
+            }
+
+            return provider;
         }
     }
 }

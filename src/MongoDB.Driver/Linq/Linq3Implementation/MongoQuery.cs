@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
         public abstract Task<IAsyncCursor<TOutput>> ExecuteAsync();
     }
 
-    internal class MongoQuery<TDocument, TOutput> : MongoQuery<TOutput>, IOrderedQueryable<TOutput>, IMongoQueryableForwarder<TOutput>
+    internal class MongoQuery<TDocument, TOutput> : MongoQuery<TOutput>, IOrderedQueryable<TOutput>, IMongoQueryableForwarder<TOutput>, IAsyncCursorSource<TOutput>
     {
         // private fields
         private readonly Expression _expression;
