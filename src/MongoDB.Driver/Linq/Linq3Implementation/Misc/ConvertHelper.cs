@@ -109,7 +109,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
                 var convertExpression = (UnaryExpression)expression;
                 var convertToType = convertExpression.Type;
                 if (convertToType.IsGenericType &&
-                    convertToType.GetGenericTypeDefinition() == typeof(IMongoQueryable<>))
+                    convertToType.GetGenericTypeDefinition() == typeof(IQueryable<>))
                 {
                     return convertExpression.Operand;
                 }

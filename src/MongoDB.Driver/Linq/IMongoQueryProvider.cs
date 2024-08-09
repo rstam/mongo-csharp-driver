@@ -43,6 +43,25 @@ namespace MongoDB.Driver.Linq
     }
 
     /// <summary>
+    /// 
+    /// </summary>
+    public static class IQueryProviderExtensions
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="provider"></param>
+        /// <param name="expression"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public static Task<TResult> ExecuteAsync<TResult>(this IQueryProvider provider, Expression expression, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return ((IMongoQueryProvider)provider).ExecuteAsync<TResult>(expression, cancellationToken);
+        }
+    }
+
+    /// <summary>
     /// The internal IMongoQueryProvider interface.
     /// </summary>
     internal interface IMongoQueryProviderInternal : IMongoQueryProvider

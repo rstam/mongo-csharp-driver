@@ -32,7 +32,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
 {
     internal sealed class LinqProviderAdapterV3 : LinqProviderAdapter
     {
-        internal override IMongoQueryable<TDocument> AsQueryable<TDocument>(
+        internal override IQueryable<TDocument> AsQueryable<TDocument>(
             IMongoCollection<TDocument> collection,
             IClientSessionHandle session,
             AggregateOptions options)
@@ -41,7 +41,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
             return new MongoQuery<TDocument, TDocument>(provider);
         }
 
-        internal override IMongoQueryable<NoPipelineInput> AsQueryable(
+        internal override IQueryable<NoPipelineInput> AsQueryable(
             IMongoDatabase database,
             IClientSessionHandle session,
             AggregateOptions options)
