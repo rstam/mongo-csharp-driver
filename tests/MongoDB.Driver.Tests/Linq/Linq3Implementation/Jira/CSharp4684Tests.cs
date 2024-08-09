@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
 
             var results = async ? await queryable.ToListAsync() : queryable.ToList();
 
-            AssertStages(queryable.LoggedStages, "{ $match : { X : 1 } }");
+            AssertStages(queryable.GetLoggedStages(), "{ $match : { X : 1 } }");
             results.Select(x => x.Id).Should().Equal(1);
         }
 
@@ -51,7 +51,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             var result = async ? await queryable.FirstAsync() : ((IQueryable<C>)queryable).First();
 
             AssertStages(
-                queryable.LoggedStages,
+                queryable.GetLoggedStages(),
                 "{ $match : { X : 1 } }",
                 "{ $limit : 1 }");
             result.Id.Should().Be(1);
@@ -67,7 +67,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
 
             var results = async ? await queryable.ToListAsync() : queryable.ToList();
 
-            AssertStages(queryable.Provider.LoggedStages, "{ $match : { X : 1 } }");
+            AssertStages(queryable.GetLoggedStages(), "{ $match : { X : 1 } }");
             results.Select(x => x.Id).Should().Equal(1);
         }
 
@@ -83,7 +83,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationTests.Jira
             var result = async ? await queryable.FirstAsync() : ((IQueryable<C>)queryable).First();
 
             AssertStages(
-                queryable.Provider.LoggedStages,
+                queryable.GetLoggedStages(),
                 "{ $match : { X : 1 } }",
                 "{ $limit : 1 }");
             result.Id.Should().Be(1);

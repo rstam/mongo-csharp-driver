@@ -29,12 +29,12 @@ namespace MongoDB.Driver.Linq
         #endregion
 
         // internal methods
-        internal abstract IMongoQueryable<TDocument> AsQueryable<TDocument>(
+        internal abstract IQueryable<TDocument> AsQueryable<TDocument>(
             IMongoCollection<TDocument> collection,
             IClientSessionHandle session,
             AggregateOptions options);
 
-        internal abstract IMongoQueryable<NoPipelineInput> AsQueryable(
+        internal abstract IQueryable<NoPipelineInput> AsQueryable(
             IMongoDatabase database,
             IClientSessionHandle session,
             AggregateOptions options);

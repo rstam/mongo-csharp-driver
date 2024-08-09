@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System.Linq;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver.Linq;
@@ -34,7 +35,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             var result = async ? await queryable.AnyAsync() : queryable.Any();
 
             AssertStages(
-                queryable.LoggedStages,
+                queryable.GetLoggedStages(),
                 "{ $limit : 1 }",
                 "{ $project : { _id : 0, _v : null } }");
             result.Should().Be(true);
@@ -50,7 +51,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
 
             var result = async ? await queryable.FirstAsync() : queryable.First();
 
-            AssertStages(queryable.LoggedStages, "{ $limit : 1 }");
+            AssertStages(queryable.GetLoggedStages(), "{ $limit : 1 }");
             result.Id.Should().Be(1);
         }
 
@@ -64,7 +65,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
 
             var result = async ? await queryable.FirstOrDefaultAsync() : queryable.FirstOrDefault();
 
-            AssertStages(queryable.LoggedStages, "{ $limit : 1 }");
+            AssertStages(queryable.GetLoggedStages(), "{ $limit : 1 }");
             result.Id.Should().Be(1);
         }
 
@@ -79,7 +80,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             var result = async ? await queryable.SingleAsync() : queryable.Single();
 
             AssertStages(
-                queryable.LoggedStages,
+                queryable.GetLoggedStages(),
                 "{ $match : { X : 1 } }",
                 "{ $limit : 2 }");
             result.Id.Should().Be(1);
@@ -96,7 +97,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             var result = async ? await queryable.SingleOrDefaultAsync() : queryable.SingleOrDefault();
 
             AssertStages(
-                queryable.LoggedStages,
+                queryable.GetLoggedStages(),
                 "{ $match : { X : 1 } }",
                 "{ $limit : 2 }");
             result.Id.Should().Be(1);

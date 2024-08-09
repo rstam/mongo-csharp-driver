@@ -104,18 +104,18 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
 
         public static Expression RemoveConvertToMongoQueryable(Expression expression)
         {
-            if (expression.NodeType == ExpressionType.Convert)
-            {
-                var convertExpression = (UnaryExpression)expression;
-                var convertToType = convertExpression.Type;
-                if (convertToType.IsGenericType &&
-                    convertToType.GetGenericTypeDefinition() == typeof(IMongoQueryable<>))
-                {
-                    return convertExpression.Operand;
-                }
-            }
+            //if (expression.NodeType == ExpressionType.Convert)
+            //{
+            //    var convertExpression = (UnaryExpression)expression;
+            //    var convertToType = convertExpression.Type;
+            //    if (convertToType.IsGenericType &&
+            //        convertToType.GetGenericTypeDefinition() == typeof(IQueryable<>))
+            //    {
+            //        return convertExpression.Operand;
+            //    }
+            //}
 
-            throw new ExpressionNotSupportedException(expression);
+            return expression;
         }
 
         public static Expression RemoveConvertToEnumUnderlyingType(Expression expression)

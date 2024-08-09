@@ -13,6 +13,7 @@
 * limitations under the License.
 */
 
+using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
@@ -36,13 +37,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
                 var secondExpression = arguments[1];
                 var secondValue = secondExpression.Evaluate();
-                if (secondValue is IMongoQueryable secondQueryable)
+                if (secondValue is IQueryable secondQueryable)
                 {
                     var secondProvider = (IMongoQueryProviderInternal)secondQueryable.Provider;
                     var secondCollectionNamespace = secondProvider.CollectionNamespace;
                     if (secondCollectionNamespace == null)
                     {
-                        throw new ExpressionNotSupportedException(expression, because: "second argument must be an IMongoQueryable against a collection");
+                        throw new ExpressionNotSupportedException(expression, because: "second argument must be an IQueryable against a collection");
                     }
 
                     var secondCollectionName = secondCollectionNamespace.CollectionName;
@@ -61,7 +62,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                     return pipeline;
                 }
 
-                throw new ExpressionNotSupportedException(expression, because: "second argument must be IMongoQueryable");
+                throw new ExpressionNotSupportedException(expression, because: "second argument must be IQueryable");
             }
 
             throw new ExpressionNotSupportedException(expression);
