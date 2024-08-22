@@ -105,6 +105,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
         public IReadOnlyList<TNode> VisitAndConvert<TNode>(IReadOnlyList<TNode> nodes)
             where TNode : AstNode
         {
+            if (nodes == null)
+            {
+                return null;
+            }
+
             TNode[] newNodes = null;
 
             var count = nodes.Count;
@@ -209,6 +214,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
             return node.Update(VisitAndConvert(node.Value));
         }
 
+        public virtual AstNode VisitConciseCorrelatedSubqueryLookupStage(AstConciseCorrelatedSubqueryLookupStage node)
+        {
+            return node.Update(VisitAndConvert(node.Let), VisitAndConvert(node.Pipeline));
+        }
+
         public virtual AstNode VisitCondExpression(AstCondExpression node)
         {
             return node.Update(VisitAndConvert(node.If), VisitAndConvert(node.Then), VisitAndConvert(node.Else));
@@ -227,6 +237,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
         public virtual AstNode VisitCountStage(AstCountStage node)
         {
             return node;
+        }
+
+        public virtual AstNode VisitCorrelatedSubqueryLookupStage(AstCorrelatedSubqueryLookupStage node)
+        {
+            return node.Update(VisitAndConvert(node.Let), VisitAndConvert(node.Pipeline));
         }
 
         public virtual AstNode VisitCurrentOpStage(AstCurrentOpStage node)
@@ -461,17 +476,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
 
         public virtual AstNode VisitLookupStage(AstLookupStage node)
         {
-            return node.Update(VisitAndConvert(node.Match));
-        }
-
-        public virtual AstNode VisitLookupStageEqualityMatch(AstLookupStageEqualityMatch node)
-        {
             return node;
-        }
-
-        public virtual AstNode VisitLookupStageUncorrelatedMatch(AstLookupStageUncorrelatedMatch node)
-        {
-            return node.Update(VisitAndConvert(node.Pipeline), VisitAndConvert(node.Let));
         }
 
         public virtual AstNode VisitLTrimExpression(AstLTrimExpression node)

@@ -69,7 +69,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
 
                 var lookupStage = AstStage.Lookup(
                     from: innerCollectionName,
-                    match: new AstLookupStageEqualityMatch(localFieldPath, foreignFieldPath),
+                    localFieldPath,
+                    foreignFieldPath,
                     @as: "_inner");
 
                 var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[4]);

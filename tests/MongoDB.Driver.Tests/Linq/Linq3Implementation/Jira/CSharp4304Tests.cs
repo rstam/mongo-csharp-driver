@@ -33,10 +33,9 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             var stages = Translate(collection, queryable);
             AssertStages(
                 stages,
-                "{ $project : { _outer : '$$ROOT', _id : 0 } }",
-                "{ $lookup : { from : 'Child', localField : '_outer.ChildId', foreignField : '_id', as : '_inner' } }",
-                "{ $unwind : '$_inner' }",
-                "{ $project : { _v : '$_inner', _id : 0 } }");
+                "{ $lookup : { from : 'Child', localField : 'ChildId', foreignField : '_id', as : '_v' } }",
+                "{ $project : { _v : 1, _id : 0 } }",
+                "{ $unwind : '$_v' }");
 
             CreateParentCollection();
             CreateChildCollection();
