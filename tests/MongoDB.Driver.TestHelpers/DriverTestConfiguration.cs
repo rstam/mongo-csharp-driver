@@ -148,6 +148,7 @@ namespace MongoDB.Driver.Tests
                 : CoreTestConfiguration.ConnectionString.ToString();
             var clientSettings = MongoClientSettings.FromUrl(new MongoUrl(connectionString));
             clientSettings.ServerApi = CoreTestConfiguration.ServerApi;
+            clientSettings.TranslationOptions = GetTranslationOptions();
             clientSettingsConfigurator?.Invoke(clientSettings);
 
             if (clientSettings.Credential?.Mechanism == OidcSaslMechanism.MechanismName)
@@ -207,8 +208,18 @@ namespace MongoDB.Driver.Tests
             clientSettings.ServerSelectionTimeout = TimeSpan.FromMilliseconds(int.Parse(serverSelectionTimeoutString));
             clientSettings.ClusterConfigurator = cb => CoreTestConfiguration.ConfigureLogging(cb);
             clientSettings.ServerApi = CoreTestConfiguration.ServerApi;
+            clientSettings.TranslationOptions = GetTranslationOptions();
 
             return clientSettings;
+        }
+
+        public static ExpressionTranslationOptions GetTranslationOptions()
+        {
+            var compatibilityLevel = CoreTestConfiguration.MaxWireVersion.ToServerVersion();
+            return new ExpressionTranslationOptions
+            {
+                CompatibilityLevel = compatibilityLevel
+            };
         }
 
         public static bool IsReplicaSet(IMongoClient client)

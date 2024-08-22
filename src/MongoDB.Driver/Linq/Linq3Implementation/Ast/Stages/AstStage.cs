@@ -150,9 +150,33 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages
             return new AstListSessionsStage(options);
         }
 
-        public static AstStage Lookup(string from, AstLookupStageMatch match, string @as)
+        public static AstStage Lookup(
+            string from,
+            string localFieldName,
+            string foreignFieldName,
+            string @as)
         {
-            return new AstLookupStage(from, match, @as);
+            return new AstLookupStage(from, localFieldName, foreignFieldName, @as);
+        }
+
+        public static AstStage Lookup(
+            string from,
+            IEnumerable<AstComputedField> let,
+            AstPipeline pipeline,
+            string @as)
+        {
+            return new AstCorrelatedSubqueryLookupStage(from, let, pipeline, @as);
+        }
+
+        public static AstStage Lookup(
+            string from,
+            string localFieldName,
+            string foreignFieldName,
+            IEnumerable<AstComputedField> let,
+            AstPipeline pipeline,
+            string @as)
+        {
+            return new AstConciseCorrelatedSubqueryLookupStage(from, localFieldName, foreignFieldName, let, pipeline, @as);
         }
 
         public static AstStage Match(AstFilter filter)

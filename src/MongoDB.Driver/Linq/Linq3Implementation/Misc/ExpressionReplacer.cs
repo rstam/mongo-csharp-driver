@@ -26,6 +26,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             return visitor.Visit(node);
         }
 
+        public static TExpression ReplaceAndConvert<TExpression>(TExpression node, Expression original, Expression replacement)
+            where TExpression : Expression
+        {
+            return (TExpression)Replace(node, original, replacement);
+        }
+
         private readonly Expression _original;
         private readonly Expression _replacement;
 

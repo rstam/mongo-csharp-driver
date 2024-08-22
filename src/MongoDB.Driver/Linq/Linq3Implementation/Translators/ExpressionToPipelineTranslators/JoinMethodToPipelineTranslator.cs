@@ -14,10 +14,12 @@
 */
 
 using System.Linq.Expressions;
-using MongoDB.Bson.Serialization;
+using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Filters;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 using MongoDB.Driver.Linq.Linq3Implementation.ExtensionMethods;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Reflection;
@@ -37,65 +39,147 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
             if (method.Is(QueryableMethod.Join))
             {
                 var outerExpression = arguments[0];
-                var pipeline = ExpressionToPipelineTranslator.Translate(context, outerExpression);
+                var innerExpression = arguments[1];
+                var outerKeySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
+                var innerKeySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[3]);
+                var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[4]);
+                var outerParameter = resultSelectorLambda.Parameters[0];
+                var innerParameter = resultSelectorLambda.Parameters[1];
 
-                AstExpression outerAst;
-                IBsonSerializer outerSerializer;
-                var root = AstExpression.Var("ROOT", isCurrent: true);
-                if (pipeline.OutputSerializer is IWrappedValueSerializer pipelineOutputWrappedSerializer)
+                var pipeline = ExpressionToPipelineTranslator.Translate(context, outerExpression);
+                var outerSerializer = pipeline.OutputSerializer;
+
+                var (innerCollectionName, innerSerializer) = innerExpression.GetCollectionInfo(containerExpression: expression);
+                var outerKeySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, outerKeySelectorLambda, outerSerializer, asRoot: true);
+                var innerKeySelectorTranslation = ExpressionToAggregationExpressionTranslator.TranslateLambdaBody(context, innerKeySelectorLambda, innerSerializer, asRoot: true);
+
+                var localFieldPath = GetFieldPath(outerKeySelectorTranslation.Ast);
+                var foreignFieldPath = GetFieldPath(innerKeySelectorTranslation.Ast);
+
+                if (resultSelectorLambda.Body == innerParameter &&
+                    localFieldPath != null &&
+                    foreignFieldPath != null)
                 {
-                    outerAst = AstExpression.GetField(root, pipelineOutputWrappedSerializer.FieldName);
-                    outerSerializer = pipelineOutputWrappedSerializer.ValueSerializer;
+                    var lookupStage = AstStage.Lookup(
+                        innerCollectionName,
+                        localFieldPath,
+                        foreignFieldPath,
+                        @as: "_v");
+
+                    var projectStage = AstStage.Project(
+                        AstProject.Include("_v"),
+                        AstProject.Exclude("_id"));
+
+                    var unwindStage = AstStage.Unwind("_v");
+
+                    var resultSerializer = WrappedValueSerializer.Create("_v", innerSerializer);
+
+                    pipeline = pipeline.AddStages(
+                        resultSerializer,
+                        lookupStage,
+                        projectStage,
+                        unwindStage);
                 }
                 else
                 {
-                    outerAst = root;
-                    outerSerializer = pipeline.OutputSerializer;
+                    var isCorrelatedSubquery = resultSelectorLambda.LambdaBodyReferencesParameter(outerParameter);
+                    var resultPipeline = AstPipeline.Empty(innerSerializer);
+
+                    var targetWireVersion = (context.TranslationOptions?.CompatibilityLevel).ToWireVersion();
+                    if (!Feature.ConciseCorrelatedSubqueries.IsSupported(targetWireVersion) ||
+                        localFieldPath == null ||
+                        foreignFieldPath == null)
+                    {
+                        isCorrelatedSubquery = true;
+                        var localAst = ReplaceRootVarVisitor.ReplaceRootVar(outerKeySelectorTranslation.Ast, AstExpression.Var("outer"));
+                        var foreignAst = innerKeySelectorTranslation.Ast;
+                        var filter = AstFilter.Expr(AstExpression.Eq(localAst, foreignAst));
+                        var matchStage = AstStage.Match(filter);
+                        resultPipeline = resultPipeline.AddStages(innerSerializer, matchStage);
+
+                        localFieldPath = null;
+                        foreignFieldPath = null;
+                    }
+
+                    var outerVar = AstExpression.Var("outer");
+                    var outerSymbol = context.CreateSymbol(outerParameter, outerVar, outerSerializer);
+                    var innerVar = AstExpression.Var("ROOT", isCurrent: true);
+                    var innerSymbol = context.CreateSymbol(innerParameter, innerVar, innerSerializer);
+                    var resultSelectorContext = context.WithSymbols(outerSymbol, innerSymbol);
+                    var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
+                    var (resultProjectStage, resultSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
+                    resultPipeline = resultPipeline.AddStages(resultSerializer, new[] { resultProjectStage });
+
+                    var let = isCorrelatedSubquery ?
+                        new[] { AstExpression.ComputedField("outer", AstExpression.Var("ROOT", isCurrent: true)) } :
+                        null;
+
+                    var lookupStage = (localFieldPath != null && foreignFieldPath != null) ?
+                        AstStage.Lookup(
+                            innerCollectionName,
+                            localFieldPath,
+                            foreignFieldPath,
+                            let, // will be null if subquery is uncorrelated
+                            pipeline: resultPipeline,
+                            @as: "_v")
+                        :
+                        AstStage.Lookup(
+                            innerCollectionName,
+                            let, // will be null if subquery is uncorrelated
+                            pipeline: resultPipeline,
+                            @as: "_v");
+
+
+                    var projectStage = AstStage.Project(
+                        AstProject.Include("_v"),
+                        AstProject.Exclude("_id"));
+
+                    var unwindStage = AstStage.Unwind("_v");
+
+                    pipeline = pipeline.AddStages(
+                        newOutputSerializer: WrappedValueSerializer.Create("_v", resultSerializer),
+                        lookupStage,
+                        projectStage,
+                        unwindStage);
                 }
-
-                var wrapOuterStage = AstStage.Project(
-                    AstProject.Set("_outer", outerAst),
-                    AstProject.ExcludeId());
-                var wrappedOuterSerializer = WrappedValueSerializer.Create("_outer", outerSerializer);
-
-                var innerExpression = arguments[1];
-                var (innerCollectionName, innerSerializer) = innerExpression.GetCollectionInfo(containerExpression: expression);
-
-                var outerKeySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[2]);
-                var localFieldPath = outerKeySelectorLambda.GetFieldPath(context, wrappedOuterSerializer);
-
-                var innerKeySelectorLambda = ExpressionHelper.UnquoteLambda(arguments[3]);
-                var foreignFieldPath = innerKeySelectorLambda.GetFieldPath(context, innerSerializer);
-
-                var lookupStage = AstStage.Lookup(
-                    from: innerCollectionName,
-                    match: new AstLookupStageEqualityMatch(localFieldPath, foreignFieldPath),
-                    @as: "_inner");
-
-                var unwindStage = AstStage.Unwind("_inner");
-
-                var resultSelectorLambda = ExpressionHelper.UnquoteLambda(arguments[4]);
-                var outerParameter = resultSelectorLambda.Parameters[0];
-                var outerField = AstExpression.GetField(root, "_outer");
-                var outerSymbol = context.CreateSymbol(outerParameter, outerField, outerSerializer);
-                var innerParameter = resultSelectorLambda.Parameters[1];
-                var innerField = AstExpression.GetField(root, "_inner");
-                var innerSymbol = context.CreateSymbol(innerParameter, innerField, innerSerializer);
-                var resultSelectorContext = context.WithSymbols(outerSymbol, innerSymbol);
-                var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
-                var (projectStage, newOutputSerializer) = ProjectionHelper.CreateProjectStage(resultSelectorTranslation);
-
-                pipeline = pipeline.AddStages(
-                    newOutputSerializer,
-                    wrapOuterStage,
-                    lookupStage,
-                    unwindStage,
-                    projectStage);
 
                 return pipeline;
             }
 
             throw new ExpressionNotSupportedException(expression);
+        }
+
+        private static string GetFieldPath(AstExpression expression)
+        {
+            if (expression.CanBeConvertedToFieldPath())
+            {
+                var fieldPath = expression.ConvertToFieldPath();
+                if (fieldPath.Length >= 2 && fieldPath[0] == '$' && fieldPath[1] != '$')
+                {
+                    return fieldPath.Substring(1);
+                }
+            }
+
+            return null;
+        }
+
+        private class ReplaceRootVarVisitor : AstNodeVisitor
+        {
+            public static AstExpression ReplaceRootVar(AstExpression expression, AstExpression replacement)
+            {
+                var visitor = new ReplaceRootVarVisitor(replacement);
+                return visitor.VisitAndConvert(expression);
+            }
+
+            private readonly AstExpression _replacement;
+
+            private ReplaceRootVarVisitor(AstExpression replacement)
+            {
+                _replacement = replacement;
+            }
+
+            public override AstNode VisitVarExpression(AstVarExpression node)
+                => node.Name == "ROOT" ? _replacement : node;
         }
     }
 }

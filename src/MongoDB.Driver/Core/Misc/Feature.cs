@@ -59,6 +59,7 @@ namespace MongoDB.Driver.Core.Misc
         private static readonly Feature __collation = new Feature("Collation", WireVersion.Server34);
         private static readonly Feature __commandMessage = new Feature("CommandMessage", WireVersion.Server36);
         private static readonly Feature __commandsThatWriteAcceptWriteConcern = new Feature("CommandsThatWriteAcceptWriteConcern", WireVersion.Server34);
+        private static readonly Feature __conciseCorrelatedSubqueries = new Feature("ConciseCorrelatedSubqueries", WireVersion.Server50);
         private static readonly Feature __createIndexCommitQuorum = new Feature("CreateIndexCommitQuorum", WireVersion.Server44);
         private static readonly Feature __createIndexesCommand = new Feature("CreateIndexesCommand", WireVersion.Server26);
         private static readonly Feature __createIndexesUsingInsertOperations = new Feature("CreateIndexesUsingInsertOperations", WireVersion.Zero, WireVersion.Server42);
@@ -339,6 +340,11 @@ namespace MongoDB.Driver.Core.Misc
         /// </summary>
         [Obsolete("This property will be removed in a later release.")]
         public static Feature CommandsThatWriteAcceptWriteConcern => __commandsThatWriteAcceptWriteConcern;
+
+        /// <summary>
+        /// Gets the concise correlated subqueries feature.
+        /// </summary>
+        public static Feature ConciseCorrelatedSubqueries => __conciseCorrelatedSubqueries;
 
         /// <summary>
         /// Gets the create index commit quorum feature.

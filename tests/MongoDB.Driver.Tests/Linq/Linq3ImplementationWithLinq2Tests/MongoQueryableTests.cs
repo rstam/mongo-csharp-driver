@@ -667,12 +667,23 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationWithLinq2Tests
                     o => o.Id,
                     (p, o) => new { p, o });
 
-            Assert(query,
-                1,
-                "{ $project : { _outer : '$$ROOT', _id : 0 } }",
-                "{ $lookup : { from : 'testcollection_other', localField : '_outer._id', foreignField : '_id', as : '_inner' } }",
-                "{ $unwind : '$_inner' }",
-                "{ $project : { p : '$_outer', o : '$_inner', _id : 0 } }");
+            var targetWireVersion = CoreTestConfiguration.MaxWireVersion;
+            if (Feature.ConciseCorrelatedSubqueries.IsSupported(targetWireVersion))
+            {
+                Assert(query,
+                    1,
+                    "{ $lookup : { from : 'testcollection_other', localField : '_id', foreignField : '_id', let : { outer : '$$ROOT' }, pipeline : [{ $project : { p : '$$outer', o : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
+            else
+            {
+                Assert(query,
+                    1,
+                    "{ $lookup : { from : 'testcollection_other', let : { outer : '$$ROOT' }, pipeline : [{ $match : { $expr : { $eq : ['$$outer._id', '$_id'] } } }, { $project : { p : '$$outer', o : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
         }
 
         [Fact]
@@ -686,12 +697,23 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationWithLinq2Tests
                     o => o.CEF,
                     (p, o) => new { p, o });
 
-            Assert(query,
-                0,
-                "{ $project : { _outer : '$$ROOT', _id : 0 } }",
-                "{ $lookup : { from : 'testcollection_other', localField : '_outer._id', foreignField: 'CEF', as : '_inner' } }",
-                "{ $unwind : '$_inner' }",
-                "{ $project : { p : '$_outer', o : '$_inner', _id : 0 } }");
+            var targetWireVersion = CoreTestConfiguration.MaxWireVersion;
+            if (Feature.ConciseCorrelatedSubqueries.IsSupported(targetWireVersion))
+            {
+                Assert(query,
+                    0,
+                    "{ $lookup : { from : 'testcollection_other', localField : '_id', foreignField : 'CEF', let : { outer : '$$ROOT' }, pipeline : [{ $project : { p : '$$outer', o : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
+            else
+            {
+                Assert(query,
+                    0,
+                    "{ $lookup : { from : 'testcollection_other', let : { outer : '$$ROOT' }, pipeline : [{ $match : { $expr : { $eq : ['$$outer._id', '$CEF'] } } }, { $project : { p : '$$outer', o : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
         }
 
         [Fact]
@@ -702,12 +724,23 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationWithLinq2Tests
                         join o in CreateOtherQuery() on p.Id equals o.Id
                         select new { A = p.A, CEF = o.CEF };
 
-            Assert(query,
-                1,
-                "{ $project : { _outer : '$$ROOT', _id : 0 } }",
-                "{ $lookup : { from : 'testcollection_other', localField : '_outer._id', foreignField : '_id', as : '_inner' } }",
-                "{ $unwind : '$_inner' }",
-                "{ $project : { A : '$_outer.A', CEF : '$_inner.CEF', _id : 0 } }");
+            var targetWireVersion = CoreTestConfiguration.MaxWireVersion;
+            if (Feature.ConciseCorrelatedSubqueries.IsSupported(targetWireVersion))
+            {
+                Assert(query,
+                    1,
+                    "{ $lookup : { from : 'testcollection_other', localField : '_id', foreignField : '_id', let : { outer : '$$ROOT' }, pipeline : [{ $project : { A : '$$outer.A', CEF : '$CEF', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
+            else
+            {
+                Assert(query,
+                    1,
+                    "{ $lookup : { from : 'testcollection_other', let : { outer : '$$ROOT' }, pipeline : [{ $match : { $expr : { $eq : ['$$outer._id', '$_id'] } } }, { $project : { A : '$$outer.A', CEF : '$CEF', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
         }
 
         [Fact]
@@ -719,14 +752,27 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationWithLinq2Tests
                         orderby p.B, o.Id
                         select new { A = p.A, CEF = o.CEF };
 
-            Assert(query,
-                1,
-                "{ $project : { _outer : '$$ROOT', _id : 0 } }",
-                "{ $lookup : { from : 'testcollection_other', localField : '_outer._id', foreignField : '_id', as : '_inner' } }",
-                "{ $unwind: '$_inner' }",
-                "{ $project : { p : '$_outer', o : '$_inner', _id : 0 } }",
-                "{ $sort : { 'p.B' : 1, 'o._id' : 1 } }",
-                "{ $project : { A : '$p.A', CEF : '$o.CEF', _id : 0 } }");
+            var targetWireVersion = CoreTestConfiguration.MaxWireVersion;
+            if (Feature.ConciseCorrelatedSubqueries.IsSupported(targetWireVersion))
+            {
+                Assert(query,
+                    1,
+                    "{ $lookup : { from : 'testcollection_other', localField : '_id', foreignField : '_id', let : { outer : '$$ROOT' }, pipeline : [{ $project : { p : '$$outer', o : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind: '$_v' }",
+                    "{ $sort : { '_v.p.B' : 1, '_v.o._id' : 1 } }",
+                    "{ $project : { A : '$_v.p.A', CEF : '$_v.o.CEF', _id : 0 } }");
+            }
+            else
+            {
+                Assert(query,
+                    1,
+                    "{ $lookup : { from : 'testcollection_other', let : { outer : '$$ROOT' }, pipeline : [{ $match : { $expr : { $eq : ['$$outer._id', '$_id'] } } }, { $project : { p : '$$outer', o : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind: '$_v' }",
+                    "{ $sort : { '_v.p.B' : 1, '_v.o._id' : 1 } }",
+                    "{ $project : { A : '$_v.p.A', CEF : '$_v.o.CEF', _id : 0 } }");
+            }
         }
 
         [Fact]
@@ -1852,7 +1898,8 @@ namespace MongoDB.Driver.Tests.Linq.Linq3ImplementationWithLinq2Tests
         private List<T> Assert<T>(IQueryable<T> queryable, int resultCount, params string[] expectedStages)
         {
             var provider = (MongoQueryProvider<Root>)queryable.Provider;
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Root, T>(provider, queryable.Expression, translationOptions: null);
+            var translationOptions = DriverTestConfiguration.Client.Settings.TranslationOptions;
+            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<Root, T>(provider, queryable.Expression, translationOptions);
 
             var stages = executableQuery.Pipeline.Stages.Select(s => s.Render());
             stages.Should().Equal(expectedStages.Select(x => BsonDocument.Parse(x)));

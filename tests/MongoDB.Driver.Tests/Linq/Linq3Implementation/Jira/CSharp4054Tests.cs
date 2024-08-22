@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using FluentAssertions;
+using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq;
 using Xunit;
 
@@ -44,14 +45,27 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
                 select new { person, movie };
 
             var stages = Translate(people, queryable);
-            AssertStages(
-                stages,
-                "{ $project : { _v : { $map : { input : '$MovieIds', as : 'movieId', in : { person : '$$ROOT', movieId : '$$movieId' } } }, _id : 0 } }",
-                "{ $unwind : '$_v' }",
-                "{ $project : { _outer : '$_v', _id : 0 } }",
-                "{ $lookup : { from : 'movies', localField : '_outer.movieId', foreignField : '_id', as : '_inner' } }",
-                "{ $unwind : '$_inner' }",
-                "{ $project : { person : '$_outer.person', movie : '$_inner', _id : 0 } }");
+            var targetWireVersion = CoreTestConfiguration.MaxWireVersion;
+            if (Feature.ConciseCorrelatedSubqueries.IsSupported(targetWireVersion))
+            {
+                AssertStages(
+                    stages,
+                    "{ $project : { _v : { $map : { input : '$MovieIds', as : 'movieId', in : { person : '$$ROOT', movieId : '$$movieId' } } }, _id : 0 } }",
+                    "{ $unwind : '$_v' }",
+                    "{ $lookup : { from : 'movies', localField : '_v.movieId', foreignField : '_id', let : { outer : '$$ROOT' }, pipeline : [{ $project : { person : '$$outer._v.person', movie  : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
+            else
+            {
+                AssertStages(
+                    stages,
+                    "{ $project : { _v : { $map : { input : '$MovieIds', as : 'movieId', in : { person : '$$ROOT', movieId : '$$movieId' } } }, _id : 0 } }",
+                    "{ $unwind : '$_v' }",
+                    "{ $lookup : { from : 'movies', let : { outer : '$$ROOT' }, pipeline : [{ $match : { $expr : { $eq : ['$$outer._v.movieId', '$_id'] } } }, { $project : { person : '$$outer._v.person', movie : '$$ROOT', _id : 0 } }], as : '_v' } }",
+                    "{ $project : { _v : 1, _id : 0 } }",
+                    "{ $unwind : '$_v' }");
+            }
 
             var results = queryable.ToList();
             results.Should().HaveCount(3);
