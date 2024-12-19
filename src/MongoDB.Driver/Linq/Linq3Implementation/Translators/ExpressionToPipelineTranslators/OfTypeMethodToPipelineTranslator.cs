@@ -59,7 +59,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                     discriminatorConvention = wrappedValueOutputSerializer.ValueSerializer.GetDiscriminatorConvention();
                     discriminatorElementName = wrappedValueOutputSerializer.FieldName + "." + discriminatorElementName;
                 }
-                var discriminatorField = AstFilter.Field(discriminatorElementName, BsonValueSerializer.Instance);
+                var discriminatorField = AstFilter.Field(discriminatorElementName);
 
                 var filter = discriminatorConvention switch
                 {
