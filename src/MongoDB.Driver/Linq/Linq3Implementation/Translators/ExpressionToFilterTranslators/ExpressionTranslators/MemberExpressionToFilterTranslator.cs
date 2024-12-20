@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 {
                     var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, expression);
                     var serializedTrue = SerializationHelper.SerializeValue(fieldTranslation.Serializer, true);
-                    return AstFilter.Eq(fieldTranslation.Field, serializedTrue);
+                    return AstFilter.Eq(fieldTranslation.AstField, serializedTrue);
                 }
             }
 
@@ -45,14 +45,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 {
                     var fieldExpression = expression.Expression;
                     var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
-                    return AstFilter.Ne(fieldTranslation.Field, BsonNull.Value);
+                    return AstFilter.Ne(fieldTranslation.AstField, BsonNull.Value);
                 }
 
                 if (propertyInfo.PropertyType == typeof(bool))
                 {
                     var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, expression);
                     var serializedTrue = SerializationHelper.SerializeValue(fieldTranslation.Serializer, true);
-                    return AstFilter.Eq(fieldTranslation.Field, serializedTrue);
+                    return AstFilter.Eq(fieldTranslation.AstField, serializedTrue);
                 }
             }
 

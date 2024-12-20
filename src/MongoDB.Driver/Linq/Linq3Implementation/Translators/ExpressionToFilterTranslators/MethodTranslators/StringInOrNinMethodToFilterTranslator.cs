@@ -82,7 +82,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                         serializedValues.Add(serializedValue);
                     }
 
-                    return method.IsOneOf(__stringInMethods) ? AstFilter.In(fieldTranslation.Field, serializedValues) : AstFilter.Nin(fieldTranslation.Field, serializedValues);
+                    return method.IsOneOf(__stringInMethods) ? AstFilter.In(fieldTranslation.AstField, serializedValues) : AstFilter.Nin(fieldTranslation.AstField, serializedValues);
                 }
             }
 

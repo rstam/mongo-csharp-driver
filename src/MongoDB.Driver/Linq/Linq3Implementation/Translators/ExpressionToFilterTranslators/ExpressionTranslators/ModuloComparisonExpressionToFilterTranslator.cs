@@ -86,7 +86,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 throw new ExpressionNotSupportedException(expression);
             }
 
-            var moduloComparisonAst = AstFilter.Mod(fieldTranslation.Field, divisor, remainder);
+            var moduloComparisonAst = AstFilter.Mod(fieldTranslation.AstField, divisor, remainder);
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:

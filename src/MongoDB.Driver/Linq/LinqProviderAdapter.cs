@@ -81,7 +81,7 @@ namespace MongoDB.Driver.Linq
             var body = RemovePossibleConvertToObject(expression.Body);
             var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, body);
 
-            return new RenderedFieldDefinition(fieldTranslation.Field.Path, fieldTranslation.Serializer);
+            return new RenderedFieldDefinition(fieldTranslation.AstField.Path, fieldTranslation.Serializer);
 
             static Expression RemovePossibleConvertToObject(Expression expression)
             {
@@ -114,7 +114,7 @@ namespace MongoDB.Driver.Linq
             var fieldSerializer = underlyingSerializer as IBsonSerializer<TField>;
             var valueSerializer = (IBsonSerializer<TField>)FieldValueSerializerHelper.GetSerializerForValueType(underlyingSerializer, serializerRegistry, typeof(TField), allowScalarValueForArrayField);
 
-            return new RenderedFieldDefinition<TField>(fieldTranslation.Field.Path, fieldSerializer, valueSerializer, underlyingSerializer);
+            return new RenderedFieldDefinition<TField>(fieldTranslation.AstField.Path, fieldSerializer, valueSerializer, underlyingSerializer);
         }
 
         internal static BsonDocument TranslateExpressionToElemMatchFilter<TElement>(

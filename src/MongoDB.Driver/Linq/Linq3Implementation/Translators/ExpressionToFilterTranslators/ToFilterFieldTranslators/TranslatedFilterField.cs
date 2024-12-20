@@ -20,22 +20,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
 {
     internal class TranslatedFilterField
     {
-        private readonly AstFilterField _field;
+        private readonly AstFilterField _astField;
         private readonly IBsonSerializer _serializer;
 
-        public TranslatedFilterField(AstFilterField field, IBsonSerializer serializer)
+        public TranslatedFilterField(AstFilterField astField, IBsonSerializer serializer)
         {
-            _field = field;
+            _astField = astField;
             _serializer = serializer;
         }
 
-        public AstFilterField Field => _field;
+        public AstFilterField AstField => _astField;
         public IBsonSerializer Serializer => _serializer;
 
         public TranslatedFilterField SubField(string subFieldName, IBsonSerializer subFieldSerializer)
         {
-            var subField = _field.SubField(subFieldName);
-            return new TranslatedFilterField(subField, subFieldSerializer);
+            var astSubField = _astField.SubField(subFieldName);
+            return new TranslatedFilterField(astSubField, subFieldSerializer);
         }
     }
 }

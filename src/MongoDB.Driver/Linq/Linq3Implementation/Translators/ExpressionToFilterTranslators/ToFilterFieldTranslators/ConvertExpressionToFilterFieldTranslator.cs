@@ -154,7 +154,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 targetSerializer = NullableSerializer.Create(targetSerializer);
             }
 
-            return new TranslatedFilterField(fieldTranslation.Field, targetSerializer);
+            return new TranslatedFilterField(fieldTranslation.AstField, targetSerializer);
         }
 
         private static TranslatedFilterField TranslateConvertToBaseType(TranslatedFilterField fieldTranslation, Type baseType)
@@ -162,19 +162,19 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             var derivedTypeSerializer = fieldTranslation.Serializer;
             var derivedType = derivedTypeSerializer.ValueType;
             var targetSerializer = DowncastingSerializer.Create(baseType, derivedType, derivedTypeSerializer);
-            return new TranslatedFilterField(fieldTranslation.Field, targetSerializer);
+            return new TranslatedFilterField(fieldTranslation.AstField, targetSerializer);
         }
 
         private static TranslatedFilterField TranslateConvertToDerivedType(TranslatedFilterField fieldTranslation, Type targetType)
         {
             var targetSerializer = BsonSerializer.LookupSerializer(targetType);
-            return new TranslatedFilterField(fieldTranslation.Field, targetSerializer);
+            return new TranslatedFilterField(fieldTranslation.AstField, targetSerializer);
         }
 
         private static TranslatedFilterField TranslateConvertToNullable(TranslatedFilterField fieldTranslation)
         {
             var nullableSerializer = NullableSerializer.Create(fieldTranslation.Serializer);
-            return new TranslatedFilterField(fieldTranslation.Field, nullableSerializer);
+            return new TranslatedFilterField(fieldTranslation.AstField, nullableSerializer);
         }
 
         private static TranslatedFilterField TranslateConvertUnderlyingTypeToEnum(TranslatedFilterField fieldTranslation, Type targetType)
@@ -206,7 +206,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 targetSerializer = NullableSerializer.Create(targetSerializer);
             }
 
-            return new TranslatedFilterField(fieldTranslation.Field, targetSerializer);
+            return new TranslatedFilterField(fieldTranslation.AstField, targetSerializer);
         }
 
         private static TranslatedFilterField TranslateNumericConversion(TranslatedFilterField fieldTranslation, Type targetType)
@@ -240,7 +240,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             {
                 targetTypeSerializer = converterConfigurableTargetTypeSerializer.WithConverter(converterConfigurableFieldSerializer.Converter);
             }
-            return new TranslatedFilterField(fieldTranslation.Field, targetTypeSerializer);
+            return new TranslatedFilterField(fieldTranslation.AstField, targetTypeSerializer);
         }
     }
 }

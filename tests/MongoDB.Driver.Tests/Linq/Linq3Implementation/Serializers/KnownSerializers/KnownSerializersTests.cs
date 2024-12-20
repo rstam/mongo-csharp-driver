@@ -129,7 +129,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Serializers.KnownSeriali
         {
             var provider = (MongoQueryProvider<TDocument>)queryable.Provider;
             var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TOutput>(provider, queryable.Expression, translationOptions: null);
-            return executableQuery.Pipeline.Stages.Select(s => (BsonDocument)s.Render()).ToArray();
+            return executableQuery.Pipeline.AstStages.Select(s => (BsonDocument)s.Render()).ToArray();
         }
     }
 }

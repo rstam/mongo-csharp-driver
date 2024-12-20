@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
 
             if (fieldSerializer.GetType() == typeof(BsonValueSerializer))
             {
-                var field = fieldTranslation.Field;
+                var field = fieldTranslation.AstField;
                 switch (memberExpression.Member.Name)
                 {
                     case "AsBoolean": return new TranslatedFilterField(field, BooleanSerializer.Instance);
@@ -97,7 +97,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 }
                 else
                 {
-                    var subField = fieldTranslation.Field;
+                    var subField = fieldTranslation.AstField;
                     foreach (var subFieldName in memberSerializationInfo.ElementPath)
                     {
                         subField = subField.SubField(subFieldName);
@@ -113,7 +113,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 fieldSerializerType.GetGenericTypeDefinition() == typeof(NullableSerializer<>))
             {
                 var valueSerializer = ((IChildSerializerConfigurable)fieldSerializer).ChildSerializer;
-                return new TranslatedFilterField(fieldTranslation.Field, valueSerializer);
+                return new TranslatedFilterField(fieldTranslation.AstField, valueSerializer);
             }
 
             if (fieldExpression.Type.IsTupleOrValueTuple())

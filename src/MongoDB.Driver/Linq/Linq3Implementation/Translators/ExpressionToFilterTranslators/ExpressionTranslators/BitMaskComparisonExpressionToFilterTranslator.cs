@@ -94,22 +94,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     case AstComparisonFilterOperator.Eq:
                         if (rightValue.Equals(zeroValue))
                         {
-                            return AstFilter.BitsAllClear(fieldTranslation.Field, serializedBitMask);
+                            return AstFilter.BitsAllClear(fieldTranslation.AstField, serializedBitMask);
                         }
                         else if (rightValue.Equals(bitMask))
                         {
-                            return AstFilter.BitsAllSet(fieldTranslation.Field, serializedBitMask);
+                            return AstFilter.BitsAllSet(fieldTranslation.AstField, serializedBitMask);
                         }
                         break;
 
                     case AstComparisonFilterOperator.Ne:
                         if (rightValue.Equals(zeroValue))
                         {
-                            return AstFilter.BitsAnySet(fieldTranslation.Field, serializedBitMask);
+                            return AstFilter.BitsAnySet(fieldTranslation.AstField, serializedBitMask);
                         }
                         else if (rightValue.Equals(bitMask))
                         {
-                            return AstFilter.BitsAnyClear(fieldTranslation.Field, serializedBitMask);
+                            return AstFilter.BitsAnyClear(fieldTranslation.AstField, serializedBitMask);
                         }
                         break;
                 }

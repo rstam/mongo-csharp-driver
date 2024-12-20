@@ -36,8 +36,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
 
                 return method switch
                 {
-                    _ when method.Is(MqlMethod.IsMissing) => AstFilter.NotExists(fieldTranslation.Field),
-                    _ when method.Is(MqlMethod.IsNullOrMissing) => AstFilter.Eq(fieldTranslation.Field, BsonNull.Value), // matches missing fields also
+                    _ when method.Is(MqlMethod.IsMissing) => AstFilter.NotExists(fieldTranslation.AstField),
+                    _ when method.Is(MqlMethod.IsNullOrMissing) => AstFilter.Eq(fieldTranslation.AstField, BsonNull.Value), // matches missing fields also
                     _ => throw new ExpressionNotSupportedException(expression)
                 };
             }

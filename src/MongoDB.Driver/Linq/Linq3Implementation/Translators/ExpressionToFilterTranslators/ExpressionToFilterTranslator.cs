@@ -120,7 +120,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             {
                 var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, expression);
                 var serializedTrue = SerializationHelper.SerializeValue(fieldTranslation.Serializer, true);
-                return AstFilter.Eq(fieldTranslation.Field, serializedTrue);
+                return AstFilter.Eq(fieldTranslation.AstField, serializedTrue);
             }
 
             throw new ExpressionNotSupportedException(expression);

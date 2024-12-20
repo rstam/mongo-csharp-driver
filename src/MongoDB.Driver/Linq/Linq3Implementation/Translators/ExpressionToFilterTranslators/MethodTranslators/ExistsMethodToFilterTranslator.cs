@@ -37,7 +37,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             {
                 var fieldExpression = arguments[0];
                 var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
-                return AstFilter.Exists(fieldTranslation.Field);
+                return AstFilter.Exists(fieldTranslation.AstField);
             }
 
             throw new ExpressionNotSupportedException(expression);

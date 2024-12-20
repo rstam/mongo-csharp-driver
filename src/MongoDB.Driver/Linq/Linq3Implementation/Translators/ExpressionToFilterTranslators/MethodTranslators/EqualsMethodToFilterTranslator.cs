@@ -73,7 +73,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
             var value = valueExpression.GetConstantValue<object>(containingExpression: expression);
             var serializedValue = SerializationHelper.SerializeValue(fieldTranslation.Serializer, value);
-            return AstFilter.Eq(fieldTranslation.Field, serializedValue);
+            return AstFilter.Eq(fieldTranslation.AstField, serializedValue);
         }
     }
 }

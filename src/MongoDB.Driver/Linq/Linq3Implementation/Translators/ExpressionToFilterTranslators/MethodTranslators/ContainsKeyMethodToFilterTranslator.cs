@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 {
                     case DictionaryRepresentation.Document:
                         var key = GetKeyStringConstant(expression, keyExpression, dictionarySerializer.KeySerializer);
-                        var keyField = fieldTranslation.Field.SubField(key);
+                        var keyField = fieldTranslation.AstField.SubField(key);
                         return AstFilter.Exists(keyField);
 
                     default:

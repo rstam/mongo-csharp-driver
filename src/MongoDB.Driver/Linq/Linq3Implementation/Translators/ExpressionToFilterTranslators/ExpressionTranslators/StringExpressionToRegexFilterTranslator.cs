@@ -457,14 +457,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
 
                 if (fieldTranslation.Serializer is not IHasRepresentationSerializer hasRepresentationSerializer)
                 {
-                    throw new ExpressionNotSupportedException(fieldExpression, expression, because: $"it was not possible to determine whether field \"{fieldTranslation.Field.Path}\" is represented as a string");
+                    throw new ExpressionNotSupportedException(fieldExpression, expression, because: $"it was not possible to determine whether field \"{fieldTranslation.AstField.Path}\" is represented as a string");
                 }
                 if (hasRepresentationSerializer.Representation != BsonType.String)
                 {
-                    throw new ExpressionNotSupportedException(fieldExpression, expression, because: $"field \"{fieldTranslation.Field.Path}\" is not represented as a string");
+                    throw new ExpressionNotSupportedException(fieldExpression, expression, because: $"field \"{fieldTranslation.AstField.Path}\" is not represented as a string");
                 }
 
-                return (fieldTranslation.Field, new Modifiers());
+                return (fieldTranslation.AstField, new Modifiers());
             }
         }
 

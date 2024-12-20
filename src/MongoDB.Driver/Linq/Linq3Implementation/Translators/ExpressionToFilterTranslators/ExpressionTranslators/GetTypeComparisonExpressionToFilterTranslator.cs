@@ -56,7 +56,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 var actualType = typeConstantExpression.GetConstantValue<Type>(expression);
 
                 var discriminatorConvention = fieldTranslation.Serializer.GetDiscriminatorConvention();
-                var discriminatorField = fieldTranslation.Field.SubField(discriminatorConvention.ElementName);
+                var discriminatorField = fieldTranslation.AstField.SubField(discriminatorConvention.ElementName);
 
                 var filter = discriminatorConvention switch
                 {

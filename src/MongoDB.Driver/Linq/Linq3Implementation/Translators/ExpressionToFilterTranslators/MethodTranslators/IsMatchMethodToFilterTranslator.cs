@@ -35,10 +35,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 if (fieldTranslation.Serializer is IRepresentationConfigurable representationConfigurable &&
                     representationConfigurable.Representation != BsonType.String)
                 {
-                    throw new ExpressionNotSupportedException(fieldExpression, expression, because: $"field \"{fieldTranslation.Field.Path}\" is not represented as a string");
+                    throw new ExpressionNotSupportedException(fieldExpression, expression, because: $"field \"{fieldTranslation.AstField.Path}\" is not represented as a string");
                 }
 
-                return AstFilter.Regex(fieldTranslation.Field, regularExpression.Pattern, regularExpression.Options);
+                return AstFilter.Regex(fieldTranslation.AstField, regularExpression.Pattern, regularExpression.Options);
             }
 
             throw new ExpressionNotSupportedException(expression);

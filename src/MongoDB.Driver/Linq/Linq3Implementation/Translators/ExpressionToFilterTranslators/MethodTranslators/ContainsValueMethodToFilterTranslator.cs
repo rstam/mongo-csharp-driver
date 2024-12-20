@@ -49,7 +49,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                     switch (dictionaryRepresentation)
                     {
                         case DictionaryRepresentation.ArrayOfDocuments:
-                            return AstFilter.ElemMatch(fieldTranslation.Field, AstFilter.Eq(valueField, serializedValue));
+                            return AstFilter.ElemMatch(fieldTranslation.AstField, AstFilter.Eq(valueField, serializedValue));
 
                         default:
                             throw new ExpressionNotSupportedException(expression, because: $"ContainsValue is not supported when DictionaryRepresentation is: {dictionaryRepresentation}");

@@ -33,7 +33,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
             {
                 var fieldExpression = arguments[0];
                 var fieldTranslation = ExpressionToFilterFieldTranslator.Translate(context, fieldExpression);
-                return AstFilter.In(fieldTranslation.Field, new BsonValue[] { BsonNull.Value, "" });
+                return AstFilter.In(fieldTranslation.AstField, new BsonValue[] { BsonNull.Value, "" });
             }
 
             throw new ExpressionNotSupportedException(expression);

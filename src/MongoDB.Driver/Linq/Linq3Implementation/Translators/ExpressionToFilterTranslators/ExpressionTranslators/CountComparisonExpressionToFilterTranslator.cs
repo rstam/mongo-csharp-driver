@@ -69,22 +69,22 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 switch (comparisonOperator)
                 {
                     case AstComparisonFilterOperator.Eq:
-                        return AstFilter.Size(fieldTranslation.Field, size);
+                        return AstFilter.Size(fieldTranslation.AstField, size);
 
                     case AstComparisonFilterOperator.Gt:
-                        return AstFilter.Exists(ItemField(fieldTranslation.Field, size.ToInt64()));
+                        return AstFilter.Exists(ItemField(fieldTranslation.AstField, size.ToInt64()));
 
                     case AstComparisonFilterOperator.Gte:
-                        return AstFilter.Exists(ItemField(fieldTranslation.Field, size.ToInt64() - 1));
+                        return AstFilter.Exists(ItemField(fieldTranslation.AstField, size.ToInt64() - 1));
 
                     case AstComparisonFilterOperator.Lt:
-                        return AstFilter.NotExists(ItemField(fieldTranslation.Field, size.ToInt64() - 1));
+                        return AstFilter.NotExists(ItemField(fieldTranslation.AstField, size.ToInt64() - 1));
 
                     case AstComparisonFilterOperator.Lte:
-                        return AstFilter.NotExists(ItemField(fieldTranslation.Field, size.ToInt64()));
+                        return AstFilter.NotExists(ItemField(fieldTranslation.AstField, size.ToInt64()));
 
                     case AstComparisonFilterOperator.Ne:
-                        return AstFilter.Not(AstFilter.Size(fieldTranslation.Field, size));
+                        return AstFilter.Not(AstFilter.Size(fieldTranslation.AstField, size));
                 }
             }
 

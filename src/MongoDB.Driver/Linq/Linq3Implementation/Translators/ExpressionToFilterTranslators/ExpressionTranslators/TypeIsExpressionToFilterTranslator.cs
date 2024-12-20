@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToFilter
                 else
                 {
                     var discriminatorConvention = fieldTranslation.Serializer.GetDiscriminatorConvention();
-                    var discriminatorField = fieldTranslation.Field.SubField(discriminatorConvention.ElementName);
+                    var discriminatorField = fieldTranslation.AstField.SubField(discriminatorConvention.ElementName);
 
                     return discriminatorConvention switch
                     {
