@@ -20,42 +20,37 @@ namespace MongoDB.Bson.Serialization
 {
     internal static class SerializerConfigurator
     {
-        /// Reconfigures a serializer using the specified <paramref name="reconfigure"/> method if the result of <paramref name="testFunction"/> is true or the function is null.
-        /// If the serializer implements <see cref="IChildSerializerConfigurable"/> and either:
-        /// - <paramref name="topLevelOnly"/> is false;
-        /// - or is a <see cref="Nullable"/> serializer;
-        /// the method traverses and applies the reconfiguration to its child serializers recursively.
-        internal static IBsonSerializer ReconfigureSerializer<TSerializer>(IBsonSerializer serializer, Func<TSerializer, IBsonSerializer> reconfigure,
-            Func<IBsonSerializer, bool> testFunction = null, bool topLevelOnly = false)
+        // Reconfigures a serializer recursively.
+        // The reconfigure Func should return null if it does not apply to a given serializer
+        internal static IBsonSerializer ReconfigureSerializerRecursively(
+            IBsonSerializer serializer,
+            Func<IBsonSerializer, IBsonSerializer> reconfigure)
         {
             switch (serializer)
             {
-                case TSerializer typedSerializer when testFunction?.Invoke(serializer) ?? true:
-                    return reconfigure(typedSerializer);
-                case IMultipleChildrenSerializerConfigurableSerializer multipleChildrenSerializerConfigurable when !topLevelOnly:
-                {
-                    var newSerializers = new List<IBsonSerializer>();
-
-                    foreach (var childSerializer in multipleChildrenSerializerConfigurable.ChildrenSerializers)
+                // check IMultipleChildSerializersConfigurableSerializer first because some serializer implement both interfaces
+                case IMultipleChildSerializersConfigurableSerializer multipleChildSerializersConfigurable:
                     {
-                        var reconfiguredChildSerializer = ReconfigureSerializer(childSerializer, reconfigure, testFunction,
-                            false);
+                        var newChildSerializers = new List<IBsonSerializer>();
 
-                        newSerializers.Add(reconfiguredChildSerializer ?? childSerializer);
+                        foreach (var childSerializer in multipleChildSerializersConfigurable.ChildSerializers)
+                        {
+                            var reconfiguredChildSerializer = ReconfigureSerializerRecursively(childSerializer, reconfigure) ?? childSerializer;
+                            newChildSerializers.Add(reconfiguredChildSerializer);
+                        }
+
+                        return multipleChildSerializersConfigurable.WithChildSerializers(newChildSerializers.ToArray());
                     }
 
-                    return multipleChildrenSerializerConfigurable.WithChildrenSerializers(newSerializers.ToArray());
-                }
-                case IChildSerializerConfigurable childSerializerConfigurable when
-                    !topLevelOnly || Nullable.GetUnderlyingType(serializer.ValueType) != null:
-                {
-                    var childSerializer = childSerializerConfigurable.ChildSerializer;
-                    var reconfiguredChildSerializer = ReconfigureSerializer(childSerializer, reconfigure, testFunction, topLevelOnly);
-                    return reconfiguredChildSerializer != null? childSerializerConfigurable.WithChildSerializer(reconfiguredChildSerializer) : null;
-                }
+                case IChildSerializerConfigurable childSerializerConfigurable:
+                    {
+                        var childSerializer = childSerializerConfigurable.ChildSerializer;
+                        var reconfiguredChildSerializer = ReconfigureSerializerRecursively(childSerializer, reconfigure) ?? childSerializer;
+                        return reconfiguredChildSerializer != null ? childSerializerConfigurable.WithChildSerializer(reconfiguredChildSerializer) : null;
+                    }
 
                 default:
-                    return null;
+                    return reconfigure(serializer);
             }
         }
     }
