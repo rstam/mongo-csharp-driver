@@ -274,10 +274,10 @@ namespace MongoDB.Bson.Serialization
                 obj is BsonMemberMap other &&
                 _frozen.Equals(true) && other._frozen.Equals(true) && // BsonMemberMaps should only be equal if they are frozen
                 object.Equals(_defaultValue, other._defaultValue) &&
-                object.Equals(_defaultValueCreator, other._defaultValueCreator) &&
+                //object.Equals(_defaultValueCreator, other._defaultValueCreator) &&
                 _defaultValueSpecified.Equals(other._defaultValueSpecified) &&
                 object.Equals(_elementName, other._elementName) &&
-                object.Equals(_idGenerator, other._idGenerator) &&
+                //object.Equals(_idGenerator, other._idGenerator) &&
                 _ignoreIfDefault.Equals(other._ignoreIfDefault) &&
                 _ignoreIfNull.Equals(other._ignoreIfNull) &&
                 _isRequired.Equals(other._isRequired) &&

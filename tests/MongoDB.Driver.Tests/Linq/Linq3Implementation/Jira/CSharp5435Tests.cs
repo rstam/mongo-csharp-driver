@@ -16,6 +16,7 @@
 using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Serializers;
 using Xunit;
@@ -40,6 +41,11 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
                     }
                 });
             var updateError = Builders<MyDocument>.Update.Pipeline(pipelineError);
+
+            var documentSerializer = coll.DocumentSerializer;
+            var serializerRegistry = BsonSerializer.SerializerRegistry;
+            var renderedUpdate = updateError.Render(new RenderArgs<MyDocument>(documentSerializer, serializerRegistry)).AsBsonArray[0].AsBsonDocument;
+            renderedUpdate.Should().Be("""{ "$set" : { "ValueObject" : { "Value" : { "$cond" : { "if" : { "$eq" : ["$ValueObject", null] }, "then" : 1, "else" : { "$add" : ["$ValueObject.Value", 1] } } } } } }""");
 
             coll.UpdateOne(filter, updateError, new() { IsUpsert = true });
         }

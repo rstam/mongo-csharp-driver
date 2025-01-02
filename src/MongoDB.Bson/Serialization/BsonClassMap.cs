@@ -555,8 +555,8 @@ namespace MongoDB.Bson.Serialization
                 _frozen.Equals(true) &&  other._frozen.Equals(true) && // BsonClassMaps should only be equal if they are frozen
                 object.Equals(_baseClassMap, other._baseClassMap) &&
                 object.Equals(_classType, other._classType) &&
-                object.Equals(_creator, other._creator) &&
-                SequenceComparer.Equals(_creatorMaps, other._creatorMaps) &&
+                // object.Equals(_creator, other._creator) &&
+                // SequenceComparer.Equals(_creatorMaps, other._creatorMaps) &&
                 SequenceComparer.Equals(_declaredMemberMaps, other._declaredMemberMaps) &&
                 object.Equals(_discriminator, other._discriminator) &&
                 _discriminatorIsRequired.Equals(other._discriminatorIsRequired) &&
