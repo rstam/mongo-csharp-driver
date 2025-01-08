@@ -188,9 +188,9 @@ namespace MongoDB.Driver.Linq
             }
             catch (ExpressionNotSupportedException) when (translationOptions?.EnableClientSideProjections ?? false)
             {
-                var projectorDelegate = expression.Compile();
-                var clientSideProjectionDeserializer = new ClientSideProjectionDeserializer<TInput, TOutput>(inputSerializer, projectorDelegate);
-                return new RenderedProjectionDefinition<TOutput>(document: null, clientSideProjectionDeserializer);
+                var (projectStage, projectionSerializer) = ClientSideProjectionExpressionRewriter.CreateClientSideProjection(context, expression, inputSerializer);
+                var projectionDocument = projectStage == null ? null : AstSimplifier.SimplifyAndConvert(projectStage).Render()["$project"].AsBsonDocument;
+                return new RenderedProjectionDefinition<TOutput>(projectionDocument, (IBsonSerializer<TOutput>)projectionSerializer);
             }
         }
 
@@ -202,7 +202,7 @@ namespace MongoDB.Driver.Linq
         {
             var context = TranslationContext.Create(expression, translationOptions); // do not partially evaluate expression
             var parameter = expression.Parameters.Single();
-            var symbol = context.CreateSymbolWithVarName(parameter, varName: "ROOT", documentSerializer, isCurrent: true);
+            var symbol = context.CreateRootSymbol(parameter, documentSerializer);
             context = context.WithSymbol(symbol);
             var setStage = ExpressionToSetStageTranslator.Translate(context, documentSerializer, expression);
             var simplifiedSetStage = AstSimplifier.SimplifyAndConvert(setStage);

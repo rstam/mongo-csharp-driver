@@ -26,9 +26,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
     {
         public static bool LambdaBodyReferencesParameter(this LambdaExpression lambda, ParameterExpression parameter)
         {
-            var visitor = new ExpressionIsReferencedVisitor(parameter);
-            visitor.Visit(lambda.Body);
-            return visitor.ExpressionIsReferenced;
+            return ExpressionIsReferencedVisitor.IsReferenced(lambda.Body, parameter);
         }
 
         public static string TranslateToDottedFieldName(this LambdaExpression fieldSelectorLambda, TranslationContext context, IBsonSerializer parameterSerializer)
@@ -38,7 +36,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             {
                 throw new ArgumentException($"ValueType '{parameterSerializer.ValueType.FullName}' of parameterSerializer does not match parameter type '{parameterExpression.Type.FullName}'.", nameof(parameterSerializer));
             }
-            var parameterSymbol = context.CreateSymbolWithVarName(parameterExpression, varName: "ROOT", parameterSerializer, isCurrent: true);
+            var parameterSymbol = context.CreateRootSymbol(parameterExpression, parameterSerializer);
             var lambdaContext = context.WithSymbol(parameterSymbol);
             var lambdaBody = ConvertHelper.RemoveConvertToObject(fieldSelectorLambda.Body);
             var fieldSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(lambdaContext, lambdaBody);

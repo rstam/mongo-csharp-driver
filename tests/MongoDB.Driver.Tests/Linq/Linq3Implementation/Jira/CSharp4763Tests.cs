@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var projection = TranslateFindProjection(collection, find, out var projectionSerializer);
-                projection.Should().BeNull();
+                projection.Should().Be("{ _0 : '$X', _id : 0 }");
                 projectionSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var results = find.ToList();
@@ -80,7 +80,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var projection = TranslateFindProjection(collection, find, out var projectionSerializer);
-                projection.Should().BeNull();
+                projection.Should().Be("{ _0 : '$X', _id : 0 }");
                 projectionSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = find.First();
@@ -116,7 +116,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var projection = TranslateFindProjection(collection, find, out var projectionSerializer);
-                projection.Should().BeNull();
+                projection.Should().Be("{ _0 : '$X', _id : 0 }");
                 projectionSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = find.Single();
@@ -150,7 +150,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, aggregate, out var outputSerializer);
-                AssertStages(stages, Array.Empty<string>());
+                AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var results = aggregate.ToList();
@@ -184,7 +184,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, aggregate, out var serializer);
-                AssertStages(stages, Array.Empty<string>());
+                AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
                 serializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = aggregate.First();
@@ -249,7 +249,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, queryable, out var outputSerializer);
-                AssertStages(stages, Array.Empty<string>());
+                AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var results = queryable.ToList();
@@ -283,7 +283,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, queryable, out var outputSerializer);
-                AssertStages(stages, Array.Empty<string>());
+                AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = queryable.First();
@@ -347,7 +347,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, queryable, out var outputSerializer);
-                AssertStages(stages, Array.Empty<string>());
+                AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = queryable.Single();
