@@ -16,6 +16,7 @@
 using System.Linq;
 using System.Linq.Expressions;
 using MongoDB.Bson.Serialization;
+using MongoDB.Driver.Core.Misc;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Stages;
@@ -47,6 +48,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             IBsonSerializer sourceSerializer,
             LambdaExpression projectionLambda)
         {
+            var wireVersion = context.TranslationOptions.CompatibilityLevel.ToWireVersion();
+            if (!Feature.FindProjectionExpressions.IsSupported(wireVersion))
+            {
+                var clientSideProjectionDeserializer = ClientSideProjectionDeserializer.Create(sourceSerializer, projectionLambda);
+                return (null, clientSideProjectionDeserializer); // project directly off $$ROOT with no snippets
+            }
+
             var snippets = ClientSideProjectionSnippetsTranslator.TranslateSnippets(context, projectionLambda, sourceSerializer);
 
             if (snippets.Length == 0 || snippets.Length > ClientSideProjectionSnippetsDeserializer.MaxNumberOfSnippets || snippets.Any(IsRoot))
