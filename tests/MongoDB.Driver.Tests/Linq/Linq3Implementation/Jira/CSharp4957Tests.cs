@@ -18,6 +18,8 @@ using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Linq;
 using MongoDB.TestHelpers.XunitExtensions;
 using Xunit;
@@ -79,6 +81,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void New_array_with_two_items_with_different_serializers_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 

@@ -18,6 +18,8 @@ using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Linq;
 using MongoDB.TestHelpers.XunitExtensions;
 using Xunit;
@@ -168,6 +170,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Convert_ES1_to_E2_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -211,6 +214,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Convert_ES1_to_nullable_E2_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 

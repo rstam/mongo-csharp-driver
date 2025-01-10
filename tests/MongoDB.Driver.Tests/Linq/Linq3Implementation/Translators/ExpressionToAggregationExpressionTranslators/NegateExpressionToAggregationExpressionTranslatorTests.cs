@@ -18,6 +18,8 @@ using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Linq;
 using MongoDB.TestHelpers.XunitExtensions;
 using Xunit;
@@ -106,6 +108,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Translators.ExpressionTo
         public void Negate_decimal_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = CreateCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 

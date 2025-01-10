@@ -16,6 +16,7 @@
 using System;
 using System.Linq;
 using FluentAssertions;
+using MongoDB.Driver.Core.Misc;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
@@ -26,13 +27,20 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Client_side_projection_should_fetch_only_needed_fields()
         {
             var collection = GetCollection();
-            var enableClientSideProjections = new ExpressionTranslationOptions { EnableClientSideProjections = true };
+            var translationOptions = GetTranslationOptions();
 
-            var queryable = collection.AsQueryable(enableClientSideProjections)
+            var queryable = collection.AsQueryable(translationOptions)
                 .Select(x => Add(x.X, 1));
 
             var stages = Translate(collection, queryable);
-            AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
+            if (translationOptions.CompatibilityLevel == ServerVersion.Server42)
+            {
+                stages.Should().BeEmpty();
+            }
+            else
+            {
+                AssertStages(stages, "{ $project : { _0 : '$X', _id : 0 } }");
+            }
 
             var result = queryable.Single();
             result.Should().Be(2);
@@ -42,13 +50,20 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Client_side_projection_should_compute_sum_server_side()
         {
             var collection = GetCollection();
-            var enableClientSideProjections = new ExpressionTranslationOptions { EnableClientSideProjections = true };
+            var translationOptions = GetTranslationOptions();
 
-            var queryable = collection.AsQueryable(enableClientSideProjections)
+            var queryable = collection.AsQueryable(translationOptions)
                 .Select(x => Add(x.A.Sum(), 4));
 
             var stages = Translate(collection, queryable);
-            AssertStages(stages, "{ $project : { _0 : { $sum : '$A' }, _id : 0 } }");
+            if (translationOptions.CompatibilityLevel == ServerVersion.Server42)
+            {
+                stages.Should().BeEmpty();
+            }
+            else
+            {
+                AssertStages(stages, "{ $project : { _0 : { $sum : '$A' }, _id : 0 } }");
+            }
 
             var result = queryable.Single();
             result.Should().Be(10);
@@ -61,6 +76,17 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
                 collection,
                 new C { Id = 1, X = 1, A = [1, 2, 3] });
             return collection;
+        }
+
+        private ExpressionTranslationOptions GetTranslationOptions()
+        {
+            var wireVersion = CoreTestConfiguration.MaxWireVersion;
+            var compatibilityLevel = Feature.FindProjectionExpressions.IsSupported(wireVersion) ? (ServerVersion?)null : ServerVersion.Server42;
+            return new ExpressionTranslationOptions
+            {
+                EnableClientSideProjections = true,
+                CompatibilityLevel = compatibilityLevel,
+            };
         }
 
         private static int Add(int x, int y) => x + y;

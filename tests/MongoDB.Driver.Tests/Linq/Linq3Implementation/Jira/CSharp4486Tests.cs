@@ -106,6 +106,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Xor_with_two_arguments_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 

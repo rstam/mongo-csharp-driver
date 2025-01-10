@@ -19,6 +19,8 @@ using System.Linq;
 using FluentAssertions;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Core.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Linq;
 using MongoDB.TestHelpers.XunitExtensions;
 using Xunit;
@@ -80,6 +82,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Contains_with_string_field_and_char_field_not_represented_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -105,6 +108,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void Contains_with_string_constant_and_char_field_not_represented_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -198,6 +202,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -231,6 +236,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -268,6 +274,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -435,6 +442,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -539,6 +547,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void EndsWith_with_string_field_and_char_field_not_represented_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -569,6 +578,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void EndsWith_with_string_constant_and_char_field_not_represented_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -703,6 +713,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)] bool ignoreCase,
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
             var notCurrentCulture = GetACultureThatIsNotTheCurrentCulture();
@@ -809,6 +820,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -844,6 +856,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -929,6 +942,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void StartsWith_with_string_field_and_char_field_not_represented_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -959,6 +973,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         public void StartsWith_with_string_constant_and_char_field_not_represented_as_string_should_throw(
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -1093,6 +1108,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)] bool ignoreCase,
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
             var notCurrentCulture = GetACultureThatIsNotTheCurrentCulture();
@@ -1198,6 +1214,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             StringComparison comparisonType,
             [Values(false, true)] bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
@@ -1233,6 +1250,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             [Values(false, true)]
             bool enableClientSideProjections)
         {
+            RequireServer.Check().Supports(Feature.FindProjectionExpressions);
             var collection = GetCollection();
             var translationOptions = new ExpressionTranslationOptions { EnableClientSideProjections = enableClientSideProjections };
 
