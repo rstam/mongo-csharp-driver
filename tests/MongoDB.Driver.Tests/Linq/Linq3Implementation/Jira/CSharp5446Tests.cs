@@ -35,7 +35,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
 
             var stages = Translate(collection, request);
             AssertStages(stages,
-                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } }",
+                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } } }",
                 "{ $project: { P1: '$_id', P2: '$__agg0', _id: 0 } }");
         }
 
@@ -51,7 +51,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
 
             var stages = Translate(collection, request);
             AssertStages(stages,
-                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } }",
+                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } } }",
                 "{ $project: { P1: '$_id', P2: '$__agg0', _id: 0 } }");
         }
 

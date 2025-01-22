@@ -717,6 +717,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstBinaryExpression(AstBinaryOperator.SetIsSubset, arg1, arg2);
         }
 
+        public static AstExpression SetUnion(AstExpression arg)
+        {
+            return new AstUnaryExpression(AstUnaryOperator.SetUnion, arg);
+        }
+
         public static AstExpression SetUnion(params AstExpression[] args)
         {
             return new AstNaryExpression(AstNaryOperator.SetUnion, args);
