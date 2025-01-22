@@ -188,8 +188,8 @@ namespace MongoDB.Driver.Linq
             }
             catch (ExpressionNotSupportedException) when (translationOptions?.EnableClientSideProjections ?? false)
             {
-                var (projectStage, projectionSerializer) = ClientSideProjectionExpressionRewriter.CreateClientSideProjection(context, expression, inputSerializer);
-                var projectionDocument = projectStage == null ? null : AstSimplifier.SimplifyAndConvert(projectStage).Render()["$project"].AsBsonDocument;
+                var (projectStage, projectionSerializer) = ClientSideProjectionRewriter.CreateProjectSnippetsStage(context, expression, inputSerializer);
+                var projectionDocument = projectStage == null ? null : simplifier.VisitAndConvert(projectStage).Render()["$project"].AsBsonDocument;
                 return new RenderedProjectionDefinition<TOutput>(projectionDocument, (IBsonSerializer<TOutput>)projectionSerializer);
             }
         }

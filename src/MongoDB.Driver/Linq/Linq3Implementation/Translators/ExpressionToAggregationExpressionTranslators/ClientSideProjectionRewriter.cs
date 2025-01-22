@@ -23,29 +23,29 @@ using MongoDB.Driver.Linq.Linq3Implementation.Misc;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggregationExpressionTranslators
 {
-    internal static class ClientSideProjectionExpressionRewriter
+    internal static class ClientSideProjectionRewriter
     {
-        public static (AstProjectStage, IBsonSerializer) CreateClientSideProjection(
+        public static (AstProjectStage, IBsonSerializer) CreateProjectSnippetsStage(
             TranslationContext context,
             LambdaExpression projectionLambda,
             IBsonSerializer sourceSerializer)
         {
-            var (snippetsExpression, snippetsProjectionDeserializer) = ClientSideProjectionExpressionRewriter.TranslateLambdaBodyUsingSnippets(context, sourceSerializer, projectionLambda);
-            if (snippetsExpression == null)
+            var (snippetsAst, snippetsProjectionDeserializer) = RewriteProjectionUsingSnippets(context, projectionLambda, sourceSerializer);
+            if (snippetsAst == null)
             {
                 return (null, snippetsProjectionDeserializer);
             }
             else
             {
-                var snippetsTranslation = new AggregationExpression(projectionLambda, snippetsExpression, snippetsProjectionDeserializer);
+                var snippetsTranslation = new AggregationExpression(projectionLambda, snippetsAst, snippetsProjectionDeserializer);
                 return ProjectionHelper.CreateProjectStage(snippetsTranslation);
             }
         }
 
-        private static (AstComputedDocumentExpression, IBsonSerializer) TranslateLambdaBodyUsingSnippets(
+        private static (AstComputedDocumentExpression, IBsonSerializer) RewriteProjectionUsingSnippets(
             TranslationContext context,
-            IBsonSerializer sourceSerializer,
-            LambdaExpression projectionLambda)
+            LambdaExpression projectionLambda,
+            IBsonSerializer sourceSerializer)
         {
             var wireVersion = context.TranslationOptions.CompatibilityLevel.ToWireVersion();
             if (!Feature.FindProjectionExpressions.IsSupported(wireVersion))
@@ -65,9 +65,9 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             {
                 var snippetsComputedDocument = CreateSnippetsComputedDocument(snippets);
                 var snippetDeserializers = snippets.Select(s => s.Serializer).ToArray();
-                var rewrittenSelectorLamdba = RewriteSelector(projectionLambda, snippets);
-                var rewrittenSelectorDelegate = rewrittenSelectorLamdba.Compile();
-                var clientSideProjectionSnippetsDeserializer = ClientSideProjectionSnippetsDeserializer.Create(projectionLambda.ReturnType, snippetDeserializers, rewrittenSelectorDelegate);
+                var rewrittenProjectionLamdba = RewriteProjection(projectionLambda, snippets);
+                var rewrittenProjectionDelegate = rewrittenProjectionLamdba.Compile();
+                var clientSideProjectionSnippetsDeserializer = ClientSideProjectionSnippetsDeserializer.Create(projectionLambda.ReturnType, snippetDeserializers, rewrittenProjectionDelegate);
                 return (snippetsComputedDocument, clientSideProjectionSnippetsDeserializer);
             }
 
@@ -77,14 +77,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
         private static AstComputedDocumentExpression CreateSnippetsComputedDocument(AggregationExpression[] snippets)
         {
             var snippetsArray = AstExpression.ComputedArray(snippets.Select(s => s.Ast));
-            var snippetsdField = AstExpression.ComputedField("_snippets", snippetsArray);
-            return (AstComputedDocumentExpression)AstExpression.ComputedDocument([snippetsdField]);
-
+            var snippetsField = AstExpression.ComputedField("_snippets", snippetsArray);
+            return (AstComputedDocumentExpression)AstExpression.ComputedDocument([snippetsField]);
         }
 
-        private static LambdaExpression RewriteSelector(LambdaExpression selectorLambda, AggregationExpression[] snippets)
+        private static LambdaExpression RewriteProjection(LambdaExpression projectionLambda, AggregationExpression[] snippets)
         {
-            var rewrittenBody = selectorLambda.Body;
+            var rewrittenBody = projectionLambda.Body;
             var snippetsParameter = Expression.Parameter(typeof(object[]), "snippets");
 
             for (var i = 0; i < snippets.Length; i++)

@@ -56,7 +56,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToPipeli
                 }
                 catch (ExpressionNotSupportedException) when (context.TranslationOptions?.EnableClientSideProjections ?? false)
                 {
-                    (projectStage, projectionSerializer) = ClientSideProjectionExpressionRewriter.CreateClientSideProjection(context, selectorLambda, sourceSerializer);
+                    (projectStage, projectionSerializer) = ClientSideProjectionRewriter.CreateProjectSnippetsStage(context, selectorLambda, sourceSerializer);
                 }
 
                 return projectStage == null ?

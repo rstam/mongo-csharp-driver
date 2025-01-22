@@ -79,7 +79,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 {
                     var snippet = ExpressionToAggregationExpressionTranslator.Translate(_context, node);
                     _snippets.Add(snippet);
-                    return node;
+                    return node; // suppress any further visiting below this node
                 }
                 catch
                 {

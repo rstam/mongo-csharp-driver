@@ -14,7 +14,6 @@
 */
 
 using System;
-using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
