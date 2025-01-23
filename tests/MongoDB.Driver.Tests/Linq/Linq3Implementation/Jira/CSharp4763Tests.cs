@@ -170,14 +170,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, aggregate, out var outputSerializer);
-                if (aggregateOptions.TranslationOptions.CompatibilityLevel == ServerVersion.Server42)
-                {
-                    stages.Should().BeEmpty();
-                }
-                else
-                {
-                    AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
-                }
+                AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var results = aggregate.ToList();
@@ -211,14 +204,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, aggregate, out var serializer);
-                if (aggregateOptions.TranslationOptions.CompatibilityLevel == ServerVersion.Server42)
-                {
-                    stages.Should().BeEmpty();
-                }
-                else
-                {
-                    AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
-                }
+                AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
                 serializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = aggregate.First();
@@ -283,14 +269,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, queryable, out var outputSerializer);
-                if (aggregateOptions.TranslationOptions.CompatibilityLevel == ServerVersion.Server42)
-                {
-                    stages.Should().BeEmpty();
-                }
-                else
-                {
-                    AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
-                }
+                AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var results = queryable.ToList();
@@ -324,14 +303,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, queryable, out var outputSerializer);
-                if (aggregateOptions.TranslationOptions.CompatibilityLevel == ServerVersion.Server42)
-                {
-                    stages.Should().BeEmpty();
-                }
-                else
-                {
-                    AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
-                }
+                AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = queryable.First();
@@ -395,14 +367,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
             if (enableClientSideProjections ?? false)
             {
                 var stages = Translate(collection, queryable, out var outputSerializer);
-                if (aggregateOptions.TranslationOptions.CompatibilityLevel == ServerVersion.Server42)
-                {
-                    stages.Should().BeEmpty();
-                }
-                else
-                {
-                    AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
-                }
+                AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
                 outputSerializer.Should().BeAssignableTo<IClientSideProjectionDeserializer>();
 
                 var result = queryable.Single();

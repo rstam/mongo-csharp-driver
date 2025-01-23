@@ -33,14 +33,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
                 .Select(x => Add(x.X, 1));
 
             var stages = Translate(collection, queryable);
-            if (translationOptions.CompatibilityLevel == ServerVersion.Server42)
-            {
-                stages.Should().BeEmpty();
-            }
-            else
-            {
-                AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
-            }
+            AssertStages(stages, "{ $project : { _snippets : ['$X'], _id : 0 } }");
 
             var result = queryable.Single();
             result.Should().Be(2);
@@ -56,14 +49,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
                 .Select(x => Add(x.A.Sum(), 4));
 
             var stages = Translate(collection, queryable);
-            if (translationOptions.CompatibilityLevel == ServerVersion.Server42)
-            {
-                stages.Should().BeEmpty();
-            }
-            else
-            {
-                AssertStages(stages, "{ $project : { _snippets : [{ $sum : '$A' }], _id : 0 } }");
-            }
+            AssertStages(stages, "{ $project : { _snippets : [{ $sum : '$A' }], _id : 0 } }");
 
             var result = queryable.Single();
             result.Should().Be(10);

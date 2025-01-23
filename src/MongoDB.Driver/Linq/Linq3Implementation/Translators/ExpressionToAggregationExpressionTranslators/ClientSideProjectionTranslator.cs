@@ -47,13 +47,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             LambdaExpression projectionLambda,
             IBsonSerializer sourceSerializer)
         {
-            var wireVersion = context.TranslationOptions.CompatibilityLevel.ToWireVersion();
-            if (!Feature.FindProjectionExpressions.IsSupported(wireVersion))
-            {
-                var clientSideProjectionDeserializer = ClientSideProjectionDeserializer.Create(sourceSerializer, projectionLambda);
-                return (null, clientSideProjectionDeserializer); // project directly off $$ROOT with no snippets
-            }
-
             var (snippets, rewrittenProjectionLamdba) = ClientSideProjectionRewriter.RewriteProjection(context, projectionLambda, sourceSerializer);
 
             if (snippets.Length == 0 || snippets.Any(IsRoot))
