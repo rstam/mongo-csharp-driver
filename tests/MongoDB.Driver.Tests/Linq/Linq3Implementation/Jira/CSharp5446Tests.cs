@@ -25,13 +25,13 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
     public class CSharp5446Tests : Linq3IntegrationTest
     {
         [Fact]
-        public void GroupByTranslationRaw()
+        public void Aggregate_Group_Distinct_should_work()
         {
             var collection = GetCollection();
 
             var request = collection
                 .Aggregate()
-                .Group(g => g.P1, p => new GroupedResults() { P1 = p.Key, P2 = new HashSet<string>(p.Select(i => i.P2)) });
+                .Group(x => x.P1, g => new { P1 = g.Key, P2 = g.Select(i => i.P2).Distinct() });
 
             var stages = Translate(collection, request);
             AssertStages(stages,
@@ -40,14 +40,79 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         }
 
         [Fact]
-        public void GroupByTranslationLinq()
+        public void Aggregate_Group_new_HashSet_should_work()
+        {
+            var collection = GetCollection();
+
+            var request = collection
+                .Aggregate()
+                .Group(x => x.P1, g => new { P1 = g.Key, P2 = new HashSet<string>(g.Select(i => i.P2)) });
+
+            var stages = Translate(collection, request);
+            AssertStages(stages,
+                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } } }",
+                "{ $project: { P1: '$_id', P2: '$__agg0', _id: 0 } }");
+        }
+
+        [Fact]
+        public void Queryable_GroupBy_Distinct_should_work()
         {
             var collection = GetCollection();
 
             var request = collection
                 .AsQueryable()
-                .GroupBy(g => g.P1)
-                .Select(g => new GroupedResults { P1 = g.Key, P2 = new HashSet<string>(g.Select(i => i.P2)) });
+                .GroupBy(
+                    x => x.P1,
+                    (key, elements) => new { P1 = key, P2 = elements.Select(i => i.P2).Distinct() });
+
+            var stages = Translate(collection, request);
+            AssertStages(stages,
+                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } } }",
+                "{ $project: { P1: '$_id', P2: '$__agg0', _id: 0 } }");
+        }
+
+        [Fact]
+        public void Queryable_GroupBy_new_HashSet_should_work()
+        {
+            var collection = GetCollection();
+
+            var request = collection
+                .AsQueryable()
+                .GroupBy(
+                    x => x.P1,
+                    (key, elements) => new { P1 = key, P2 = new HashSet<string>(elements.Select(i => i.P2)) });
+
+            var stages = Translate(collection, request);
+            AssertStages(stages,
+                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } } }",
+                "{ $project: { P1: '$_id', P2: '$__agg0', _id: 0 } }");
+        }
+
+        [Fact]
+        public void Queryable_GroupBy_Select_Distinct_should_work()
+        {
+            var collection = GetCollection();
+
+            var request = collection
+                .AsQueryable()
+                .GroupBy(x => x.P1)
+                .Select(g => new { P1 = g.Key, P2 = g.Select(i => i.P2).Distinct() });
+
+            var stages = Translate(collection, request);
+            AssertStages(stages,
+                "{ $group: { _id: '$P1', __agg0: { $addToSet: '$P2' } } }",
+                "{ $project: { P1: '$_id', P2: '$__agg0', _id: 0 } }");
+        }
+
+        [Fact]
+        public void Queryable_GroupBy_Select_new_HashSet_should_work()
+        {
+            var collection = GetCollection();
+
+            var request = collection
+                .AsQueryable()
+                .GroupBy(x => x.P1)
+                .Select(g => new { P1 = g.Key, P2 = new HashSet<string>(g.Select(i => i.P2)) });
 
             var stages = Translate(collection, request);
             AssertStages(stages,
@@ -64,12 +129,6 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
                 new SourceData { P1 = 1, P2 = "B" },
                 new SourceData { P1 = 2, P2 = "C" });
             return collection;
-        }
-
-        public class GroupedResults
-        {
-            public int P1 { get; set; }
-            public HashSet<string> P2 { get; set; }
         }
 
         private class SourceData

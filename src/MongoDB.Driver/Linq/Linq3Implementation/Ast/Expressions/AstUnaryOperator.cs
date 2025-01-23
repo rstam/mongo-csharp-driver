@@ -22,7 +22,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         Abs,
         Acos,
         Acosh,
-        AddToSet,
         AllElementsTrue,
         AnyElementTrue,
         ArrayToObject,
@@ -57,6 +56,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         RadiansToDegrees,
         ReverseArray,
         Round,
+        SetIntersection,
         SetUnion,
         Sin,
         Sinh,
@@ -89,13 +89,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         {
             switch (@operator)
             {
-                case AstUnaryOperator.AddToSet: accumulatorOperator = AstUnaryAccumulatorOperator.AddToSet; return true;
                 case AstUnaryOperator.Avg: accumulatorOperator = AstUnaryAccumulatorOperator.Avg; return true;
                 case AstUnaryOperator.First: accumulatorOperator = AstUnaryAccumulatorOperator.First; return true;
                 case AstUnaryOperator.Last: accumulatorOperator = AstUnaryAccumulatorOperator.Last; return true;
                 case AstUnaryOperator.Max: accumulatorOperator = AstUnaryAccumulatorOperator.Max; return true;
                 case AstUnaryOperator.Min: accumulatorOperator = AstUnaryAccumulatorOperator.Min; return true;
                 case AstUnaryOperator.Push: accumulatorOperator = AstUnaryAccumulatorOperator.Push; return true;
+                case AstUnaryOperator.SetIntersection: accumulatorOperator = AstUnaryAccumulatorOperator.AddToSet; return true;
                 case AstUnaryOperator.SetUnion: accumulatorOperator = AstUnaryAccumulatorOperator.AddToSet; return true;
                 case AstUnaryOperator.StdDevPop: accumulatorOperator = AstUnaryAccumulatorOperator.StdDevPop; return true;
                 case AstUnaryOperator.StdDevSamp: accumulatorOperator = AstUnaryAccumulatorOperator.StdDevSamp; return true;
@@ -125,7 +125,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                 AstUnaryOperator.Abs => "$abs",
                 AstUnaryOperator.Acos => "$acos",
                 AstUnaryOperator.Acosh => "$acosh",
-                AstUnaryOperator.AddToSet => "$addToSet",
                 AstUnaryOperator.AllElementsTrue => "$allElementsTrue",
                 AstUnaryOperator.AnyElementTrue => "$anyElementTrue",
                 AstUnaryOperator.ArrayToObject => "$arrayToObject",
@@ -160,6 +159,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
                 AstUnaryOperator.RadiansToDegrees => "$radiansToDegrees",
                 AstUnaryOperator.ReverseArray => "$reverseArray",
                 AstUnaryOperator.Round => "$round",
+                AstUnaryOperator.SetIntersection => "$setIntersection",
                 AstUnaryOperator.SetUnion => "$setUnion",
                 AstUnaryOperator.Sin => "$sin",
                 AstUnaryOperator.Sinh => "$sinh",

@@ -707,6 +707,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstNaryExpression(AstNaryOperator.SetEquals, arg1, arg2);
         }
 
+        public static AstExpression SetIntersection(AstExpression arg)
+        {
+            return new AstUnaryExpression(AstUnaryOperator.SetIntersection, arg);
+        }
+
         public static AstExpression SetIntersection(params AstExpression[] args)
         {
             return new AstNaryExpression(AstNaryOperator.SetIntersection, args);

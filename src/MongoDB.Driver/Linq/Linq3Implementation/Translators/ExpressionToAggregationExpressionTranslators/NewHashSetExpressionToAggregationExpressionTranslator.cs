@@ -42,7 +42,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     {
                         var collectionExpression = argument;
                         var collectionTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, collectionExpression);
-                        var ast = AstExpression.SetUnion(collectionTranslation.Ast);
+                        var ast = AstExpression.SetIntersection(collectionTranslation.Ast);
                         var serializerType = typeof(EnumerableInterfaceImplementerSerializer<,>).MakeGenericType(hashSetType, hashSetItemType);
                         var hashSetItemSerializer = ArraySerializerHelper.GetItemSerializer(collectionTranslation.Serializer);
                         var serializer = (IBsonSerializer)Activator.CreateInstance(serializerType, hashSetItemSerializer);
