@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
@@ -409,7 +410,48 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
                 return node.Vars[0].Value;
             }
 
+            var (simpleBindings, complexBindings) = SeparateSimpleAndComplexBindings(node.Vars);
+            if (simpleBindings.Count > 0)
+            {
+                // { $let : { vars : { <simple-and-complex-bindings> }, in : <expr> } } => { $let : { vars : { complex-bindings }, in : <rewritten-expr> } }
+                // { $let : { vars : { <simple-bindings> }, in : <expr> } } => <rewritten-expr>
+                var rewrittenExpr = ReplaceBindings(node.In, simpleBindings);
+                return complexBindings.Count > 0 ? new AstLetExpression(complexBindings, rewrittenExpr) : rewrittenExpr;
+            }
+
             return node;
+
+            static (IReadOnlyList<AstVarBinding>, IReadOnlyList<AstVarBinding>) SeparateSimpleAndComplexBindings(IReadOnlyList<AstVarBinding> bindings)
+            {
+                var simpleBindings = new List<AstVarBinding>();
+                var complexBindings = new List<AstVarBinding>();
+
+                foreach (var binding in bindings)
+                {
+                    if (IsSimpleExpression(binding.Value))
+                    {
+                        simpleBindings.Add(binding);
+                    }
+                    else
+                    {
+                        complexBindings.Add(binding);
+                    }
+                }
+
+                return (simpleBindings, complexBindings);
+            }
+
+            static bool IsSimpleExpression(AstExpression expression)
+            {
+                return
+                    expression.NodeType == AstNodeType.ConstantExpression ||
+                    expression.CanBeConvertedToFieldPath();
+            }
+
+            static AstExpression ReplaceBindings(AstExpression expression, IReadOnlyList<AstVarBinding> bindings)
+            {
+                return AstNodeReplacer.ReplaceAndConvert(expression, bindings.Select(binding => ((AstNode)binding.Var, (AstNode)binding.Value)).ToArray());
+            }
         }
 
         public override AstNode VisitMapExpression(AstMapExpression node)

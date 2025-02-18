@@ -40,7 +40,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var dictionaryRepresentation = dictionarySerializer.DictionaryRepresentation;
 
                 var valueTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, valueExpression);
-                var (valueBinding, valueAst) = AstExpression.UseVarIfNotSimple("value", valueTranslation.Ast);
+                var valueVar = AstExpression.Var("value");
+                var valueBinding = AstExpression.VarBinding(valueVar, valueTranslation.Ast);
 
                 AstExpression ast;
                 switch (dictionaryRepresentation)
@@ -54,7 +55,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                                 @in: AstExpression.Cond(
                                     @if: AstExpression.Var("value"),
                                     @then: true,
-                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueAst))));
+                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueVar))));
                         break;
 
                     case DictionaryRepresentation.ArrayOfArrays:
@@ -66,7 +67,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                                 @in: AstExpression.Cond(
                                     @if: AstExpression.Var("value"),
                                     @then: true,
-                                    @else: AstExpression.Eq(AstExpression.ArrayElemAt(AstExpression.Var("this"), 1), valueAst))));
+                                    @else: AstExpression.Eq(AstExpression.ArrayElemAt(AstExpression.Var("this"), 1), valueVar))));
                         break;
 
                     case DictionaryRepresentation.ArrayOfDocuments:
@@ -78,7 +79,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                                 @in: AstExpression.Cond(
                                     @if: AstExpression.Var("value"),
                                     @then: true,
-                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueAst))));
+                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueVar))));
                         break;
 
                     default:
