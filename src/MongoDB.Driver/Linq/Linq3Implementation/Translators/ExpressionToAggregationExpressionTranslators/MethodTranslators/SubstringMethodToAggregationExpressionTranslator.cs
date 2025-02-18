@@ -59,12 +59,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             if (lengthExpression == null)
             {
                 var strlenOperator = substrOperator == AstTernaryOperator.SubstrCP ? AstUnaryOperator.StrLenCP : AstUnaryOperator.StrLenBytes;
-                var (stringVar, stringAst) = AstExpression.UseVarIfNotSimple("string", stringTranslation.Ast);
-                var (indexVar, indexAst) = AstExpression.UseVarIfNotSimple("index", startIndexTranslation.Ast);
-                var lengthAst = AstExpression.StrLen(strlenOperator, stringAst);
-                var countAst = AstExpression.Subtract(lengthAst, indexAst);
-                var inAst = AstExpression.Substr(substrOperator, stringAst, indexAst, countAst);
-                ast = AstExpression.Let(stringVar, indexVar, inAst);
+                var (stringBinding, stringVar) = AstExpression.VarBinding("string", stringTranslation.Ast);
+                var (indexBinding, indexVar) = AstExpression.VarBinding("index", startIndexTranslation.Ast);
+                var lengthAst = AstExpression.StrLen(strlenOperator, stringVar);
+                var countAst = AstExpression.Subtract(lengthAst, indexVar);
+                var inAst = AstExpression.Substr(substrOperator, stringVar, indexVar, countAst);
+                ast = AstExpression.Let([stringBinding, indexBinding], inAst);
             }
             else
             {

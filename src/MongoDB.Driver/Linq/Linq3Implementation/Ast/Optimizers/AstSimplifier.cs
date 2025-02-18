@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
@@ -387,7 +388,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
                     var simplifiedInput = VisitAndConvert(node.Input);
                     var var = AstExpression.Var("this");
                     var binding = AstExpression.VarBinding(var, simplifiedInput);
-                    simplified = AstExpression.Let(binding, AstExpression.FieldPath($"$$this.{fieldName}"));
+                    simplified = AstExpression.Let([binding], AstExpression.FieldPath($"$$this.{fieldName}"));
                     return true;
                 }
 

@@ -52,7 +52,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 NestedAsQueryableHelper.EnsureQueryableMethodHasNestedAsQueryableSource(expression, sourceTranslation);
                 var itemSerializer = ArraySerializerHelper.GetItemSerializer(sourceTranslation.Serializer);
 
-                var (sourceVarBinding, sourceAst) = AstExpression.UseVarIfNotSimple("source", sourceTranslation.Ast);
+                var (sourceBinding, sourceVar) = AstExpression.VarBinding("source", sourceTranslation.Ast);
                 AstExpression defaultValueAst;
                 if (method.IsOneOf(__defaultIfEmptyWithDefaultValueMethods))
                 {
@@ -68,11 +68,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     defaultValueAst = AstExpression.Constant(new BsonArray { serializedDefaultValue });
                 }
                 var ast = AstExpression.Let(
-                    sourceVarBinding,
-                    AstExpression.Cond(
-                        AstExpression.Eq(AstExpression.Size(sourceAst), 0),
+                    vars: [sourceBinding],
+                    @in: AstExpression.Cond(
+                        AstExpression.Eq(AstExpression.Size(sourceVar), 0),
                         defaultValueAst,
-                        sourceAst));
+                        sourceVar));
 
                 var serializer = NestedAsQueryableSerializer.CreateIEnumerableOrNestedAsQueryableSerializer(expression.Type, itemSerializer);
                 return new TranslatedExpression(expression, ast, serializer);

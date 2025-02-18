@@ -222,10 +222,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
         {
             if (sourceType.IsNullable(out var sourceValueType))
             {
-                var (sourceVarBinding, sourceAst) = AstExpression.UseVarIfNotSimple("source", sourceTranslation.Ast);
+                var (sourceBinding, sourceVar) = AstExpression.VarBinding("source", sourceTranslation.Ast);
                 var sourceNullableSerializer = (INullableSerializer)sourceTranslation.Serializer;
                 var sourceValueSerializer = sourceNullableSerializer.ValueSerializer;
-                var sourceValueTranslation = new TranslatedExpression(expression.Operand, sourceAst, sourceValueSerializer);
+                var sourceValueTranslation = new TranslatedExpression(expression.Operand, sourceVar, sourceValueSerializer);
                 var convertTranslation = Translate(expression, sourceValueType, targetType, sourceValueTranslation);
 
                 // note: we would have liked to throw a query execution error here if the value is null and the target type is not nullable but there is no way to do that in MQL
@@ -233,8 +233,8 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 // but see SERVER-78092 and the proposed $error operator
 
                 var ast = AstExpression.Let(
-                    sourceVarBinding,
-                    AstExpression.Cond(AstExpression.Eq(sourceAst, BsonNull.Value), BsonNull.Value, convertTranslation.Ast));
+                    vars: [sourceBinding],
+                    @in: AstExpression.Cond(AstExpression.Eq(sourceVar, BsonNull.Value), BsonNull.Value, convertTranslation.Ast));
 
                 return new TranslatedExpression(expression, ast, convertTranslation.Serializer);
             }

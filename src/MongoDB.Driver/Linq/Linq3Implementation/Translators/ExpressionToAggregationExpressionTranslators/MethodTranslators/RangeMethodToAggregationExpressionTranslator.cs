@@ -39,13 +39,12 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var countTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, countExpression);
                 SerializationHelper.EnsureRepresentationIsNumeric(expression, countExpression, countTranslation);
 
-                var (startVar, startAst) = AstExpression.UseVarIfNotSimple("start", startTranslation.Ast);
-                var (countVar, countAst) = AstExpression.UseVarIfNotSimple("count", countTranslation.Ast);
+                var (startBinding, startVar) = AstExpression.VarBinding("start", startTranslation.Ast);
+                var (countBinding, countVar) = AstExpression.VarBinding("count", countTranslation.Ast);
 
                 var ast = AstExpression.Let(
-                    startVar,
-                    countVar,
-                    AstExpression.Range(startAst, end: AstExpression.Add(startAst, countAst)));
+                    vars: [startBinding, countBinding],
+                    @in: AstExpression.Range(startVar, end: AstExpression.Add(startVar, countVar)));
                 var serializer = IEnumerableSerializer.Create(new Int32Serializer());
                 return new TranslatedExpression(expression, ast, serializer);
             }

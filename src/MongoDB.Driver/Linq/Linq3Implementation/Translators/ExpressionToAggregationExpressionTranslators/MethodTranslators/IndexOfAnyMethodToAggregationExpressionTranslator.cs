@@ -42,11 +42,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
             if (method.IsOneOf(__indexOfAnyMethods))
             {
-                var (stringVar, stringAst) = TranslateObject(expression.Object);
+                var (stringBinding, stringVar) = TranslateObject(expression.Object);
                 var anyOf = TranslateAnyOf(arguments);
-                var (startIndexVar, startIndexAst) = TranslateStartIndex(arguments);
-                var (countVar, countAst) = TranslateCount(arguments);
-                var (endVar, endAst) = ComputeEnd(startIndexAst, countAst);
+                var (startIndexBinding, startIndexVar) = TranslateStartIndex(arguments);
+                var (countBinding, countVar) = TranslateCount(arguments);
+                var (endBinding, endVar) = ComputeEnd(startIndexVar, countVar);
 
                 AstExpression ast;
                 if (anyOf.Length == 0)
@@ -58,7 +58,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     // indexOfChar => { $indexOfCP : ['$$string', { $substrCP : [<anyOf>, '$$anyOfIndex', 1] }, '$$startIndex', '$$end' }
                     var anyOfIndexVar = AstExpression.Var("anyOfIndex");
                     var charAst = AstExpression.SubstrCP(anyOf, anyOfIndexVar, 1);
-                    ast = AstExpression.IndexOfCP(stringAst, charAst, startIndexAst, endAst);
+                    ast = AstExpression.IndexOfCP(stringVar, charAst, startIndexVar, endVar);
 
                     // computeIndexes => { $map : { input : { $range : [0, anyOf.Length] }, as : 'anyOfIndex', in : <indexOfChar> } }
                     ast = AstExpression.Map(
@@ -75,15 +75,15 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
                     // topLevel => { $cond : [{ $eq : ['$$string', null] }, null, { $ifNull : [<minResult>, -1] }] }
                     ast = AstExpression.Cond(
-                        @if: AstExpression.Eq(stringAst, BsonNull.Value),
+                        @if: AstExpression.Eq(stringVar, BsonNull.Value),
                         then: BsonNull.Value,
                         @else: AstExpression.IfNull(ast, -1));
 
                     // computeEnd => { $let : { vars : { end : { $add : ['$$startIndex', '$$count'] } }, in : <topLevel> } }
-                    ast = AstExpression.Let(endVar, @in: ast);
+                    ast = AstExpression.Let(vars: [endBinding], @in: ast);
 
                     // s.IndexOfAny(anyOf, startIndex, count) => { $let : { vars : { string : <s>, startIndex : <startIndex>, count : <count> }, in : <computeEnd> } }
-                    ast = AstExpression.Let(stringVar, startIndexVar, countVar, @in: ast);
+                    ast = AstExpression.Let(vars: [stringBinding, startIndexBinding, countBinding], @in: ast);
                 }
 
                 return new TranslatedExpression(expression, ast, new Int32Serializer());
@@ -94,9 +94,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
             (AstVarBinding, AstExpression) TranslateObject(Expression objectExpression)
             {
                 var stringTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, objectExpression);
-                var stringVar = AstExpression.Var("string");
-                var stringVarBinding = AstExpression.VarBinding(stringVar, stringTranslation.Ast);
-                return (stringVarBinding, stringVar);
+                return AstExpression.VarBinding("string", stringTranslation.Ast);
             }
 
             string TranslateAnyOf(ReadOnlyCollection<Expression> arguments)
@@ -116,7 +114,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var startIndexExpression = arguments[1];
                 var startIndexTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, startIndexExpression);
                 SerializationHelper.EnsureRepresentationIsNumeric(expression, startIndexExpression, startIndexTranslation);
-                return AstExpression.UseVarIfNotSimple("startIndex", startIndexTranslation.Ast);
+                return AstExpression.VarBinding("startIndex", startIndexTranslation.Ast);
             }
 
             (AstVarBinding, AstExpression) TranslateCount(ReadOnlyCollection<Expression> arguments)
@@ -129,7 +127,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var countExpression = arguments[2];
                 var countTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, countExpression);
                 SerializationHelper.EnsureRepresentationIsNumeric(expression, countExpression, countTranslation);
-                return AstExpression.UseVarIfNotSimple("count", countTranslation.Ast);
+                return AstExpression.VarBinding("count", countTranslation.Ast);
             }
 
             (AstVarBinding, AstExpression) ComputeEnd(AstExpression startIndexAst, AstExpression countAst)
@@ -140,7 +138,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 }
 
                 var endAst = AstExpression.Add(startIndexAst, countAst);
-                return AstExpression.UseVarIfNotSimple("end", endAst);
+                return AstExpression.VarBinding("end", endAst);
             }
         }
     }

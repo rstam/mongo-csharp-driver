@@ -77,14 +77,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                     var funcContext = context.WithSymbols(accumulatorSymbol, itemSymbol);
                     var funcTranslation = ExpressionToAggregationExpressionTranslator.Translate(funcContext, funcLambda.Body);
 
-                    var (sourceVarBinding, sourceAst) = AstExpression.UseVarIfNotSimple("source", sourceTranslation.Ast);
-                    var seedVar = AstExpression.Var("seed");
-                    var restVar = AstExpression.Var("rest");
+                    var (sourceBinding, sourceVar) = AstExpression.VarBinding("source", sourceTranslation.Ast);
+                    var (seedBinding, seedVar) = AstExpression.VarBinding("seed", AstExpression.ArrayElemAt(sourceVar, 0));
+                    var (restBinding, restVar) = AstExpression.VarBinding("rest", AstExpression.Slice(sourceVar, 1, int.MaxValue));
+
                     var ast = AstExpression.Let(
-                        var: sourceVarBinding,
+                        vars: [sourceBinding],
                         @in: AstExpression.Let(
-                            var1: AstExpression.VarBinding(seedVar, AstExpression.ArrayElemAt(sourceAst, 0)),
-                            var2: AstExpression.VarBinding(restVar, AstExpression.Slice(sourceAst, 1, int.MaxValue)),
+                            vars: [seedBinding, restBinding],
                             @in: AstExpression.Cond(
                                 @if: AstExpression.Eq(AstExpression.Size(restVar), 0),
                                 @then: seedVar,
@@ -123,9 +123,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                         var resultSelectorAccumulatorSymbol = context.CreateSymbol(resultSelectorAccumulatorParameter, accumulatorSerializer);
                         var resultSelectorContext = context.WithSymbol(resultSelectorAccumulatorSymbol);
                         var resultSelectorTranslation = ExpressionToAggregationExpressionTranslator.Translate(resultSelectorContext, resultSelectorLambda.Body);
+                        var accumulatorBinding = AstExpression.VarBinding(resultSelectorAccumulatorSymbol.Var, ast);
 
                         ast = AstExpression.Let(
-                            var: AstExpression.VarBinding(resultSelectorAccumulatorSymbol.Var, ast),
+                            vars: [accumulatorBinding],
                             @in: resultSelectorTranslation.Ast);
                         serializer = resultSelectorTranslation.Serializer;
                     }

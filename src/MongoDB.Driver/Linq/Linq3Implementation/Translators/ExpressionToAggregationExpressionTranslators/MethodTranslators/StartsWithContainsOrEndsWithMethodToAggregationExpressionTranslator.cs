@@ -176,16 +176,16 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
                 static AstExpression CreateEndsWithAst(AstExpression stringAst, AstExpression substringAst)
                 {
-                    var (stringVar, stringSimpleAst) = AstExpression.UseVarIfNotSimple("string", stringAst);
-                    var (substringVar, substringSimpleAst) = AstExpression.UseVarIfNotSimple("substring", substringAst);
-                    var startAst = AstExpression.Subtract(AstExpression.StrLenCP(stringSimpleAst), AstExpression.StrLenCP(substringSimpleAst));
-                    var startVar = AstExpression.Var("start");
+                    var (stringBinding, stringVar) = AstExpression.VarBinding("string", stringAst);
+                    var (substringBinding, substringVar) = AstExpression.VarBinding("substring", substringAst);
+                    var (startBinding, startVar) = AstExpression.VarBinding("start", AstExpression.Subtract(AstExpression.StrLenCP(stringVar), AstExpression.StrLenCP(substringVar)));
+
                     var ast = AstExpression.Let(
-                        var: AstExpression.VarBinding(startVar, startAst),
+                        vars: [startBinding],
                         @in: AstExpression.And(
                             AstExpression.Gte(startVar, 0),
-                            AstExpression.Eq(AstExpression.IndexOfCP(stringSimpleAst, substringSimpleAst, startVar), startVar)));
-                    return AstExpression.Let(stringVar, substringVar, ast);
+                            AstExpression.Eq(AstExpression.IndexOfCP(stringVar, substringVar, startVar), startVar)));
+                    return AstExpression.Let([stringBinding, substringBinding], ast);
                 }
             }
 

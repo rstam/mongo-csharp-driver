@@ -18,6 +18,7 @@ using System.Collections.Generic;
 using System.Linq;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors;
 
 namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
@@ -485,52 +486,52 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryExpression(AstUnaryOperator.Last, array);
         }
 
-        public static AstExpression Let(AstVarBinding var, AstExpression @in)
-        {
-            if (var == null)
-            {
-                return @in;
-            }
-            else
-            {
-                return AstExpression.Let(new[] { var }, @in);
-            }
-        }
-
-        public static AstExpression Let(AstVarBinding var1, AstVarBinding var2, AstExpression @in)
-        {
-            if (var1 == null && var2 == null)
-            {
-                return @in;
-            }
-            else
-            {
-                var vars = new List<AstVarBinding>(2);
-                if (var1 != null) { vars.Add(var1); }
-                if (var2 != null) { vars.Add(var2); }
-                return AstExpression.Let(vars, @in);
-            }
-        }
-
-        public static AstExpression Let(AstVarBinding var1, AstVarBinding var2, AstVarBinding var3, AstExpression @in)
-        {
-            if (var1 == null && var2 == null && var3 == null)
-            {
-                return @in;
-            }
-            else
-            {
-                var vars = new List<AstVarBinding>(3);
-                if (var1 != null) { vars.Add(var1); }
-                if (var2 != null) { vars.Add(var2); }
-                if (var3 != null) { vars.Add(var3); }
-                return AstExpression.Let(vars, @in);
-            }
-        }
-
         public static AstExpression Let(IEnumerable<AstVarBinding> vars, AstExpression @in)
         {
-            return new AstLetExpression(vars, @in);
+            var varsArray = vars.ToArray();
+
+            var (simpleBindings, complexBindings) = SeparateSimpleAndComplexBindings(varsArray);
+            if (simpleBindings.Count > 0)
+            {
+                // { $let : { vars : { <simple-and-complex-bindings> }, in : <expr> } } => { $let : { vars : { complex-bindings }, in : <rewritten-expr> } }
+                // { $let : { vars : { <simple-bindings> }, in : <expr> } } => <rewritten-expr>
+                var rewrittenExpr = ReplaceBindings(@in, simpleBindings);
+                return complexBindings.Count > 0 ? new AstLetExpression(complexBindings, rewrittenExpr) : rewrittenExpr;
+            }
+
+            return new AstLetExpression(varsArray, @in);
+
+            static (IReadOnlyList<AstVarBinding>, IReadOnlyList<AstVarBinding>) SeparateSimpleAndComplexBindings(IEnumerable<AstVarBinding> bindings)
+            {
+                var simpleBindings = new List<AstVarBinding>();
+                var complexBindings = new List<AstVarBinding>();
+
+                foreach (var binding in bindings)
+                {
+                    if (IsSimpleExpression(binding.Value))
+                    {
+                        simpleBindings.Add(binding);
+                    }
+                    else
+                    {
+                        complexBindings.Add(binding);
+                    }
+                }
+
+                return (simpleBindings, complexBindings);
+            }
+
+            static bool IsSimpleExpression(AstExpression expression)
+            {
+                return
+                    expression.NodeType == AstNodeType.ConstantExpression ||
+                    expression.CanBeConvertedToFieldPath();
+            }
+
+            static AstExpression ReplaceBindings(AstExpression expression, IReadOnlyList<AstVarBinding> bindings)
+            {
+                return AstNodeReplacer.ReplaceAndConvert(expression, bindings.Select(binding => ((AstNode)binding.Var, (AstNode)binding.Value)).ToArray());
+            }
         }
 
         public static AstExpression Literal(AstExpression value)
@@ -925,28 +926,6 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             return new AstUnaryWindowExpression(@operator, arg, window);
         }
 
-        public static (AstVarBinding, AstExpression) UseVarIfNotSimple(string name, AstExpression expression)
-        {
-            if (IsSimple(expression))
-            {
-                return (null, expression);
-            }
-            else
-            {
-                var var = AstExpression.Var(name);
-                var varBinding = AstExpression.VarBinding(var, expression);
-                return (varBinding, var);
-            }
-
-            static bool IsSimple(AstExpression expression)
-            {
-                return
-                    expression == null ||
-                    expression.NodeType == AstNodeType.ConstantExpression ||
-                    expression.CanBeConvertedToFieldPath();
-            }
-        }
-
         public static AstVarExpression Var(string name, bool isCurrent = false)
         {
             return new AstVarExpression(name, isCurrent);
@@ -955,6 +934,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstVarBinding VarBinding(AstVarExpression var, AstExpression value)
         {
             return new AstVarBinding(var, value);
+        }
+
+        public static (AstVarBinding, AstVarExpression) VarBinding(string varName, AstExpression value)
+        {
+            var var = AstExpression.Var(varName);
+            var binding = AstExpression.VarBinding(var, value);
+            return (binding, var);
         }
 
         public static AstExpression Zip(IEnumerable<AstExpression> inputs, bool? useLongestLength = null, AstExpression defaults = null)

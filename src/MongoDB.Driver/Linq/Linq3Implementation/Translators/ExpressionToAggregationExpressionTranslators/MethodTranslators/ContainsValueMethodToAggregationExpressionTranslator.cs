@@ -40,45 +40,45 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var dictionaryRepresentation = dictionarySerializer.DictionaryRepresentation;
 
                 var valueTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, valueExpression);
-                var (valueBinding, valueAst) = AstExpression.UseVarIfNotSimple("value", valueTranslation.Ast);
+                var (valueBinding, valueVar) = AstExpression.VarBinding("value", valueTranslation.Ast);
 
                 AstExpression ast;
                 switch (dictionaryRepresentation)
                 {
                     case DictionaryRepresentation.Document:
                         ast = AstExpression.Let(
-                            var: valueBinding,
+                            vars: [valueBinding],
                             @in: AstExpression.Reduce(
                                 input: AstExpression.ObjectToArray(dictionaryTranslation.Ast),
                                 initialValue: false,
                                 @in: AstExpression.Cond(
                                     @if: AstExpression.Var("value"),
                                     @then: true,
-                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueAst))));
+                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueVar))));
                         break;
 
                     case DictionaryRepresentation.ArrayOfArrays:
                         ast = AstExpression.Let(
-                            var: valueBinding,
+                            vars: [valueBinding],
                             @in: AstExpression.Reduce(
                                 input: dictionaryTranslation.Ast,
                                 initialValue: false,
                                 @in: AstExpression.Cond(
                                     @if: AstExpression.Var("value"),
                                     @then: true,
-                                    @else: AstExpression.Eq(AstExpression.ArrayElemAt(AstExpression.Var("this"), 1), valueAst))));
+                                    @else: AstExpression.Eq(AstExpression.ArrayElemAt(AstExpression.Var("this"), 1), valueVar))));
                         break;
 
                     case DictionaryRepresentation.ArrayOfDocuments:
                         ast = AstExpression.Let(
-                            var: valueBinding,
+                            vars: [valueBinding],
                             @in: AstExpression.Reduce(
                                 input: dictionaryTranslation.Ast,
                                 initialValue: false,
                                 @in: AstExpression.Cond(
                                     @if: AstExpression.Var("value"),
                                     @then: true,
-                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueAst))));
+                                    @else: AstExpression.Eq(AstExpression.GetField(AstExpression.Var("this"), "v"), valueVar))));
                         break;
 
                     default:

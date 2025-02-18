@@ -36,22 +36,21 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
                 var firstTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, firstExpression);
                 var secondTranslation = ExpressionToAggregationExpressionTranslator.Translate(context, secondExpression);
 
-                var (firstVarBinding, firstAst) = AstExpression.UseVarIfNotSimple("first", firstTranslation.Ast);
-                var (secondVarBinding, secondAst) = AstExpression.UseVarIfNotSimple("second", secondTranslation.Ast);
+                var (firstBinding, firstVar) = AstExpression.VarBinding("first", firstTranslation.Ast);
+                var (secondBinding, secondVar) = AstExpression.VarBinding("second", secondTranslation.Ast);
                 var pairVar = AstExpression.Var("pair");
 
                 var ast = AstExpression.Let(
-                    firstVarBinding,
-                    secondVarBinding,
-                    @in : AstExpression.And(
-                        AstExpression.Eq(AstExpression.Type(firstAst), "array"),
-                        AstExpression.Eq(AstExpression.Type(secondAst), "array"),
-                        AstExpression.Eq(AstExpression.Size(firstAst), AstExpression.Size(secondAst)),
+                    vars: [firstBinding, secondBinding],
+                    @in: AstExpression.And(
+                        AstExpression.Eq(AstExpression.Type(firstVar), "array"),
+                        AstExpression.Eq(AstExpression.Type(secondVar), "array"),
+                        AstExpression.Eq(AstExpression.Size(firstVar), AstExpression.Size(secondVar)),
                         AstExpression.AllElementsTrue(
                             AstExpression.Map(
-                                input: AstExpression.Zip([firstAst, secondAst]),
+                                input: AstExpression.Zip([firstVar, secondVar]),
                                 @as: pairVar,
-                                @in : AstExpression.Eq(AstExpression.ArrayElemAt(pairVar, 0), AstExpression.ArrayElemAt(pairVar, 1)))))
+                                @in: AstExpression.Eq(AstExpression.ArrayElemAt(pairVar, 0), AstExpression.ArrayElemAt(pairVar, 1)))))
                 );
 
                 return new TranslatedExpression(expression, ast, new BooleanSerializer());
