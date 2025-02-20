@@ -784,7 +784,7 @@ namespace MongoDB.Bson.Serialization
             // note: EnsureKnownTypesAreRegistered handles its own locking so call from outside any lock
             EnsureKnownTypesAreRegistered(type);
 
-            List<BsonValue> discriminators = new List<BsonValue>();
+            var discriminators = new List<BsonValue>();
 
             __configLock.EnterReadLock();
             try
