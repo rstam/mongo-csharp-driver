@@ -21,6 +21,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Core.Misc;
+using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToExecutableQueryTranslators;
 using MongoDB.Driver.Support;
 
@@ -156,11 +157,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation
 
         public override BsonDocument[] Translate<TResult>(IQueryable<TResult> queryable, out IBsonSerializer<TResult> outputSerializer)
         {
-            var translationOptions = GetTranslationOptions();
-            var executableQuery = ExpressionToExecutableQueryTranslator.Translate<TDocument, TResult>(provider: this, queryable.Expression, translationOptions);
-            var stages = executableQuery.Pipeline.Ast.Stages;
-            outputSerializer = (IBsonSerializer<TResult>)executableQuery.Pipeline.OutputSerializer;
-            return stages.Select(s => s.Render().AsBsonDocument).ToArray();
+            return LinqQueryTranslator.TranslateQueryable(queryable, out outputSerializer);
         }
     }
 }

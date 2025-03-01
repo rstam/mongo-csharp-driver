@@ -15,7 +15,9 @@
 
 using System.Linq;
 using FluentAssertions;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver.Linq;
+using MongoDB.Driver.Linq.Linq3Implementation.Translators;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
@@ -23,7 +25,7 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
     public class CSharp5473Tests : Linq3IntegrationTest
     {
         [Fact]
-        public void Translate_queryable_should_work()
+        public void Provider_Translate_queryable_should_work()
         {
             var collection = GetCollection();
             var queryable = collection.AsQueryable()
@@ -39,12 +41,12 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
         }
 
         [Fact]
-        public void Translate_expression_should_work()
+        public void Provider_Translate_expression_using_dummy_queryable_should_work()
         {
             var collection = GetCollection();
             var queryable = collection.AsQueryable()
                 .Select(x => x.X + 1);
-            var expression = queryable.Expression; // collection was just used as an easy way to create the Expression
+            var expression = queryable.Expression; // collection was used as an easy way to create the Expression
 
             // this is an example of how to translate an Expression using a dummyQueryable
             var client = DriverTestConfiguration.Client;
@@ -56,6 +58,51 @@ namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira
 
             var pipeline = new BsonDocumentStagePipelineDefinition<C, int>(stages, outputSerializer);
             var result = collection.Aggregate(pipeline).Single();
+            result.Should().Be(2);
+        }
+
+        [Fact]
+        public void LinqQueryTranslator_TranslateExpression_should_work()
+        {
+            var collection = GetCollection();
+            var queryable = collection.AsQueryable()
+                .Select(x => x.X + 1);
+            var expression = queryable.Expression; // collection was used as an easy way to create the Expression
+
+            var stages = LinqQueryTranslator.TranslateExpression(expression, translationOptions: null, outputSerializer: out var outputSerializer);
+            AssertStages(stages, "{ $project : { _v : { $add : ['$X', 1] }, _id : 0 } }");
+
+            var pipeline = new BsonDocumentStagePipelineDefinition<C, int>(stages, (IBsonSerializer<int>)outputSerializer);
+            var result = collection.Aggregate(pipeline).Single();
+            result.Should().Be(2);
+        }
+
+        [Fact]
+        public void LinqQueryTranslator_TranslateQueryable_should_work()
+        {
+            var collection = GetCollection();
+            var queryable = collection.AsQueryable()
+                .Select(x => x.X + 1);
+
+            var stages = LinqQueryTranslator.TranslateQueryable(queryable, out var outputSerializer);
+            AssertStages(stages, "{ $project : { _v : { $add : ['$X', 1] }, _id : 0 } }");
+
+            var pipeline = new BsonDocumentStagePipelineDefinition<C, int>(stages, (IBsonSerializer<int>)outputSerializer);
+            var result = collection.Aggregate(pipeline).Single();
+            result.Should().Be(2);
+        }
+
+        [Fact]
+        public void Select_should_work()
+        {
+            var collection = GetCollection();
+            var queryable = collection.AsQueryable()
+                .Select(x => x.X + 1);
+
+            var stages = Translate(collection, queryable);
+            AssertStages(stages, "{ $project : { _v : { $add : ['$X', 1] }, _id : 0 } }");
+
+            var result = queryable.Single();
             result.Should().Be(2);
         }
 
