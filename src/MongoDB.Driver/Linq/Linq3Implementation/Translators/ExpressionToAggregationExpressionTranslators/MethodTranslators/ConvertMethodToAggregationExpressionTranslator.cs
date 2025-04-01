@@ -30,21 +30,21 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 
             var fieldAst = ExpressionToAggregationExpressionTranslator.Translate(context, arguments[0]).Ast;
 
-            if (arguments[1] is not ConstantExpression constantExpression)
+            if (arguments[1] is not ConstantExpression constantExpression) // what if options is null?
             {
-                throw new InvalidOperationException("The 'options' argument must be a constant expression");
+                throw new InvalidOperationException("The 'options' argument must be a constant expression"); // what about computed onError and onNull?
             }
 
             var options = (ConvertOptions)constantExpression.Value;
 
             if (options.OnErrorWasSet)
             {
-                onErrorAst = options.GetOnError();
+                onErrorAst = options.GetOnError(); // this needs to be translated
             }
 
             if (options.OnNullWasSet)
             {
-                onNullAst = options.GetOnNull();
+                onNullAst = options.GetOnNull(); // this needs to be translated
             }
 
             var toType = method.GetGenericArguments()[1];

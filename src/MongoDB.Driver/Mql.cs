@@ -224,7 +224,7 @@ namespace MongoDB.Driver
 
         internal abstract bool OnNullWasSet { get; }
 
-        internal abstract BsonValue GetOnError();
+        internal abstract BsonValue GetOnError(); // maybe internal abstract object OnError => { get; }
 
         internal abstract BsonValue GetOnNull();
     }
@@ -233,18 +233,18 @@ namespace MongoDB.Driver
     /// Represents the typed options parameter for the conversion methods in the Mql static class.
     /// This class allows to set 'onError' and 'onNull'.
     /// </summary>
-    /// <typeparam name="TResult"> The type of 'onError' and 'onNull'.</typeparam>
-    public class ConvertOptions<TResult> : ConvertOptions
+    /// <typeparam name="TTo"> The type of 'onError' and 'onNull'.</typeparam>
+    public class ConvertOptions<TTo> : ConvertOptions
     {
-        private TResult _onError;
+        private TTo _onError;
         private bool _onErrorWasSet;
-        private TResult _onNull;
+        private TTo _onNull;
         private bool _onNullWasSet;
 
         /// <summary>
         /// The onError parameter.
         /// </summary>
-        public TResult OnError
+        public TTo OnError
         {
             get => _onError;
             set
@@ -257,7 +257,7 @@ namespace MongoDB.Driver
         /// <summary>
         /// The onNull parameter.
         /// </summary>
-        public TResult OnNull
+        public TTo OnNull
         {
             get => _onNull;
             set
@@ -270,7 +270,7 @@ namespace MongoDB.Driver
         internal override bool OnErrorWasSet => _onErrorWasSet;
         internal override bool OnNullWasSet => _onNullWasSet;
 
-        internal override BsonValue GetOnError() => BsonValue.Create(_onError);
+        internal override BsonValue GetOnError() => BsonValue.Create(_onError); // should be handled by the translator using the correct serializer
 
         internal override BsonValue GetOnNull() => BsonValue.Create(_onNull);
 

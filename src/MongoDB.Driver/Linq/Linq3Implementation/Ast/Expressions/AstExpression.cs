@@ -267,6 +267,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
             Ensure.IsNotNull(input, nameof(input));
             Ensure.IsNotNull(to, nameof(to));
 
+            // TODO: move this simplification to AstSimplifier?
             if (onError == null && onNull == null && subType == null && format == null && byteOrder == null &&
                 to is AstConstantExpression toConstantExpression &&
                 (toConstantExpression.Value as BsonString)?.Value is { } toValue)
