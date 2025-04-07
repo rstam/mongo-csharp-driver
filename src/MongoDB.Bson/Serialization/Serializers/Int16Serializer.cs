@@ -24,6 +24,15 @@ namespace MongoDB.Bson.Serialization.Serializers
     /// </summary>
     public sealed class Int16Serializer : StructSerializerBase<short>, IRepresentationConfigurable<Int16Serializer>, IRepresentationConverterConfigurable<Int16Serializer>
     {
+        #region static
+        private static readonly Int16Serializer __instance = new Int16Serializer(representation: BsonType.Int32);
+
+        /// <summary>
+        /// Gets the default instance of Int16Serializer.
+        /// </summary>
+        public static Int16Serializer Instance => __instance;
+        #endregion
+
         // private fields
         private readonly BsonType _representation;
         private readonly RepresentationConverter _converter;

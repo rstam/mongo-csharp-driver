@@ -187,7 +187,7 @@ namespace MongoDB.Driver
     /// <summary>
     /// Represents the options parameter for <see cref="Mql.Convert{TFrom, TTo}(TFrom, ConvertOptions{TTo})"/>.
     /// </summary>
-    public abstract class ConvertOptions
+    public abstract class ConvertOptions // should this be in a file called ConvertOptions.cs?
     {
         private ByteOrder? _byteOrder;
         private string _format;
@@ -220,13 +220,8 @@ namespace MongoDB.Driver
             set => _subType = value;
         }
 
-        internal abstract bool OnErrorWasSet { get; }
-
-        internal abstract bool OnNullWasSet { get; }
-
-        internal abstract BsonValue GetOnError();
-
-        internal abstract BsonValue GetOnNull();
+        internal abstract bool OnErrorWasSet(out object onError);
+        internal abstract bool OnNullWasSet(out object onNull);
     }
 
     /// <summary>
@@ -234,22 +229,18 @@ namespace MongoDB.Driver
     /// This class allows to set 'onError' and 'onNull'.
     /// </summary>
     /// <typeparam name="TTo"> The type of 'onError' and 'onNull'.</typeparam>
-    public class ConvertOptions<TTo> : ConvertOptions
+    public class ConvertOptions<TTo> : ConvertOptions // should these be in a file called ConvertOptions.cs?
     {
         private TTo _onError;
         private bool _onErrorWasSet;
         private TTo _onNull;
         private bool _onNullWasSet;
-        private readonly IBsonSerializer _serializer;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConvertOptions{TTo}"/> class.
         /// </summary>
         public ConvertOptions()
         {
-            _serializer = StandardSerializers.TryGetSerializer(typeof(TTo), out var serializer)
-                ? serializer
-                : BsonSerializer.LookupSerializer(typeof(TTo));
         }
 
         /// <summary>
@@ -278,11 +269,16 @@ namespace MongoDB.Driver
             }
         }
 
-        internal override bool OnErrorWasSet => _onErrorWasSet;
-        internal override bool OnNullWasSet => _onNullWasSet;
+        internal override bool OnErrorWasSet(out object onError)
+        {
+            onError = _onError;
+            return _onErrorWasSet;
+        }
 
-        internal override BsonValue GetOnError() => _serializer.ToBsonValue(_onError);
-
-        internal override BsonValue GetOnNull() => _serializer.ToBsonValue(_onNull);
+        internal override bool OnNullWasSet(out object onNull)
+        {
+            onNull = _onNull;
+            return _onNullWasSet;
+        }
     }
 }

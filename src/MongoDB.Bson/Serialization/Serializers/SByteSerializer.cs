@@ -24,6 +24,15 @@ namespace MongoDB.Bson.Serialization.Serializers
     [CLSCompliant(false)]
     public sealed class SByteSerializer : StructSerializerBase<sbyte>, IRepresentationConfigurable<SByteSerializer>
     {
+        #region static
+        private static readonly SByteSerializer __instance = new SByteSerializer(representation: BsonType.Int32);
+
+        /// <summary>
+        /// Gets the default instance of SByteSerializer.
+        /// </summary>
+        public static SByteSerializer Instance => __instance;
+        #endregion
+
         // private fields
         private readonly BsonType _representation;
 

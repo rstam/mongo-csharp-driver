@@ -77,6 +77,14 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             }
         }
 
+        public static void EnsureSerializerIsCompatible(Expression expression, IBsonSerializer actualSerializer, IBsonSerializer expectedSerializer)
+        {
+            if (!actualSerializer.Equals(expectedSerializer))
+            {
+                throw new ExpressionNotSupportedException(expression, because: "the result serializer is not compatible with the expected serializer");
+            }
+        }
+
         public static BsonType GetRepresentation(IBsonSerializer serializer)
         {
             if (serializer is IDiscriminatedInterfaceSerializer discriminatedInterfaceSerializer)
