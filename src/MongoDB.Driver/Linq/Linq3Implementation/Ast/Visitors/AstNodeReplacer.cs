@@ -25,6 +25,13 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
             var replacer = new AstNodeReplacer(mappings);
             return replacer.Visit(node);
         }
+
+        public static TNode ReplaceAndConvert<TNode>(TNode node, params (AstNode Original, AstNode Replacement)[] mappings)
+            where TNode : AstNode
+        {
+            var replacer = new AstNodeReplacer(mappings);
+            return (TNode)replacer.Visit(node);
+        }
         #endregion
 
         private readonly (AstNode Original, AstNode Replacement)[] _mappings;
