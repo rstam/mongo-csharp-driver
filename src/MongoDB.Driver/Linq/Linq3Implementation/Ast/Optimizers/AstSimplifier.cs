@@ -487,7 +487,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
                 return Visit(simplified);
             }
 
-            // { $map : { input : [{ A : <exprA1>, B : <exprB1> }, { A : <exprA2>, B : <exprB2>, ... }, ...], as : "item", in: { F : "$$item.A", G : "$$item.B", ... } } }
+            // { $map : { input : [{ A : <exprA1>, B : <exprB1>, ... }, { A : <exprA2>, B : <exprB2>, ... }, ...], as : "item", in: { F : "$$item.A", G : "$$item.B", ... } } }
             // => [{ F : <exprA1>, G : <exprB1>", ... }, { F : <exprA2>, G : <exprB2>, ... }, ...]
             if (node.Input is AstComputedArrayExpression inputComputedArray &&
                 inputComputedArray.Items.Count >= 1 &&
