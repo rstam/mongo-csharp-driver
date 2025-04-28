@@ -448,7 +448,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
             if (node.Input is AstGetFieldExpression inputGetField &&
                 node.In is AstGetFieldExpression inGetField)
             {
-                if (inGetField.GetUltimateInput() == node.As)
+                if (inGetField.GetChainedGetFieldUltimateInput() == node.As)
                 {
                     var simplified = AstNodeReplacer.Replace(node.In, (node.As, node.Input));
                     return Visit(simplified);
@@ -488,7 +488,7 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Optimizers
             }
 
             // { $map : { input : [{ A : <exprA1>, B : <exprB1> }, { A : <exprA2>, B : <exprB2>, ... }, ...], as : "item", in: { F : "$$item.A", G : "$$item.B", ... } } }
-            // => [{ F : <exprA1>, G : <exprB2>", ... }, { F : <exprA2>, G : <exprB2>, ... }, ...]
+            // => [{ F : <exprA1>, G : <exprB1>", ... }, { F : <exprA2>, G : <exprB2>, ... }, ...]
             if (node.Input is AstComputedArrayExpression inputComputedArray &&
                 inputComputedArray.Items.Count >= 1 &&
                 inputComputedArray.Items[0] is AstComputedDocumentExpression firstComputedDocument &&

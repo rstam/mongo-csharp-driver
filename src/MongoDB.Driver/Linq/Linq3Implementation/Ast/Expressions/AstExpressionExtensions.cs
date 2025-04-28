@@ -19,10 +19,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
 {
     internal static class AstExpressionExtensions
     {
-        public static AstExpression GetUltimateInput(this AstGetFieldExpression getFieldExpression)
+        public static AstExpression GetChainedGetFieldUltimateInput(this AstGetFieldExpression getFieldExpression)
             =>
                 getFieldExpression.Input is AstGetFieldExpression nestedGetFieldExpression ?
-                    GetUltimateInput(nestedGetFieldExpression) :
+                    GetChainedGetFieldUltimateInput(nestedGetFieldExpression) :
                     getFieldExpression.Input;
 
         public static bool IsInt32Constant(this AstExpression expression, out int value)
