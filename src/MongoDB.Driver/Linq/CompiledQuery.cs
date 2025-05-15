@@ -22,9 +22,35 @@ namespace MongoDB.Driver.Linq;
 /// <summary>
 ///
 /// </summary>
+/// <typeparam name="TResult"></typeparam>
+public abstract class CompiledQueryBase<TResult>
+{
+
+}
+
+/// <summary>
+///
+/// </summary>
+/// <typeparam name="TResult"></typeparam>
+public class CompiledQuery<TResult> : CompiledQueryBase<TResult>
+{
+    /// <summary>
+    ///
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public IAsyncCursor<TResult> Execute()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+///
+/// </summary>
 /// <typeparam name="TParameter"></typeparam>
-/// <typeparam name="TOutput"></typeparam>
-public class CompiledQuery<TParameter, TOutput>
+/// <typeparam name="TResult"></typeparam>
+public class CompiledQueryBase<TParameter, TResult> : CompiledQueryBase<TResult>
 {
     /// <summary>
     ///
@@ -32,7 +58,28 @@ public class CompiledQuery<TParameter, TOutput>
     /// <param name="parameter"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public IEnumerable<TOutput> Execute(TParameter parameter)
+    public IAsyncCursor<TResult> Execute(TParameter parameter)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+///
+/// </summary>
+/// <typeparam name="TParameter1"></typeparam>
+/// <typeparam name="TParameter2"></typeparam>
+/// <typeparam name="TResult"></typeparam>
+public class CompiledQueryBase<TParameter1, TParameter2, TResult> : CompiledQueryBase<TResult>
+{
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="parameter1"></param>
+    /// <param name="parameter2"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public IAsyncCursor<TResult> Execute(TParameter1 parameter1, TParameter2 parameter2)
     {
         throw new NotImplementedException();
     }

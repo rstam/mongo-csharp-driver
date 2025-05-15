@@ -30,7 +30,20 @@ public class QueryCompilerTests : LinqIntegrationTest<QueryCompilerTests.ClassFi
     }
 
     [Fact]
-    public void Enumerable_query_should_work()
+    public void Query_with_zero_parameters_should_work()
+    {
+        var collection = Fixture.Collection;
+        var compiledQuery = QueryCompiler.CompileQuery(
+            () =>
+                collection.AsQueryable(null)
+                    .Take(1));
+
+        var result = compiledQuery.Execute().Single();
+        result.Id.Should().Be(1);
+    }
+
+    [Fact]
+    public void Query_with_one_parameter_should_work()
     {
         var collection = Fixture.Collection;
         var compiledQuery = QueryCompiler.CompileQuery(
@@ -43,15 +56,27 @@ public class QueryCompilerTests : LinqIntegrationTest<QueryCompilerTests.ClassFi
     }
 
     [Fact]
-    public void Scalar_query_should_work()
+    public void Query_with_two_parameters_should_work()
+    {
+        var collection = Fixture.Collection;
+        var compiledQuery = QueryCompiler.CompileQuery(
+            (int id, int take) =>
+                collection.AsQueryable(null)
+                    .Where(x => x.Id == id)
+                    .Take(take));
+
+        var result = compiledQuery.Execute(1, 2).Single();
+        result.Id.Should().Be(1);
+    }
+
+    [Fact]
+    public void Scalar_query_with_one_parameter_should_work()
     {
         var collection = Fixture.Collection;
         var compiledQuery = QueryCompiler.CompileScalarQuery(
             (int id) =>
                 collection.AsQueryable(null)
-                    .Where(x => x.Id == id)
-                    .Select(x => x.Id)
-                    .Single());
+                    .Single(x => x.Id == id));
 
         var result = compiledQuery.Execute(1);
         result.Should().Be(1);

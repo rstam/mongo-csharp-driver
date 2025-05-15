@@ -599,6 +599,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Visitors
             return node.Update(VisitAndConvert(node.Value));
         }
 
+        public virtual AstNode VisitQueryParameterExpression(AstQueryParameterExpression node)
+        {
+            return node;
+        }
+
         public virtual AstNode VisitRangeExpression(AstRangeExpression node)
         {
             return node.Update(VisitAndConvert(node.Start), VisitAndConvert(node.End), VisitAndConvert(node.Step));

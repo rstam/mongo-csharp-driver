@@ -16,6 +16,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using MongoDB.Bson;
 using MongoDB.Driver.Core.Misc;
 
@@ -671,6 +672,11 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions
         public static AstExpression Push(AstExpression arg)
         {
             return new AstUnaryExpression(AstUnaryOperator.Push, arg);
+        }
+
+        public static AstQueryParameterExpression QueryParameter(ParameterExpression parameter, string name)
+        {
+            return new AstQueryParameterExpression(parameter, name);
         }
 
         public static AstExpression Range(AstExpression start, AstExpression end, AstExpression step = null)

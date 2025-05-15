@@ -36,10 +36,10 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Misc
             _parameter = Ensure.IsNotNull(parameter, nameof(parameter));
             _name = Ensure.IsNotNullOrEmpty(name, nameof(name));
             _ast = Ensure.IsNotNull(ast, nameof(ast));
-            _serializer = Ensure.IsNotNull(serializer, nameof(serializer));
+            _serializer = serializer; // can be null for QueryParameter
             _isCurrent = isCurrent;
 
-            if (_serializer.ValueType != _parameter.Type)
+            if (_serializer != null && _serializer.ValueType != _parameter.Type)
             {
                 throw new ArgumentException($"Value type {_serializer.ValueType} of serializer type {_serializer.GetType()} does not match parameter type {_parameter.Type}.");
             }
