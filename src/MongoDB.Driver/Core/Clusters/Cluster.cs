@@ -153,7 +153,7 @@ namespace MongoDB.Driver.Core.Clusters
             DescriptionChanged?.Invoke(this, new ClusterDescriptionChangedEventArgs(oldDescription, newDescription));
         }
 
-        public IServer SelectServer(OperationContext operationContext, IServerSelector selector)
+        public (IServer, TimeSpan) SelectServer(OperationContext operationContext, IServerSelector selector)
         {
             Ensure.IsNotNull(selector, nameof(selector));
             Ensure.IsNotNull(operationContext, nameof(operationContext));
@@ -168,11 +168,11 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 while (true)
                 {
-                    var result = SelectServer(expirableClusterDescription, selector, operationCountSelector);
-                    if (result != default)
+                    var (server, description) = SelectServer(expirableClusterDescription, selector, operationCountSelector);
+                    if (server != null)
                     {
-                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, result.ServerDescription, stopwatch);
-                        return result.Server;
+                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, description, stopwatch);
+                        return (server, description.AverageRoundTripTime);
                     }
 
                     serverSelectionWaitQueueDisposer ??= _serverSelectionWaitQueue.Enter(operationContext, selector, expirableClusterDescription.ClusterDescription, EventContext.OperationId);
@@ -191,7 +191,7 @@ namespace MongoDB.Driver.Core.Clusters
             }
         }
 
-        public async Task<IServer> SelectServerAsync(OperationContext operationContext, IServerSelector selector)
+        public async Task<(IServer, TimeSpan)> SelectServerAsync(OperationContext operationContext, IServerSelector selector)
         {
             Ensure.IsNotNull(selector, nameof(selector));
             Ensure.IsNotNull(operationContext, nameof(operationContext));
@@ -206,11 +206,11 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 while (true)
                 {
-                    var result = SelectServer(expirableClusterDescription, selector, operationCountSelector);
-                    if (result != default)
+                    var (server, description) = SelectServer(expirableClusterDescription, selector, operationCountSelector);
+                    if (server != null)
                     {
-                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, result.ServerDescription, stopwatch);
-                        return result.Server;
+                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, description, stopwatch);
+                        return (server, description.AverageRoundTripTime);
                     }
 
                     serverSelectionWaitQueueDisposer ??= _serverSelectionWaitQueue.Enter(operationContext, selector, expirableClusterDescription.ClusterDescription, EventContext.OperationId);

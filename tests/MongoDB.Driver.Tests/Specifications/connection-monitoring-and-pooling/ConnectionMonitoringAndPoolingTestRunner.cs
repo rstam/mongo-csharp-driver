@@ -83,12 +83,6 @@ namespace MongoDB.Driver.Tests.Specifications.connection_monitoring_and_pooling
             public readonly static string ignore = nameof(ignore);
             public readonly static string async = nameof(async);
 
-            public static class Operations
-            {
-                public const string runOn = nameof(runOn);
-                public readonly static string failPoint = nameof(failPoint);
-            }
-
             public static class Intergration
             {
                 public readonly static string runOn = nameof(runOn);
@@ -99,12 +93,6 @@ namespace MongoDB.Driver.Tests.Specifications.connection_monitoring_and_pooling
             {
                 public readonly static string unit = nameof(unit);
                 public readonly static string integration = nameof(integration);
-            }
-
-            public sealed class FailPoint
-            {
-                public readonly static string appName = nameof(appName);
-                public readonly static string data = nameof(data);
             }
 
             public readonly static string[] AllFields = new[]
@@ -671,7 +659,7 @@ namespace MongoDB.Driver.Tests.Specifications.connection_monitoring_and_pooling
                         connectionIdLocalValueProvider: connectionIdProvider))
                     .Subscribe(eventCapturer));
 
-                var server = cluster.SelectServer(OperationContext.NoTimeout, WritableServerSelector.Instance);
+                var (server, _) = cluster.SelectServer(OperationContext.NoTimeout, WritableServerSelector.Instance);
                 connectionPool = server._connectionPool();
 
                 if (test.TryGetValue(Schema.Intergration.failPoint, out var failPointDocument))
@@ -729,8 +717,8 @@ namespace MongoDB.Driver.Tests.Specifications.connection_monitoring_and_pooling
                         eventCapturer.WaitForOrThrowIfTimeout(events => events.Any(e => e is ConnectionPoolClearedEvent), TimeSpan.FromMilliseconds(500));
                     }
 
-                    var failPointServer = CoreTestConfiguration.Cluster.SelectServer(OperationContext.NoTimeout, new EndPointServerSelector(server.EndPoint));
-                    failPoint = FailPoint.Configure(failPointServer, NoCoreSession.NewHandle(), failPointDocument.AsBsonDocument, withAsync: async);
+                    var (failPointServer, failPointServerRoundTripTime) = CoreTestConfiguration.Cluster.SelectServer(OperationContext.NoTimeout, new EndPointServerSelector(server.EndPoint));
+                    failPoint = FailPoint.Configure(failPointServer, failPointServerRoundTripTime, NoCoreSession.NewHandle(), failPointDocument.AsBsonDocument, withAsync: async);
 
                     if (resetPool)
                     {

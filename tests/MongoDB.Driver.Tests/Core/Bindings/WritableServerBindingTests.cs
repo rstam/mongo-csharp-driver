@@ -97,7 +97,7 @@ namespace MongoDB.Driver.Core.Bindings
             bool async)
         {
             var subject = new WritableServerBinding(_mockCluster.Object, NoCoreSession.NewHandle());
-            var selectedServer = new Mock<IServer>().Object;
+            var selectedServer = (new Mock<IServer>().Object, TimeSpan.FromMilliseconds(42));
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);
@@ -154,7 +154,7 @@ namespace MongoDB.Driver.Core.Bindings
             bool async)
         {
             var subject = new WritableServerBinding(_mockCluster.Object, NoCoreSession.NewHandle());
-            var selectedServer = new Mock<IServer>().Object;
+            var selectedServer = (new Mock<IServer>().Object, TimeSpan.FromMilliseconds(42));
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);
@@ -194,7 +194,7 @@ namespace MongoDB.Driver.Core.Bindings
             bool async)
         {
             var subject = new WritableServerBinding(_mockCluster.Object, NoCoreSession.NewHandle());
-            var selectedServer = new Mock<IServer>().Object;
+            var selectedServer = (new Mock<IServer>().Object, TimeSpan.FromMilliseconds(42));
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);
@@ -235,7 +235,7 @@ namespace MongoDB.Driver.Core.Bindings
             bool async)
         {
             var subject = new WritableServerBinding(_mockCluster.Object, NoCoreSession.NewHandle());
-            var selectedServer = new Mock<IServer>().Object;
+            var selectedServer = (new Mock<IServer>().Object, TimeSpan.FromMilliseconds(42));
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);

@@ -30,11 +30,12 @@ namespace MongoDB.Driver.Core.Bindings
         public void constructor_should_initialize_instance()
         {
             var server = new Mock<IServer>().Object;
+            var roundTripTime = TimeSpan.FromMilliseconds(42);
             var channel = new Mock<IChannelHandle>().Object;
             var readPreference = ReadPreference.Primary;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var result = new ChannelReadBinding(server, channel, readPreference, session);
+            var result = new ChannelReadBinding(server, roundTripTime, channel, readPreference, session);
 
             result._channel().Should().BeSameAs(channel);
             result._disposed().Should().BeFalse();
@@ -46,24 +47,55 @@ namespace MongoDB.Driver.Core.Bindings
         [Fact]
         public void constructor_should_throw_when_server_is_null()
         {
+            var roundTripTime = TimeSpan.FromMilliseconds(42);
             var channel = new Mock<IChannelHandle>().Object;
             var readPreference = ReadPreference.Primary;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var exception = Record.Exception(() => new ChannelReadBinding(null, channel, readPreference, session));
+            var exception = Record.Exception(() => new ChannelReadBinding(null, roundTripTime, channel, readPreference, session));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("server");
         }
 
         [Fact]
-        public void constructor_should_throw_when_channel_is_null()
+        public void constructor_should_throw_when_round_trip_time_is_zero()
         {
             var server = new Mock<IServer>().Object;
+            var channel = new Mock<IChannelHandle>().Object;
             var readPreference = ReadPreference.Primary;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var exception = Record.Exception(() => new ChannelReadBinding(server, null, readPreference, session));
+            var exception = Record.Exception(() => new ChannelReadBinding(server, TimeSpan.Zero, channel, readPreference, session));
+
+            var e = exception.Should().BeOfType<ArgumentOutOfRangeException>().Subject;
+            e.ParamName.Should().Be("roundTripTime");
+        }
+
+
+        [Fact]
+        public void constructor_should_throw_when_round_trip_time_is_negative()
+        {
+            var server = new Mock<IServer>().Object;
+            var channel = new Mock<IChannelHandle>().Object;
+            var readPreference = ReadPreference.Primary;
+            var session = new Mock<ICoreSessionHandle>().Object;
+
+            var exception = Record.Exception(() => new ChannelReadBinding(server, TimeSpan.FromMilliseconds(-5), channel, readPreference, session));
+
+            var e = exception.Should().BeOfType<ArgumentOutOfRangeException>().Subject;
+            e.ParamName.Should().Be("roundTripTime");
+        }
+
+        [Fact]
+        public void constructor_should_throw_when_channel_is_null()
+        {
+            var server = new Mock<IServer>().Object;
+            var roundTripTime = TimeSpan.FromMilliseconds(42);
+            var readPreference = ReadPreference.Primary;
+            var session = new Mock<ICoreSessionHandle>().Object;
+
+            var exception = Record.Exception(() => new ChannelReadBinding(server, roundTripTime, null, readPreference, session));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("channel");
@@ -73,10 +105,11 @@ namespace MongoDB.Driver.Core.Bindings
         public void constructor_should_throw_when_readPreference_is_null()
         {
             var server = new Mock<IServer>().Object;
+            var roundTripTime = TimeSpan.FromMilliseconds(42);
             var channel = new Mock<IChannelHandle>().Object;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var exception = Record.Exception(() => new ChannelReadBinding(server, channel, null, session));
+            var exception = Record.Exception(() => new ChannelReadBinding(server, roundTripTime, channel, null, session));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("readPreference");
@@ -86,10 +119,11 @@ namespace MongoDB.Driver.Core.Bindings
         public void constructor_should_throw_when_session_is_null()
         {
             var server = new Mock<IServer>().Object;
+            var roundTripTime = TimeSpan.FromMilliseconds(42);
             var channel = new Mock<IChannelHandle>().Object;
             var readPreference = ReadPreference.Primary;
 
-            var exception = Record.Exception(() => new ChannelReadBinding(server, channel, readPreference, null));
+            var exception = Record.Exception(() => new ChannelReadBinding(server, roundTripTime, channel, readPreference, null));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("session");
@@ -150,9 +184,11 @@ namespace MongoDB.Driver.Core.Bindings
         public async Task GetReadChannelSource_should_return_expected_result(
             [Values(false, true)] bool async)
         {
+            var server = new Mock<IServer>().Object;
+            var roundTripTime = TimeSpan.FromMilliseconds(5);
             var mockChannel = new Mock<IChannelHandle>();
             var mockSession = new Mock<ICoreSessionHandle>();
-            var subject = CreateSubject(channel: mockChannel.Object, session: mockSession.Object);
+            var subject = CreateSubject(server, roundTripTime, channel: mockChannel.Object, session: mockSession.Object);
 
             var forkedChannel = new Mock<IChannelHandle>().Object;
             var forkedSession = new Mock<ICoreSessionHandle>().Object;
@@ -168,6 +204,8 @@ namespace MongoDB.Driver.Core.Bindings
             var newSource = referenceCounted.Instance.Should().BeOfType<ChannelChannelSource>().Subject;
             newSource._channel().Should().Be(forkedChannel);
             newSource.Session.Should().Be(forkedSession);
+            newSource.Server.Should().Be(server);
+            newSource.RoundTripTime.Should().Be(roundTripTime);
         }
 
         [Theory]
@@ -175,7 +213,9 @@ namespace MongoDB.Driver.Core.Bindings
         public async Task GetReadChannelSource_should_throw_when_disposed(
             [Values(false, true)] bool async)
         {
-            var subject = CreateDisposedSubject();
+            var subject = CreateSubject();
+            subject.Dispose();
+
             var exception = async ?
                 await Record.ExceptionAsync(() => subject.GetReadChannelSourceAsync(OperationContext.NoTimeout)) :
                 Record.Exception(() => subject.GetReadChannelSource(OperationContext.NoTimeout));
@@ -185,17 +225,11 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         // private methods
-        private ChannelReadBinding CreateDisposedSubject()
-        {
-            var subject = CreateSubject();
-            subject.Dispose();
-            return subject;
-        }
-
-        private ChannelReadBinding CreateSubject(IServer server = null, IChannelHandle channel = null, ReadPreference readPreference = null, ICoreSessionHandle session = null)
+        private ChannelReadBinding CreateSubject(IServer server = null, TimeSpan? roundTripTime = null, IChannelHandle channel = null, ReadPreference readPreference = null, ICoreSessionHandle session = null)
         {
             return new ChannelReadBinding(
                 server ?? new Mock<IServer>().Object,
+                roundTripTime ?? TimeSpan.FromMilliseconds(42),
                 channel ?? new Mock<IChannelHandle>().Object,
                 readPreference ?? ReadPreference.Primary,
                 session ?? new Mock<ICoreSessionHandle>().Object);

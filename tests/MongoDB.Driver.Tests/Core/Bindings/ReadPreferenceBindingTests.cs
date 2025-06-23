@@ -95,7 +95,7 @@ namespace MongoDB.Driver.Core.Bindings
             bool async)
         {
             var subject = new ReadPreferenceBinding(_mockCluster.Object, ReadPreference.Primary, NoCoreSession.NewHandle());
-            var selectedServer = new Mock<IServer>().Object;
+            var selectedServer = (new Mock<IServer>().Object, TimeSpan.FromMilliseconds(42));
 
             var clusterId = new ClusterId();
             var endPoint = new DnsEndPoint("localhost", 27017);
@@ -134,7 +134,7 @@ namespace MongoDB.Driver.Core.Bindings
         {
             var mockSession = new Mock<ICoreSessionHandle>();
             var subject = new ReadPreferenceBinding(_mockCluster.Object, ReadPreference.Primary, mockSession.Object);
-            var selectedServer = new Mock<IServer>().Object;
+            var selectedServer = (new Mock<IServer>().Object, TimeSpan.FromMilliseconds(42));
             _mockCluster.Setup(m => m.SelectServer(It.IsAny<OperationContext>(), It.IsAny<IServerSelector>())).Returns(selectedServer);
             _mockCluster.Setup(m => m.SelectServerAsync(It.IsAny<OperationContext>(), It.IsAny<IServerSelector>())).Returns(Task.FromResult(selectedServer));
             var forkedSession = new Mock<ICoreSessionHandle>().Object;

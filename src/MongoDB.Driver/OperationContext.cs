@@ -159,7 +159,7 @@ namespace MongoDB.Driver
 
             return new OperationContext(timeout, CancellationToken)
             {
-                ParentContext = this
+                ParentContext = this,
             };
         }
     }

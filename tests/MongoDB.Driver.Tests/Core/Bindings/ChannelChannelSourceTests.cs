@@ -30,14 +30,16 @@ namespace MongoDB.Driver.Core.Bindings
         public void constructor_should_initialize_instance()
         {
             var server = new Mock<IServer>().Object;
+            var roundTripTime = TimeSpan.FromSeconds(42);
             var channel = new Mock<IChannelHandle>().Object;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var result = new ChannelChannelSource(server, channel, session);
+            var result = new ChannelChannelSource(server, roundTripTime, channel, session);
 
             result._channel().Should().BeSameAs(channel);
             result._disposed().Should().BeFalse();
             result.Server.Should().BeSameAs(server);
+            result.RoundTripTime.Should().Be(roundTripTime);
             result.Session.Should().BeSameAs(session);
         }
 
@@ -47,7 +49,7 @@ namespace MongoDB.Driver.Core.Bindings
             var channel = new Mock<IChannelHandle>().Object;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var exception = Record.Exception(() => new ChannelChannelSource(null, channel, session));
+            var exception = Record.Exception(() => new ChannelChannelSource(null, TimeSpan.Zero, channel, session));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("server");
@@ -59,7 +61,7 @@ namespace MongoDB.Driver.Core.Bindings
             var server = new Mock<IServer>().Object;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var exception = Record.Exception(() => new ChannelChannelSource(server, null, session));
+            var exception = Record.Exception(() => new ChannelChannelSource(server, TimeSpan.Zero, null, session));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("channel");
@@ -71,7 +73,7 @@ namespace MongoDB.Driver.Core.Bindings
             var server = new Mock<IServer>().Object;
             var channel = new Mock<IChannelHandle>().Object;
 
-            var exception = Record.Exception(() => new ChannelChannelSource(server, channel, null));
+            var exception = Record.Exception(() => new ChannelChannelSource(server, TimeSpan.Zero, channel, null));
 
             var e = exception.Should().BeOfType<ArgumentNullException>().Subject;
             e.ParamName.Should().Be("session");
@@ -183,6 +185,7 @@ namespace MongoDB.Driver.Core.Bindings
         {
             return new ChannelChannelSource(
                 server ?? new Mock<IServer>().Object,
+                TimeSpan.Zero,
                 channel ?? new Mock<IChannelHandle>().Object,
                 session ?? new Mock<ICoreSessionHandle>().Object);
         }

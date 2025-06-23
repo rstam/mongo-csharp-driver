@@ -75,9 +75,9 @@ namespace MongoDB.Driver.Core.Bindings
             return GetChannelSourceHelper(server);
         }
 
-        private IChannelSourceHandle GetChannelSourceHelper(IServer server)
+        private IChannelSourceHandle GetChannelSourceHelper((IServer Server, TimeSpan RoundTripTime) server)
         {
-            return new ChannelSourceHandle(new ServerChannelSource(server, _session.Fork()));
+            return new ChannelSourceHandle(new ServerChannelSource(server.Server, server.RoundTripTime, _session.Fork()));
         }
 
         public void Dispose()
