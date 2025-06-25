@@ -37,25 +37,15 @@ namespace MongoDB.Driver.Core.Bindings
             _session = Ensure.IsNotNull(session, nameof(session));
         }
 
-        public ReadPreference ReadPreference
-        {
-            get { return ReadPreference.Primary; }
-        }
+        public ReadPreference ReadPreference => ReadPreference.Primary;
 
-        public ICoreSessionHandle Session
-        {
-            get { return _session; }
-        }
+        public ICoreSessionHandle Session => _session;
 
         public IChannelSourceHandle GetReadChannelSource(OperationContext operationContext)
-        {
-            return GetReadChannelSource(operationContext, null);
-        }
+            => GetReadChannelSource(operationContext, null);
 
         public Task<IChannelSourceHandle> GetReadChannelSourceAsync(OperationContext operationContext)
-        {
-            return GetReadChannelSourceAsync(operationContext, null);
-        }
+            => GetReadChannelSourceAsync(operationContext, null);
 
         public IChannelSourceHandle GetReadChannelSource(OperationContext operationContext, IReadOnlyCollection<ServerDescription> deprioritizedServers)
         {

@@ -733,33 +733,6 @@ namespace MongoDB.Driver.Tests.Specifications.connection_monitoring_and_pooling
             return (connectionPool, failPoint, cluster, eventsFilter);
         }
 
-        private IConnectionPool SetupConnectionPoolMock(BsonDocument test, IEventSubscriber eventSubscriber)
-        {
-            var endPoint = new DnsEndPoint("localhost", 27017);
-            var serverId = new ServerId(new ClusterId(), endPoint);
-            ParseSettings(test, out var connectionPoolSettings, out var connectionSettings);
-
-            var connectionFactory = new Mock<IConnectionFactory>();
-            var exceptionHandler = new Mock<IConnectionExceptionHandler>();
-            connectionFactory.Setup(f => f.ConnectionSettings).Returns(() => new ConnectionSettings());
-            connectionFactory
-                .Setup(c => c.CreateConnection(serverId, endPoint))
-                .Returns(() =>
-                {
-                    var connection = new MockConnection(serverId, connectionSettings, eventSubscriber);
-                    return connection;
-                });
-            var connectionPool = new ExclusiveConnectionPool(
-                serverId,
-                endPoint,
-                connectionPoolSettings,
-                connectionFactory.Object,
-                exceptionHandler.Object,
-                eventSubscriber.ToEventLogger<LogCategories.Connection>());
-
-            return connectionPool;
-        }
-
         private void Start(BsonDocument operation, ConcurrentDictionary<string, Task> tasks)
         {
             var startTarget = operation.GetValue("target").ToString();

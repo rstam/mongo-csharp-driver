@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using FluentAssertions;
 using MongoDB.Driver.Core.Clusters;
@@ -38,29 +39,24 @@ namespace MongoDB.Driver.Core.Bindings
                 .Subject.ParamName.Should().Be("server");
         }
 
-        [Fact]
-        public void Constructor_should_throw_when_roundTripTime_is_zero()
+        [Theory]
+        [MemberData(nameof(InvalidRoundTripCases))]
+        public void Constructor_should_throw_when_roundTripTime_is_invalid(TimeSpan roundTripTime)
         {
             var server = Mock.Of<IServer>();
             var session = Mock.Of<ICoreSessionHandle>();
 
-            var exception = Record.Exception(() => new ServerChannelSource(server, TimeSpan.Zero, session));
+            var exception = Record.Exception(() => new ServerChannelSource(server, roundTripTime, session));
 
             exception.Should().BeOfType<ArgumentOutOfRangeException>()
                 .Subject.ParamName.Should().Be("roundTripTime");
         }
 
-        [Fact]
-        public void Constructor_should_throw_when_roundTripTime_is_negative()
-        {
-            var server = Mock.Of<IServer>();
-            var session = Mock.Of<ICoreSessionHandle>();
-
-            var exception = Record.Exception(() => new ServerChannelSource(server, TimeSpan.FromMilliseconds(-42), session));
-
-            exception.Should().BeOfType<ArgumentOutOfRangeException>()
-                .Subject.ParamName.Should().Be("roundTripTime");
-        }
+        public static IEnumerable<object[]> InvalidRoundTripCases =
+        [
+            [TimeSpan.Zero],
+            [TimeSpan.FromMilliseconds(-5)]
+        ];
 
         [Fact]
         public void Constructor_should_throw_when_session_is_null()

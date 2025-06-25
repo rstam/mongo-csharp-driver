@@ -42,23 +42,4 @@ namespace MongoDB.Driver.Core.Connections
         /// <returns>A Task whose result is the Stream.</returns>
         Task<Stream> CreateStreamAsync(EndPoint endPoint, CancellationToken cancellationToken);
     }
-
-    internal static class StreamFactoryExtensions
-    {
-        public static Stream CreateStream(this IStreamFactory factory, EndPoint endPoint, TimeSpan timeout, CancellationToken cancellationToken)
-        {
-            using var timeoutCancellationTokenSource = new CancellationTokenSource(timeout);
-            using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
-
-            return factory.CreateStream(endPoint, cancellationTokenSource.Token);
-        }
-
-        public static async Task<Stream> CreateStreamAsync(this IStreamFactory factory, EndPoint endPoint, TimeSpan timeout, CancellationToken cancellationToken)
-        {
-            using var timeoutCancellationTokenSource = new CancellationTokenSource(timeout);
-            using var cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCancellationTokenSource.Token);
-
-            return await factory.CreateStreamAsync(endPoint, cancellationTokenSource.Token).ConfigureAwait(false);
-        }
-    }
 }

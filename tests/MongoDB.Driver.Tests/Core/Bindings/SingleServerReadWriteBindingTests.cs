@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -50,29 +51,24 @@ namespace MongoDB.Driver.Core.Bindings
             e.ParamName.Should().Be("server");
         }
 
-        [Fact]
-        public void constructor_should_throw_when_roundTripTime_is_zero()
+        [Theory]
+        [MemberData(nameof(InvalidRoundTripCases))]
+        public void constructor_should_throw_when_roundTripTime_is_invalid(TimeSpan roundTripTime)
         {
             var server = new Mock<IServer>().Object;
             var session = new Mock<ICoreSessionHandle>().Object;
 
-            var exception = Record.Exception(() => new SingleServerReadWriteBinding(server, TimeSpan.Zero, session));
+            var exception = Record.Exception(() => new SingleServerReadWriteBinding(server, roundTripTime, session));
 
             var e = exception.Should().BeOfType<ArgumentOutOfRangeException>().Subject;
             e.ParamName.Should().Be("roundTripTime");
         }
 
-        [Fact]
-        public void constructor_should_throw_when_roundTripTime_is_negative()
-        {
-            var server = new Mock<IServer>().Object;
-            var session = new Mock<ICoreSessionHandle>().Object;
-
-            var exception = Record.Exception(() => new SingleServerReadWriteBinding(server, TimeSpan.FromMilliseconds(-5), session));
-
-            var e = exception.Should().BeOfType<ArgumentOutOfRangeException>().Subject;
-            e.ParamName.Should().Be("roundTripTime");
-        }
+        public static IEnumerable<object[]> InvalidRoundTripCases =
+        [
+            [TimeSpan.Zero],
+            [TimeSpan.FromMilliseconds(-5)]
+        ];
 
         [Fact]
         public void constructor_should_throw_when_session_is_null()

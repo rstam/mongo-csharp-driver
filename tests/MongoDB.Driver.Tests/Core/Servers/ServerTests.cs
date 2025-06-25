@@ -832,7 +832,7 @@ namespace MongoDB.Driver.Core.Servers
             using (var session = cluster.StartSession())
             {
                 var (server, roundTripTime) = cluster.SelectServer(OperationContext.NoTimeout, WritableServerSelector.Instance);
-                var channelSource = new ServerChannelSource(server, roundTripTime, session);
+                using (var channelSource = new ServerChannelSource(server, roundTripTime, session))
                 using (var channel = channelSource.GetChannel(OperationContext.NoTimeout))
                 {
                     session.AdvanceClusterTime(sessionClusterTime);
@@ -880,7 +880,7 @@ namespace MongoDB.Driver.Core.Servers
             using (var session = cluster.StartSession())
             {
                 var (server, roundTripTime) = cluster.SelectServer(OperationContext.NoTimeout, WritableServerSelector.Instance);
-                var channelSource = new ServerChannelSource(server, roundTripTime, session);
+                using (var channelSource = new ServerChannelSource(server, roundTripTime, session))
                 using (var channel = channelSource.GetChannel(OperationContext.NoTimeout))
                 {
                     var command = BsonDocument.Parse("{ ping : 1 }");
@@ -924,7 +924,7 @@ namespace MongoDB.Driver.Core.Servers
             using (var session = cluster.StartSession())
             {
                 var (server, roundTripTime) = cluster.SelectServer(OperationContext.NoTimeout, WritableServerSelector.Instance);
-                var channelSource = new ServerChannelSource(server, roundTripTime, session);
+                using (var channelSource = new ServerChannelSource(server, roundTripTime, session))
                 using (var channel = channelSource.GetChannel(OperationContext.NoTimeout))
                 {
                     var command = BsonDocument.Parse("{ ping : 1 }");

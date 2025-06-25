@@ -34,7 +34,6 @@ namespace MongoDB.Driver.Core.Servers
         private readonly IConnectionHandle _connection;
         private readonly IServer _server;
         private readonly TimeSpan _roundTripTime;
-
         private readonly InterlockedInt32 _state;
         private readonly bool _ownConnection;
 
@@ -44,7 +43,6 @@ namespace MongoDB.Driver.Core.Servers
             _server = server;
             _connection = connection;
             _roundTripTime = roundTripTime;
-
             _state = new InterlockedInt32(ChannelState.Initial);
             _ownConnection = ownConnection;
         }
@@ -52,10 +50,7 @@ namespace MongoDB.Driver.Core.Servers
         // properties
         public IConnectionHandle Connection => _connection;
 
-        public ConnectionDescription ConnectionDescription
-        {
-            get { return _connection.Description; }
-        }
+        public ConnectionDescription ConnectionDescription => _connection.Description;
 
         public TimeSpan RoundTripTimeout => _roundTripTime;
 

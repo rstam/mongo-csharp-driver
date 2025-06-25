@@ -21,10 +21,13 @@ using MongoDB.Driver.Core.Misc;
 
 namespace MongoDB.Driver
 {
-    internal sealed class OperationContext
+    internal sealed class OperationContext : IDisposable
     {
         // TODO: this static field is temporary here and will be removed in a future PRs in scope of CSOT.
         public static readonly OperationContext NoTimeout = new(System.Threading.Timeout.InfiniteTimeSpan, CancellationToken.None);
+
+        private CancellationTokenSource _remainingTimeoutCancellationTokenSource;
+        private CancellationTokenSource _combinedCancellationTokenSource;
 
         public OperationContext(TimeSpan timeout, CancellationToken cancellationToken)
             : this(Stopwatch.StartNew(), timeout, cancellationToken)
@@ -61,9 +64,44 @@ namespace MongoDB.Driver
             }
         }
 
+        [Obsolete("Do not use this property, unless it's needed to avoid breaking changes in public API")]
+        public CancellationToken CombinedCancellationToken
+        {
+            get
+            {
+                if (_combinedCancellationTokenSource != null)
+                {
+                    return _combinedCancellationTokenSource.Token;
+                }
+
+                var remainingTimeout = RemainingTimeout;
+                if (remainingTimeout == System.Threading.Timeout.InfiniteTimeSpan)
+                {
+                    return CancellationToken;
+                }
+
+                if (!CancellationToken.CanBeCanceled)
+                {
+                    _combinedCancellationTokenSource = new CancellationTokenSource(remainingTimeout);
+                }
+                else
+                {
+                    _remainingTimeoutCancellationTokenSource = new CancellationTokenSource(remainingTimeout);
+                    _combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken, _remainingTimeoutCancellationTokenSource.Token);
+                }
+
+                return _combinedCancellationTokenSource.Token;
+            }
+        }
         private Stopwatch Stopwatch { get; }
 
         public TimeSpan Timeout { get; }
+
+        public void Dispose()
+        {
+            _remainingTimeoutCancellationTokenSource?.Dispose();
+            _combinedCancellationTokenSource?.Dispose();
+        }
 
         public bool IsTimedOut()
         {

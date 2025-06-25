@@ -71,8 +71,8 @@ namespace MongoDB.Driver.Core.WireProtocol
                 responseHandling,
                 BsonDocumentSerializer.Instance,
                 messageEncoderSettings,
-                null,
-                TimeSpan.FromMilliseconds(42)); // serverApi
+                null, // serverApi
+                TimeSpan.FromMilliseconds(42));
 
             var mockConnection = new Mock<IConnection>();
             var commandResponse = MessageHelper.BuildCommandResponse(CreateRawBsonDocument(new BsonDocument("ok", 1)));

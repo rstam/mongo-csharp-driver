@@ -263,7 +263,9 @@ namespace MongoDB.Driver.Core.Connections
             try
             {
                 helper.OpeningConnection();
-                _stream = _streamFactory.CreateStream(_endPoint, operationContext.RemainingTimeout, operationContext.CancellationToken);
+#pragma warning disable CS0618 // Type or member is obsolete
+                _stream = _streamFactory.CreateStream(_endPoint, operationContext.CombinedCancellationToken);
+#pragma warning restore CS0618 // Type or member is obsolete
                 helper.InitializingConnection();
                 // TODO: CSOT: Implement operation context support for MongoDB Handshake
                 _connectionInitializerContext = _connectionInitializer.SendHello(this, operationContext.CancellationToken);
@@ -291,7 +293,9 @@ namespace MongoDB.Driver.Core.Connections
             try
             {
                 helper.OpeningConnection();
-                _stream = await _streamFactory.CreateStreamAsync(_endPoint, operationContext.RemainingTimeout, operationContext.CancellationToken).ConfigureAwait(false);
+#pragma warning disable CS0618 // Type or member is obsolete
+                _stream = await _streamFactory.CreateStreamAsync(_endPoint, operationContext.CombinedCancellationToken).ConfigureAwait(false);
+#pragma warning restore CS0618 // Type or member is obsolete
                 helper.InitializingConnection();
                 // TODO: CSOT: Implement operation context support for MongoDB Handshake
                 _connectionInitializerContext = await _connectionInitializer.SendHelloAsync(this, operationContext.CancellationToken).ConfigureAwait(false);
@@ -718,7 +722,7 @@ namespace MongoDB.Driver.Core.Connections
 
         private void ThrowIfCancelledOrDisposed(OperationContext operationContext)
         {
-            operationContext?.CancellationToken.ThrowIfCancellationRequested();
+            operationContext.ThrowIfTimedOutOrCanceled();
             ThrowIfDisposed();
         }
 

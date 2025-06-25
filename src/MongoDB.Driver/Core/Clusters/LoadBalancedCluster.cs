@@ -176,7 +176,7 @@ namespace MongoDB.Driver.Core.Clusters
             Ensure.IsNotNull(operationContext, nameof(operationContext));
             ThrowIfDisposed();
 
-            var serverSelectionOperationContext = operationContext.WithTimeout(_settings.ServerSelectionTimeout);
+            using var serverSelectionOperationContext = operationContext.WithTimeout(_settings.ServerSelectionTimeout);
 
             _serverSelectionEventLogger.LogAndPublish(new ClusterSelectingServerEvent(
                 _description,
@@ -218,7 +218,7 @@ namespace MongoDB.Driver.Core.Clusters
             Ensure.IsNotNull(operationContext, nameof(operationContext));
             ThrowIfDisposed();
 
-            var serverSelectionOperationContext = operationContext.WithTimeout(_settings.ServerSelectionTimeout);
+            using var serverSelectionOperationContext = operationContext.WithTimeout(_settings.ServerSelectionTimeout);
 
             _serverSelectionEventLogger.LogAndPublish(new ClusterSelectingServerEvent(
                 _description,

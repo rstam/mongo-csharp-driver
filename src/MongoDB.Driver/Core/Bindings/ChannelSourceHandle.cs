@@ -65,7 +65,6 @@ namespace MongoDB.Driver.Core.Bindings
             {
                 _reference.DecrementReferenceCount();
                 _disposed = true;
-                GC.SuppressFinalize(this);
             }
         }
 

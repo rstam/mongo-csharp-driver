@@ -627,15 +627,12 @@ namespace MongoDB.Driver.Core.WireProtocol
 
         private void ThrowIfRemainingTimeoutLessThenRoundTripTime(OperationContext operationContext)
         {
-            if (operationContext.RemainingTimeout == Timeout.InfiniteTimeSpan)
+            if (operationContext.RemainingTimeout == Timeout.InfiniteTimeSpan || operationContext.RemainingTimeout > _serverRoundTripTime)
             {
                 return;
             }
 
-            if (operationContext.RemainingTimeout < _serverRoundTripTime)
-            {
-                throw new TimeoutException();
-            }
+            throw new TimeoutException();
         }
 
         private MongoException WrapNotSupportedRetryableWriteException(MongoCommandException exception)

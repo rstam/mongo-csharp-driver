@@ -40,15 +40,9 @@ namespace MongoDB.Driver.Core.Bindings
             _session = Ensure.IsNotNull(session, nameof(session));
         }
 
-        public ReadPreference ReadPreference
-        {
-            get { return _readPreference; }
-        }
+        public ReadPreference ReadPreference => _readPreference;
 
-        public ICoreSessionHandle Session
-        {
-            get { return _session; }
-        }
+        public ICoreSessionHandle Session => _session;
 
         public IChannelSourceHandle GetReadChannelSource(OperationContext operationContext)
         {
