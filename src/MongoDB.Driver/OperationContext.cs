@@ -74,13 +74,12 @@ namespace MongoDB.Driver
                     return _combinedCancellationTokenSource.Token;
                 }
 
-                var remainingTimeout = RemainingTimeout;
-                if (remainingTimeout == System.Threading.Timeout.InfiniteTimeSpan)
+                if (RemainingTimeout == System.Threading.Timeout.InfiniteTimeSpan)
                 {
                     return CancellationToken;
                 }
 
-                _remainingTimeoutCancellationTokenSource = new CancellationTokenSource(remainingTimeout);
+                _remainingTimeoutCancellationTokenSource = new CancellationTokenSource(RemainingTimeout);
                 _combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken, _remainingTimeoutCancellationTokenSource.Token);
                 return _combinedCancellationTokenSource.Token;
             }
@@ -96,15 +95,7 @@ namespace MongoDB.Driver
         }
 
         public bool IsTimedOut()
-        {
-            var remainingTimeout = RemainingTimeout;
-            if (remainingTimeout == System.Threading.Timeout.InfiniteTimeSpan)
-            {
-                return false;
-            }
-
-            return remainingTimeout == TimeSpan.Zero;
-        }
+            => RemainingTimeout == TimeSpan.Zero;
 
         public void ThrowIfTimedOutOrCanceled()
         {
@@ -124,7 +115,7 @@ namespace MongoDB.Driver
             }
 
             var timeout = RemainingTimeout;
-            if (timeout != System.Threading.Timeout.InfiniteTimeSpan && timeout < TimeSpan.Zero)
+            if (timeout == TimeSpan.Zero)
             {
                 throw new TimeoutException();
             }
@@ -157,7 +148,7 @@ namespace MongoDB.Driver
             }
 
             var timeout = RemainingTimeout;
-            if (timeout != System.Threading.Timeout.InfiniteTimeSpan && timeout < TimeSpan.Zero)
+            if (timeout == TimeSpan.Zero)
             {
                 throw new TimeoutException();
             }
