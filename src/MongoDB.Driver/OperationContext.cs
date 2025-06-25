@@ -80,16 +80,8 @@ namespace MongoDB.Driver
                     return CancellationToken;
                 }
 
-                if (!CancellationToken.CanBeCanceled)
-                {
-                    _combinedCancellationTokenSource = new CancellationTokenSource(remainingTimeout);
-                }
-                else
-                {
-                    _remainingTimeoutCancellationTokenSource = new CancellationTokenSource(remainingTimeout);
-                    _combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken, _remainingTimeoutCancellationTokenSource.Token);
-                }
-
+                _remainingTimeoutCancellationTokenSource = new CancellationTokenSource(remainingTimeout);
+                _combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(CancellationToken, _remainingTimeoutCancellationTokenSource.Token);
                 return _combinedCancellationTokenSource.Token;
             }
         }
