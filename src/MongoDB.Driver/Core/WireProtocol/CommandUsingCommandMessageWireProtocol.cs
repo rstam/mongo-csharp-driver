@@ -376,10 +376,10 @@ namespace MongoDB.Driver.Core.WireProtocol
                 }
             }
 
-            if (operationContext.HasOperationTimeout())
+            if (operationContext.IsOperationTimeoutConfigured())
             {
                 var serverTimeout = operationContext.RemainingTimeout - _serverRoundTripTime;
-                AddIfNotAlreadyAdded("timeoutMS", (int)serverTimeout.TotalMilliseconds);
+                AddIfNotAlreadyAdded("maxTimeMS", (int)serverTimeout.TotalMilliseconds);
             }
 
             var elementAppendingSerializer = new ElementAppendingSerializer<BsonDocument>(BsonDocumentSerializer.Instance, extraElements);

@@ -116,7 +116,7 @@ namespace MongoDB.Driver.Core.Misc
             Ensure.IsBetween(offset, 0, buffer.Length, nameof(offset));
             Ensure.IsBetween(count, 0, buffer.Length - offset, nameof(count));
 
-            var hasOperationTimeout = operationContext.HasOperationTimeout();
+            var hasOperationTimeout = operationContext.IsOperationTimeoutConfigured();
             var streamTimeout = stream.CanTimeout ? TimeSpan.FromMilliseconds(stream.ReadTimeout) : Timeout.InfiniteTimeSpan;
 
             while (count > 0)
@@ -139,7 +139,7 @@ namespace MongoDB.Driver.Core.Misc
             Ensure.IsBetween(offset, 0, buffer.Length, nameof(offset));
             Ensure.IsBetween(count, 0, buffer.Length - offset, nameof(count));
 
-            var hasOperationTimeout = operationContext.HasOperationTimeout();
+            var hasOperationTimeout = operationContext.IsOperationTimeoutConfigured();
             var streamTimeout = stream.CanTimeout ? TimeSpan.FromMilliseconds(stream.ReadTimeout) : Timeout.InfiniteTimeSpan;
 
             while (count > 0)
@@ -164,7 +164,7 @@ namespace MongoDB.Driver.Core.Misc
             Ensure.IsBetween(offset, 0, buffer.Length, nameof(offset));
             Ensure.IsBetween(count, 0, buffer.Length - offset, nameof(count));
 
-            var hasOperationTimeout = operationContext.HasOperationTimeout();
+            var hasOperationTimeout = operationContext.IsOperationTimeoutConfigured();
             var streamTimeout = stream.CanTimeout ? TimeSpan.FromMilliseconds(stream.ReadTimeout) : Timeout.InfiniteTimeSpan;
 
             while (count > 0)
@@ -187,7 +187,7 @@ namespace MongoDB.Driver.Core.Misc
             Ensure.IsBetween(offset, 0, buffer.Length, nameof(offset));
             Ensure.IsBetween(count, 0, buffer.Length - offset, nameof(count));
 
-            var hasOperationTimeout = operationContext.HasOperationTimeout();
+            var hasOperationTimeout = operationContext.IsOperationTimeoutConfigured();
             var streamTimeout = stream.CanTimeout ? TimeSpan.FromMilliseconds(stream.ReadTimeout) : Timeout.InfiniteTimeSpan;
 
             while (count > 0)
@@ -287,7 +287,7 @@ namespace MongoDB.Driver.Core.Misc
             Ensure.IsBetween(offset, 0, buffer.Length, nameof(offset));
             Ensure.IsBetween(count, 0, buffer.Length - offset, nameof(count));
 
-            var hasOperationTimeout = operationContext.HasOperationTimeout();
+            var hasOperationTimeout = operationContext.IsOperationTimeoutConfigured();
             var streamTimeout = stream.CanTimeout ? TimeSpan.FromMilliseconds(stream.WriteTimeout) : Timeout.InfiniteTimeSpan;
 
             while (count > 0)
@@ -308,7 +308,7 @@ namespace MongoDB.Driver.Core.Misc
             Ensure.IsBetween(offset, 0, buffer.Length, nameof(offset));
             Ensure.IsBetween(count, 0, buffer.Length - offset, nameof(count));
 
-            var hasOperationTimeout = operationContext.HasOperationTimeout();
+            var hasOperationTimeout = operationContext.IsOperationTimeoutConfigured();
             var streamTimeout = stream.CanTimeout ? TimeSpan.FromMilliseconds(stream.WriteTimeout) : Timeout.InfiniteTimeSpan;
 
             while (count > 0)
