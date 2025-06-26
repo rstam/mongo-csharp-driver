@@ -897,13 +897,13 @@ namespace MongoDB.Driver.Core.Servers
                         CommandResponseHandling.Return,
                         BsonDocumentSerializer.Instance,
                         new MessageEncoderSettings());
-                }
 
-                var commandSucceededEvent = eventCapturer.Next().Should().BeOfType<CommandSucceededEvent>().Subject;
-                var actualReply = commandSucceededEvent.Reply;
-                var actualClusterTime = actualReply["$clusterTime"].AsBsonDocument;
-                session.ClusterTime.Should().Be(actualClusterTime);
-                server.ClusterClock.ClusterTime.Should().Be(actualClusterTime);
+                    var commandSucceededEvent = eventCapturer.Next().Should().BeOfType<CommandSucceededEvent>().Subject;
+                    var actualReply = commandSucceededEvent.Reply;
+                    var actualClusterTime = actualReply["$clusterTime"].AsBsonDocument;
+                    session.ClusterTime.Should().Be(actualClusterTime);
+                    server.ClusterClock.ClusterTime.Should().Be(actualClusterTime);
+                }
             }
         }
 
