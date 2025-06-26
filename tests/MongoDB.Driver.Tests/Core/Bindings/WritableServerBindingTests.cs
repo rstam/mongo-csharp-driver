@@ -18,6 +18,7 @@ using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Servers;
@@ -288,9 +289,6 @@ namespace MongoDB.Driver.Core.Bindings
     internal static class WritableServerBindingReflector
     {
         public static IClusterInternal _cluster(this WritableServerBinding obj)
-        {
-            var fieldInfo = typeof(WritableServerBinding).GetField("_cluster", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (IClusterInternal)fieldInfo.GetValue(obj);
-        }
+            => (IClusterInternal)Reflector.GetFieldValue(obj, "_cluster");
     }
 }

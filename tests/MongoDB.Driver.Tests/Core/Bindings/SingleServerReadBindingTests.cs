@@ -16,9 +16,9 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Servers;
 using Moq;
@@ -190,7 +190,6 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         // private methods
-
         private SingleServerReadBinding CreateSubject(IServer server = null, TimeSpan? roundTripTime = null, ReadPreference readPreference = null, ICoreSessionHandle session = null)
         {
             return new SingleServerReadBinding(
@@ -215,15 +214,9 @@ namespace MongoDB.Driver.Core.Bindings
     internal static class SingleServerReadBindingReflector
     {
         public static bool _disposed(this SingleServerReadBinding obj)
-        {
-            var fieldInfo = typeof(SingleServerReadBinding).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (bool)fieldInfo.GetValue(obj);
-        }
+            => (bool)Reflector.GetFieldValue(obj, "_disposed");
 
         public static IServer _server(this SingleServerReadBinding obj)
-        {
-            var fieldInfo = typeof(SingleServerReadBinding).GetField("_server", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (IServer)fieldInfo.GetValue(obj);
-        }
+            => (IServer)Reflector.GetFieldValue(obj, "_server");
     }
 }

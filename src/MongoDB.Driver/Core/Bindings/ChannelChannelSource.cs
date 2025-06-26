@@ -33,7 +33,7 @@ namespace MongoDB.Driver.Core.Bindings
         public ChannelChannelSource(IServer server, TimeSpan roundTripTime, IChannelHandle channel, ICoreSessionHandle session)
         {
             _server = Ensure.IsNotNull(server, nameof(server));
-            _roundTripTime = roundTripTime;
+            _roundTripTime = Ensure.IsGreaterThanZero(roundTripTime, nameof(roundTripTime));
             _channel = Ensure.IsNotNull(channel, nameof(channel));
             _session = Ensure.IsNotNull(session, nameof(session));
         }

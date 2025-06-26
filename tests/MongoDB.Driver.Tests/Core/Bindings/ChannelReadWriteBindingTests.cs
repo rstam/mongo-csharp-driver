@@ -15,9 +15,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Servers;
 using Moq;
@@ -254,21 +254,12 @@ namespace MongoDB.Driver.Core.Bindings
     internal static class ChannelReadWriteBindingReflector
     {
         public static IChannelHandle _channel(this ChannelReadWriteBinding obj)
-        {
-            var fieldInfo = typeof(ChannelReadWriteBinding).GetField("_channel", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (IChannelHandle)fieldInfo.GetValue(obj);
-        }
+            => (IChannelHandle)Reflector.GetFieldValue(obj, "_channel");
 
         public static bool _disposed(this ChannelReadWriteBinding obj)
-        {
-            var fieldInfo = typeof(ChannelReadWriteBinding).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (bool)fieldInfo.GetValue(obj);
-        }
+            => (bool)Reflector.GetFieldValue(obj, "_disposed");
 
         public static IServer _server(this ChannelReadWriteBinding obj)
-        {
-            var fieldInfo = typeof(ChannelReadWriteBinding).GetField("_server", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (IServer)fieldInfo.GetValue(obj);
-        }
+            => (IServer)Reflector.GetFieldValue(obj, "_server");
     }
 }

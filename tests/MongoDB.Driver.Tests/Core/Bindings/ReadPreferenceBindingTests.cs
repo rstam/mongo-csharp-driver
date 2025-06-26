@@ -15,9 +15,9 @@
 
 using System;
 using System.Net;
-using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Misc;
@@ -187,9 +187,6 @@ namespace MongoDB.Driver.Core.Bindings
     internal static class ReadPreferenceBindingReflector
     {
         public static IClusterInternal _cluster(this ReadPreferenceBinding obj)
-        {
-            var fieldInfo = typeof(ReadPreferenceBinding).GetField("_cluster", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (IClusterInternal)fieldInfo.GetValue(obj);
-        }
+            => (IClusterInternal)Reflector.GetFieldValue(obj, "_cluster");
     }
 }

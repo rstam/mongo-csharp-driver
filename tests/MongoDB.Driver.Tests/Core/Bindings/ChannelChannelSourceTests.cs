@@ -15,9 +15,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 using FluentAssertions;
+using MongoDB.Bson.TestHelpers;
 using MongoDB.TestHelpers.XunitExtensions;
 using MongoDB.Driver.Core.Servers;
 using Moq;
@@ -215,15 +215,9 @@ namespace MongoDB.Driver.Core.Bindings
     internal static class ChannelChannelSourceReflector
     {
         public static IChannelHandle _channel(this ChannelChannelSource obj)
-        {
-            var fieldInfo = typeof(ChannelChannelSource).GetField("_channel", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (IChannelHandle)fieldInfo.GetValue(obj);
-        }
+            => (IChannelHandle)Reflector.GetFieldValue(obj, "_channel");
 
         public static bool _disposed(this ChannelChannelSource obj)
-        {
-            var fieldInfo = typeof(ChannelChannelSource).GetField("_disposed", BindingFlags.NonPublic | BindingFlags.Instance);
-            return (bool)fieldInfo.GetValue(obj);
-        }
+            => (bool)Reflector.GetFieldValue(obj, "_disposed");
     }
 }
