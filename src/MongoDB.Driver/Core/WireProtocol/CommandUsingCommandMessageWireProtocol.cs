@@ -49,7 +49,7 @@ namespace MongoDB.Driver.Core.WireProtocol
         private readonly CommandResponseHandling _responseHandling;
         private readonly IBsonSerializer<TCommandResult> _resultSerializer;
         private readonly ServerApi _serverApi;
-        private readonly TimeSpan _serverRoundTripTime;
+        private readonly TimeSpan _minRoundTripTime;
         private readonly ICoreSession _session;
         // streamable fields
         private bool _moreToCome = false; // MoreToCome from the previous response
@@ -69,7 +69,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             MessageEncoderSettings messageEncoderSettings,
             Action<IMessageEncoderPostProcessor> postWriteAction,
             ServerApi serverApi,
-            TimeSpan serverRoundTripTime)
+            TimeSpan minRoundTripTime)
         {
             if (responseHandling != CommandResponseHandling.Return &&
                 responseHandling != CommandResponseHandling.NoResponseExpected &&
@@ -90,7 +90,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             _messageEncoderSettings = messageEncoderSettings;
             _postWriteAction = postWriteAction; // can be null
             _serverApi = serverApi; // can be null
-            _serverRoundTripTime = serverRoundTripTime;
+            _minRoundTripTime = minRoundTripTime;
 
             if (messageEncoderSettings != null)
             {
@@ -378,7 +378,7 @@ namespace MongoDB.Driver.Core.WireProtocol
 
             if (operationContext.IsOperationTimeoutConfigured())
             {
-                var serverTimeout = operationContext.RemainingTimeout - _serverRoundTripTime;
+                var serverTimeout = operationContext.RemainingTimeout - _minRoundTripTime; // handle negative values
                 AddIfNotAlreadyAdded("maxTimeMS", (int)serverTimeout.TotalMilliseconds);
             }
 
@@ -627,7 +627,7 @@ namespace MongoDB.Driver.Core.WireProtocol
 
         private void ThrowIfRemainingTimeoutLessThenRoundTripTime(OperationContext operationContext)
         {
-            if (operationContext.RemainingTimeout == Timeout.InfiniteTimeSpan || operationContext.RemainingTimeout > _serverRoundTripTime)
+            if (operationContext.RemainingTimeout == Timeout.InfiniteTimeSpan || operationContext.RemainingTimeout > _minRoundTripTime)
             {
                 return;
             }

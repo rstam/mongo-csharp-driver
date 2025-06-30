@@ -30,7 +30,6 @@ namespace MongoDB.Driver.Core.Bindings
     {
         IConnectionHandle Connection { get; }
         ConnectionDescription ConnectionDescription { get; }
-        TimeSpan RoundTripTimeout { get; }
 
         TResult Command<TResult>(
             OperationContext operationContext,

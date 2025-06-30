@@ -31,7 +31,7 @@ namespace MongoDB.Driver.Core.Servers
         ServerId ServerId { get; }
         ServerApi ServerApi { get; }
 
-        IConnectionHandle GetConnection(OperationContext operationContext);
+        IConnectionHandle GetConnection(OperationContext operationContext); // questionable to switch from channel to connection
         Task<IConnectionHandle> GetConnectionAsync(OperationContext operationContext);
         void ReturnConnection(IConnectionHandle connection);
         void HandleChannelException(IConnection connection, Exception exception);
@@ -45,5 +45,10 @@ namespace MongoDB.Driver.Core.Servers
         void Initialize();
         void Invalidate(string reasonInvalidated, TopologyVersion responseTopologyVersion);
         void RequestHeartbeat();
+    }
+
+    internal interface ISelectedServer : IServer
+    {
+        ServerDescription DescriptionWhenSelected { get; }
     }
 }

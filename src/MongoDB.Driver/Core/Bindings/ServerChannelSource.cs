@@ -25,14 +25,12 @@ namespace MongoDB.Driver.Core.Bindings
         // fields
         private bool _disposed;
         private readonly IServer _server;
-        private readonly TimeSpan _serverRoundTripTime;
         private readonly ICoreSessionHandle _session;
 
         // constructors
-        public ServerChannelSource(IServer server, TimeSpan roundTripTime, ICoreSessionHandle session)
+        public ServerChannelSource(IServer server, ICoreSessionHandle session)
         {
             _server = Ensure.IsNotNull(server, nameof(server));
-            _serverRoundTripTime = Ensure.IsGreaterThanZero(roundTripTime, nameof(roundTripTime));
             _session = Ensure.IsNotNull(session, nameof(session));
         }
 
@@ -40,8 +38,6 @@ namespace MongoDB.Driver.Core.Bindings
         public IServer Server => _server;
 
         public ServerDescription ServerDescription => _server.Description;
-
-        public TimeSpan RoundTripTime => _serverRoundTripTime;
 
         public ICoreSessionHandle Session => _session;
 
@@ -59,14 +55,14 @@ namespace MongoDB.Driver.Core.Bindings
         {
             ThrowIfDisposed();
             var connection = _server.GetConnection(operationContext);
-            return new ServerChannel(_server, connection, _serverRoundTripTime);
+            return new ServerChannel(_server, connection);
         }
 
         public async Task<IChannelHandle> GetChannelAsync(OperationContext operationContext)
         {
             ThrowIfDisposed();
             var connection = await _server.GetConnectionAsync(operationContext).ConfigureAwait(false);
-            return new ServerChannel(_server, connection, _serverRoundTripTime);
+            return new ServerChannel(_server, connection);
         }
 
         private void ThrowIfDisposed()

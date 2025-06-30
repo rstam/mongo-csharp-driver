@@ -85,7 +85,7 @@ namespace MongoDB.Driver.Core.TestHelpers
         public static string DecorateApplicationName(string applicationName, bool async) => $"{applicationName}{ApplicationNameTestableSuffix}{async}";
 
         // private static methods
-        private static (IServer Server, TimeSpan RoundTripTime) GetWriteableServer(IClusterInternal cluster)
+        private static IServer GetWriteableServer(IClusterInternal cluster)
         {
             var selector = WritableServerSelector.Instance;
             return cluster.SelectServer(OperationContext.NoTimeout, selector);

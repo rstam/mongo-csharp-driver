@@ -38,13 +38,20 @@ namespace MongoDB.Driver.Core.Bindings
         }
 
         // properties
-        public IServer Server => _reference.Instance.Server;
+        public IServer Server
+        {
+            get { return _reference.Instance.Server; }
+        }
 
-        public ServerDescription ServerDescription => _reference.Instance.ServerDescription;
+        public ServerDescription ServerDescription
+        {
+            get { return _reference.Instance.ServerDescription; }
+        }
 
-        public TimeSpan RoundTripTime => _reference.Instance.RoundTripTime;
-
-        public ICoreSessionHandle Session => _reference.Instance.Session;
+        public ICoreSessionHandle Session
+        {
+            get { return _reference.Instance.Session; }
+        }
 
         // methods
         public IChannelHandle GetChannel(OperationContext operationContext)
@@ -65,6 +72,7 @@ namespace MongoDB.Driver.Core.Bindings
             {
                 _reference.DecrementReferenceCount();
                 _disposed = true;
+                GC.SuppressFinalize(this);
             }
         }
 

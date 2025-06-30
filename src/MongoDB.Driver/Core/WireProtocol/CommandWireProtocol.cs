@@ -44,7 +44,7 @@ namespace MongoDB.Driver.Core.WireProtocol
         private readonly CommandResponseHandling _responseHandling;
         private readonly IBsonSerializer<TCommandResult> _resultSerializer;
         private readonly ServerApi _serverApi;
-        private readonly TimeSpan _serverRoundTripTime;
+        private readonly TimeSpan _minRoundTripTime;
         private readonly ICoreSession _session;
 
         // constructors
@@ -87,7 +87,7 @@ namespace MongoDB.Driver.Core.WireProtocol
                 resultSerializer,
                 messageEncoderSettings,
                 serverApi,
-                serverRoundTripTime: TimeSpan.Zero)
+                minRoundTripTime: TimeSpan.Zero)
         {
         }
 
@@ -104,7 +104,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             IBsonSerializer<TCommandResult> resultSerializer,
             MessageEncoderSettings messageEncoderSettings,
             ServerApi serverApi,
-            TimeSpan serverRoundTripTime)
+            TimeSpan minRoundTripTime)
         {
             if (responseHandling != CommandResponseHandling.Return &&
                 responseHandling != CommandResponseHandling.NoResponseExpected &&
@@ -125,7 +125,7 @@ namespace MongoDB.Driver.Core.WireProtocol
             _messageEncoderSettings = messageEncoderSettings;
             _postWriteAction = postWriteAction; // can be null
             _serverApi = serverApi; // can be null
-            _serverRoundTripTime = serverRoundTripTime;
+            _minRoundTripTime = minRoundTripTime;
         }
 
         // public properties
@@ -160,7 +160,7 @@ namespace MongoDB.Driver.Core.WireProtocol
                 _messageEncoderSettings,
                 _postWriteAction,
                 _serverApi,
-                _serverRoundTripTime);
+                _minRoundTripTime);
         }
 
         private IWireProtocol<TCommandResult> CreateCommandUsingQueryMessageWireProtocol()

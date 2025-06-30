@@ -153,7 +153,7 @@ namespace MongoDB.Driver.Core.Clusters
             DescriptionChanged?.Invoke(this, new ClusterDescriptionChangedEventArgs(oldDescription, newDescription));
         }
 
-        public (IServer, TimeSpan) SelectServer(OperationContext operationContext, IServerSelector selector)
+        public IServer SelectServer(OperationContext operationContext, IServerSelector selector)
         {
             Ensure.IsNotNull(selector, nameof(selector));
             Ensure.IsNotNull(operationContext, nameof(operationContext));
@@ -168,11 +168,11 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 while (true)
                 {
-                    var (server, description) = SelectServer(expirableClusterDescription, selector, operationCountSelector);
+                    var server = SelectServer(expirableClusterDescription, selector, operationCountSelector);
                     if (server != null)
                     {
-                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, description, stopwatch);
-                        return (server, description.AverageRoundTripTime);
+                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, server.Description, stopwatch);
+                        return server;
                     }
 
                     serverSelectionWaitQueueDisposer ??= _serverSelectionWaitQueue.Enter(serverSelectionOperationContext, selector, expirableClusterDescription.ClusterDescription, EventContext.OperationId);
@@ -191,7 +191,7 @@ namespace MongoDB.Driver.Core.Clusters
             }
         }
 
-        public async Task<(IServer, TimeSpan)> SelectServerAsync(OperationContext operationContext, IServerSelector selector)
+        public async Task<IServer> SelectServerAsync(OperationContext operationContext, IServerSelector selector)
         {
             Ensure.IsNotNull(selector, nameof(selector));
             Ensure.IsNotNull(operationContext, nameof(operationContext));
@@ -206,11 +206,11 @@ namespace MongoDB.Driver.Core.Clusters
             {
                 while (true)
                 {
-                    var (server, description) = SelectServer(expirableClusterDescription, selector, operationCountSelector);
+                    var server = SelectServer(expirableClusterDescription, selector, operationCountSelector);
                     if (server != null)
                     {
-                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, description, stopwatch);
-                        return (server, description.AverageRoundTripTime);
+                        EndServerSelection(expirableClusterDescription.ClusterDescription, selector, server.Description, stopwatch);
+                        return server;
                     }
 
                     serverSelectionWaitQueueDisposer ??= _serverSelectionWaitQueue.Enter(serverSelectionOperationContext, selector, expirableClusterDescription.ClusterDescription, EventContext.OperationId);
@@ -306,7 +306,7 @@ namespace MongoDB.Driver.Core.Clusters
             return exception;
         }
 
-        private (IClusterableServer Server, ServerDescription ServerDescription) SelectServer(ExpirableClusterDescription clusterDescriptionChangeSource, IServerSelector selector, OperationsCountServerSelector operationCountSelector)
+        private SelectedServer SelectServer(ExpirableClusterDescription clusterDescriptionChangeSource, IServerSelector selector, OperationsCountServerSelector operationCountSelector)
         {
             MongoIncompatibleDriverException.ThrowIfNotSupported(clusterDescriptionChangeSource.ClusterDescription);
 
@@ -320,7 +320,7 @@ namespace MongoDB.Driver.Core.Clusters
                 var selectedServer = clusterDescriptionChangeSource.ConnectedServers.FirstOrDefault(s => EndPointHelper.Equals(s.EndPoint, selectedServerDescription.EndPoint));
                 if (selectedServer != null)
                 {
-                    return (selectedServer, selectedServerDescription);
+                    return new(selectedServer, selectedServerDescription);
                 }
             }
 

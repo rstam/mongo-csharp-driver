@@ -33,16 +33,14 @@ namespace MongoDB.Driver.Core.Servers
         // fields
         private readonly IConnectionHandle _connection;
         private readonly IServer _server;
-        private readonly TimeSpan _roundTripTime;
         private readonly InterlockedInt32 _state;
         private readonly bool _ownConnection;
 
         // constructors
-        public ServerChannel(IServer server, IConnectionHandle connection, TimeSpan roundTripTime, bool ownConnection = true)
+        public ServerChannel(IServer server, IConnectionHandle connection, bool ownConnection = true)
         {
             _server = server;
             _connection = connection;
-            _roundTripTime = roundTripTime;
             _state = new InterlockedInt32(ChannelState.Initial);
             _ownConnection = ownConnection;
         }
@@ -51,8 +49,6 @@ namespace MongoDB.Driver.Core.Servers
         public IConnectionHandle Connection => _connection;
 
         public ConnectionDescription ConnectionDescription => _connection.Description;
-
-        public TimeSpan RoundTripTimeout => _roundTripTime;
 
         // methods
         public TResult Command<TResult>(
@@ -69,6 +65,12 @@ namespace MongoDB.Driver.Core.Servers
             IBsonSerializer<TResult> resultSerializer,
             MessageEncoderSettings messageEncoderSettings)
         {
+            var minRoundTripTime = TimeSpan.Zero;
+            if (_server is ISelectedServer selectedServer)
+            {
+                minRoundTripTime = selectedServer.DescriptionWhenSelected.MinRoundTripTime;
+            }
+
             var protocol = new CommandWireProtocol<TResult>(
                 CreateClusterClockAdvancingCoreSession(session),
                 readPreference,
@@ -82,7 +84,7 @@ namespace MongoDB.Driver.Core.Servers
                 resultSerializer,
                 messageEncoderSettings,
                 _server.ServerApi,
-                _roundTripTime);
+                minRoundTripTime);
 
             return ExecuteProtocol(operationContext, protocol, session);
         }
@@ -101,6 +103,12 @@ namespace MongoDB.Driver.Core.Servers
             IBsonSerializer<TResult> resultSerializer,
             MessageEncoderSettings messageEncoderSettings)
         {
+            var minRoundTripTime = TimeSpan.Zero;
+            if (_server is ISelectedServer selectedServer)
+            {
+                minRoundTripTime = selectedServer.DescriptionWhenSelected.MinRoundTripTime;
+            }
+
             var protocol = new CommandWireProtocol<TResult>(
                 CreateClusterClockAdvancingCoreSession(session),
                 readPreference,
@@ -114,7 +122,7 @@ namespace MongoDB.Driver.Core.Servers
                 resultSerializer,
                 messageEncoderSettings,
                 _server.ServerApi,
-                _roundTripTime);
+                minRoundTripTime);
 
             return ExecuteProtocolAsync(operationContext, protocol, session);
         }
@@ -169,7 +177,7 @@ namespace MongoDB.Driver.Core.Servers
         {
             ThrowIfDisposed();
 
-            return new ServerChannel(_server, _connection.Fork(), _roundTripTime, false);
+            return new ServerChannel(_server, _connection.Fork(), false);
         }
 
         private void MarkSessionDirtyIfNeeded(ICoreSession session, Exception ex)
@@ -196,6 +204,3 @@ namespace MongoDB.Driver.Core.Servers
         }
     }
 }
-
-
-

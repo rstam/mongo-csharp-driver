@@ -378,6 +378,11 @@ namespace MongoDB.Driver.Core.Servers
             }
         }
 
+        internal TimeSpan MinRoundTripTime
+        {
+            get { return _averageRoundTripTime; } // TODO: track MinRoundTripTime
+        }
+
         /// <summary>
         /// The reason the server description was last changed.
         /// </summary>

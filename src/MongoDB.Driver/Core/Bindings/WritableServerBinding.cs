@@ -37,15 +37,25 @@ namespace MongoDB.Driver.Core.Bindings
             _session = Ensure.IsNotNull(session, nameof(session));
         }
 
-        public ReadPreference ReadPreference => ReadPreference.Primary;
+        public ReadPreference ReadPreference
+        {
+            get { return ReadPreference.Primary; }
+        }
 
-        public ICoreSessionHandle Session => _session;
+        public ICoreSessionHandle Session
+        {
+            get { return _session; }
+        }
 
         public IChannelSourceHandle GetReadChannelSource(OperationContext operationContext)
-            => GetReadChannelSource(operationContext, null);
+        {
+            return GetReadChannelSource(operationContext, null);
+        }
 
         public Task<IChannelSourceHandle> GetReadChannelSourceAsync(OperationContext operationContext)
-            => GetReadChannelSourceAsync(operationContext, null);
+        {
+            return GetReadChannelSourceAsync(operationContext, null);
+        }
 
         public IChannelSourceHandle GetReadChannelSource(OperationContext operationContext, IReadOnlyCollection<ServerDescription> deprioritizedServers)
         {
@@ -129,9 +139,9 @@ namespace MongoDB.Driver.Core.Bindings
             return CreateServerChannelSource(server);
         }
 
-        private IChannelSourceHandle CreateServerChannelSource((IServer Server, TimeSpan RoundTripTime) server)
+        private IChannelSourceHandle CreateServerChannelSource(IServer server)
         {
-            return new ChannelSourceHandle(new ServerChannelSource(server.Server, server.RoundTripTime, _session.Fork()));
+            return new ChannelSourceHandle(new ServerChannelSource(server, _session.Fork()));
         }
 
         public void Dispose()

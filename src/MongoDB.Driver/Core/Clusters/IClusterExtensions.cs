@@ -24,7 +24,7 @@ namespace MongoDB.Driver.Core.Clusters
 {
     internal static class IClusterExtensions
     {
-        public static (IServer, TimeSpan) SelectServerAndPinIfNeeded(
+        public static IServer SelectServerAndPinIfNeeded(
             this IClusterInternal cluster,
             OperationContext operationContext,
             ICoreSessionHandle session,
@@ -43,12 +43,12 @@ namespace MongoDB.Driver.Core.Clusters
 
             // Server selection also updates the cluster type, allowing us to determine if the server
             // should be pinned.
-            var (server, serverRoundTripTime) = cluster.SelectServer(operationContext, selector);
-            PinServerIfNeeded(cluster, session, server, serverRoundTripTime);
-            return (server, serverRoundTripTime);
+            var server = cluster.SelectServer(operationContext, selector);
+            PinServerIfNeeded(cluster, session, server);
+            return server;
         }
 
-        public static async Task<(IServer, TimeSpan)> SelectServerAndPinIfNeededAsync(
+        public static async Task<IServer> SelectServerAndPinIfNeededAsync(
             this IClusterInternal cluster,
             OperationContext operationContext,
             ICoreSessionHandle session,
@@ -67,27 +67,27 @@ namespace MongoDB.Driver.Core.Clusters
 
             // Server selection also updates the cluster type, allowing us to determine if the server
             // should be pinned.
-            var (server, serverRoundTripTime) = await cluster.SelectServerAsync(operationContext, selector).ConfigureAwait(false);
-            PinServerIfNeeded(cluster, session, server, serverRoundTripTime);
+            var server = await cluster.SelectServerAsync(operationContext, selector).ConfigureAwait(false);
+            PinServerIfNeeded(cluster, session, server);
 
-            return (server, serverRoundTripTime);
+            return server;
         }
 
-        private static void PinServerIfNeeded(ICluster cluster, ICoreSessionHandle session, IServer server, TimeSpan serverRoundTripTime)
+        private static void PinServerIfNeeded(ICluster cluster, ICoreSessionHandle session, IServer server)
         {
             if (cluster.Description.Type == ClusterType.Sharded && session.IsInTransaction)
             {
-                session.CurrentTransaction.PinServer(server, serverRoundTripTime);
+                session.CurrentTransaction.PinServer(server);
             }
         }
 
-        private static (IServer, TimeSpan) GetPinnedServerIfValid(ICluster cluster, ICoreSessionHandle session)
+        private static IServer GetPinnedServerIfValid(ICluster cluster, ICoreSessionHandle session)
         {
             if (cluster.Description.Type == ClusterType.Sharded
                 && session.IsInTransaction
                 && session.CurrentTransaction.State != CoreTransactionState.Starting)
             {
-                return (session.CurrentTransaction.PinnedServer, session.CurrentTransaction.PinnedServerRoundTripTime);
+                return session.CurrentTransaction.PinnedServer;
             }
 
             return default;
