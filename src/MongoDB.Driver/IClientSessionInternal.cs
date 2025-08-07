@@ -13,21 +13,15 @@
  * limitations under the License.
  */
 
-using System;
-using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace MongoDB.Driver.Core.Misc
+namespace MongoDB.Driver;
+
+internal interface IClientSessionInternal
 {
-    internal sealed class SystemWatch : IWatch
-    {
-        private readonly Stopwatch _wrappedStopwatch;
-
-        public SystemWatch()
-        {
-            _wrappedStopwatch = Stopwatch.StartNew();
-        }
-
-        public TimeSpan Elapsed => _wrappedStopwatch.Elapsed;
-    }
+    void AbortTransaction(AbortTransactionOptions options, CancellationToken cancellationToken = default);
+    Task AbortTransactionAsync(AbortTransactionOptions options, CancellationToken cancellationToken = default);
+    void CommitTransaction(CommitTransactionOptions options, CancellationToken cancellationToken = default);
+    Task CommitTransactionAsync(CommitTransactionOptions options, CancellationToken cancellationToken = default);
 }
-

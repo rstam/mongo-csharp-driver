@@ -24,91 +24,17 @@ namespace MongoDB.Driver
     {
         // TODO: CSOT: Merge this extension methods in IClientSession interface on major release
 
-        /// <summary>
-        /// Aborts the transaction.
-        /// </summary>
-        /// <param name="session">The session.</param>
-        /// <param name="options">Abort transaction options.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
         public static void AbortTransaction(this IClientSession session, AbortTransactionOptions options, CancellationToken cancellationToken = default)
-        {
-            if (options?.Timeout == null || session.Options.DefaultTransactionOptions?.Timeout == options?.Timeout)
-            {
-                session.AbortTransaction(cancellationToken);
-                return;
-            }
+            => ((IClientSessionInternal)session).AbortTransaction(options, cancellationToken);
 
-            if (session is not ClientSessionHandle clientSessionHandle)
-            {
-                throw new InvalidOperationException("Cannot apply options on non ClientSessionHandle.");
-            }
-
-            clientSessionHandle.AbortTransaction(options, cancellationToken);
-        }
-
-        /// <summary>
-        /// Aborts the transaction.
-        /// </summary>
-        /// <param name="session">The session.</param>
-        /// <param name="options">Abort transaction options.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
         public static Task AbortTransactionAsync(this IClientSession session, AbortTransactionOptions options, CancellationToken cancellationToken = default)
-        {
-            if (options?.Timeout == null || session.Options.DefaultTransactionOptions?.Timeout == options?.Timeout)
-            {
-                return session.AbortTransactionAsync(cancellationToken);
-            }
+            => ((IClientSessionInternal)session).AbortTransactionAsync(options, cancellationToken);
 
-            if (session is not ClientSessionHandle clientSessionHandle)
-            {
-                throw new InvalidOperationException("Cannot apply options on non ClientSessionHandle.");
-            }
-
-            return clientSessionHandle.AbortTransactionAsync(options, cancellationToken);
-        }
-
-        /// <summary>
-        /// Commits the transaction.
-        /// </summary>
-        /// <param name="session">The session.</param>
-        /// <param name="options">Commit transaction options.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
         public static void CommitTransaction(this IClientSession session, CommitTransactionOptions options, CancellationToken cancellationToken = default)
-        {
-            if (options?.Timeout == null || session.Options.DefaultTransactionOptions?.Timeout == options?.Timeout)
-            {
-                session.CommitTransaction(cancellationToken);
-                return;
-            }
+            => ((IClientSessionInternal)session).CommitTransaction(options, cancellationToken);
 
-            if (session is not ClientSessionHandle clientSessionHandle)
-            {
-                throw new InvalidOperationException("Cannot apply options on non ClientSessionHandle.");
-            }
-
-            clientSessionHandle.CommitTransaction(options, cancellationToken);
-        }
-
-        /// <summary>
-        /// Commits the transaction.
-        /// </summary>
-        /// <param name="session">The session.</param>
-        /// <param name="options">Commit transaction options.</param>
-        /// <param name="cancellationToken">The cancellation token.</param>
         public static Task CommitTransactionAsync(this IClientSession session, CommitTransactionOptions options, CancellationToken cancellationToken = default)
-        {
-            if (options?.Timeout == null || session.Options.DefaultTransactionOptions?.Timeout == options?.Timeout)
-            {
-                return session.CommitTransactionAsync(cancellationToken);
-            }
-
-            if (session is not ClientSessionHandle clientSessionHandle)
-            {
-                throw new InvalidOperationException("Cannot apply options on non ClientSessionHandle.");
-            }
-
-            return clientSessionHandle.CommitTransactionAsync(options, cancellationToken);
-        }
+            => ((IClientSessionInternal)session).CommitTransactionAsync(options, cancellationToken);
 
         internal static ReadPreference GetEffectiveReadPreference(this IClientSession session, ReadPreference defaultReadPreference)
         {

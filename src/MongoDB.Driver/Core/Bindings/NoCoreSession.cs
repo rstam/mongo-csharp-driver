@@ -24,7 +24,7 @@ namespace MongoDB.Driver.Core.Bindings
     /// An object that represents no core session.
     /// </summary>
     /// <seealso cref="MongoDB.Driver.Core.Bindings.ICoreSession" />
-    public sealed class NoCoreSession : ICoreSession
+    public sealed class NoCoreSession : ICoreSession, ICoreSessionInternal
     {
         #region static
         // private static fields
@@ -94,8 +94,18 @@ namespace MongoDB.Driver.Core.Bindings
             throw new NotSupportedException("NoCoreSession does not support AbortTransaction.");
         }
 
+        void ICoreSessionInternal.AbortTransaction(AbortTransactionOptions options, CancellationToken cancellationToken )
+        {
+            throw new NotSupportedException("NoCoreSession does not support AbortTransaction.");
+        }
+
         /// <inheritdoc />
         public Task AbortTransactionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotSupportedException("NoCoreSession does not support AbortTransactionAsync.");
+        }
+
+        Task ICoreSessionInternal.AbortTransactionAsync(AbortTransactionOptions options, CancellationToken cancellationToken )
         {
             throw new NotSupportedException("NoCoreSession does not support AbortTransactionAsync.");
         }
@@ -127,8 +137,18 @@ namespace MongoDB.Driver.Core.Bindings
             throw new NotSupportedException("NoCoreSession does not support CommitTransaction.");
         }
 
+        void ICoreSessionInternal.CommitTransaction(CommitTransactionOptions options, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException("NoCoreSession does not support CommitTransaction.");
+        }
+
         /// <inheritdoc />
         public Task CommitTransactionAsync(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            throw new NotSupportedException("NoCoreSession does not support CommitTransactionAsync.");
+        }
+
+        Task ICoreSessionInternal.CommitTransactionAsync(CommitTransactionOptions options, CancellationToken cancellationToken)
         {
             throw new NotSupportedException("NoCoreSession does not support CommitTransactionAsync.");
         }
