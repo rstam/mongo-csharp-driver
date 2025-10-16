@@ -13,6 +13,8 @@
 * limitations under the License.
 */
 
+using System.Collections.Generic;
+
 namespace MongoDB.Bson.IO;
 
 /// <summary>
@@ -20,21 +22,33 @@ namespace MongoDB.Bson.IO;
 /// </summary>
 public class BsonBinaryReaderBookmark : BsonReaderBookmark
 {
+    private readonly BsonBinaryReaderContext _context;
+    private readonly BsonBinaryReaderContext[] _contextArray;
+    private readonly long _position;
+
     internal BsonBinaryReaderBookmark(
         BsonReaderState state,
         BsonType currentBsonType,
         string currentName,
-        BsonBinaryReaderContext currentContext,
-        BsonBinaryReaderContext[] contextsStack,
+        BsonBinaryReaderContext context,
+        Stack<BsonBinaryReaderContext> contextStack,
         long position)
         : base(state, currentBsonType, currentName)
     {
-        CurrentContext = currentContext;
-        ContextsStack = contextsStack;
-        Position = position;
+        _context = context;
+        _contextArray = contextStack.ToArray();
+        _position = position;
     }
 
-    internal BsonBinaryReaderContext CurrentContext { get; }
-    internal BsonBinaryReaderContext[] ContextsStack { get; }
-    internal long Position { get; }
+    internal long Position => _position;
+
+    internal BsonBinaryReaderContext RestoreContext(Stack<BsonBinaryReaderContext> contextStack)
+    {
+        contextStack.Clear();
+        for (var i = _contextArray.Length - 1; i >= 0; i--)
+        {
+            contextStack.Push(_contextArray[i]);
+        }
+        return _context;
+    }
 }
