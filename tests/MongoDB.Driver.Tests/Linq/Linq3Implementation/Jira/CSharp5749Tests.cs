@@ -37,6 +37,30 @@ public class CSharp5749Tests : LinqIntegrationTest<CSharp5749Tests.ClassFixture>
     }
 
     [Fact]
+    public void Enumerable_Contains_with_null_comparer_should_work()
+    {
+        var collection = Fixture.Collection;
+        var names = new[] { "Two", "Three" };
+
+        var queryable = collection.AsQueryable().Where((C x) => names.Contains(x.Name, null));
+
+        var results = queryable.ToArray();
+        results.Select(x => x.Id).Should().Equal(2, 3);
+    }
+
+    [Fact]
+    public void Enumerable_SequenceEqual_with_null_comparer_work()
+    {
+        var collection = Fixture.Collection;
+        var ratings = new[] { 1, 9, 6 };
+
+        var queryable = collection.AsQueryable().Where((C x) => ratings.SequenceEqual(x.Ratings, null));
+
+        var results = queryable.ToArray();
+        results.Select(x => x.Id).Should().Equal(3);
+    }
+
+    [Fact]
     public void MemoryExtensions_Contains_in_Where_should_work()
     {
         var collection = Fixture.Collection;

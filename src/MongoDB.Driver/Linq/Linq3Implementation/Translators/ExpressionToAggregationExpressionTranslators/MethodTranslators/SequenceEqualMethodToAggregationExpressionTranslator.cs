@@ -14,6 +14,7 @@
 */
 
 using System.Linq.Expressions;
+using System.Reflection;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver.Linq.Linq3Implementation.Ast.Expressions;
 using MongoDB.Driver.Linq.Linq3Implementation.Misc;
@@ -23,13 +24,36 @@ namespace MongoDB.Driver.Linq.Linq3Implementation.Translators.ExpressionToAggreg
 {
     internal static class SequenceEqualMethodToAggregationExpressionTranslator
     {
+        private readonly static MethodInfo[] __sequenceEqualMethods =
+        [
+            EnumerableMethod.SequenceEqual,
+            EnumerableMethod.SequenceEqualWithComparer,
+            QueryableMethod.SequenceEqual,
+            QueryableMethod.SequenceEqualWithComparer
+        ];
+
+        private readonly static MethodInfo[] __sequenceEqualWithComparerMethods =
+        [
+            EnumerableMethod.SequenceEqualWithComparer,
+            QueryableMethod.SequenceEqualWithComparer
+        ];
+
         public static TranslatedExpression Translate(TranslationContext context, MethodCallExpression expression)
         {
             var method = expression.Method;
             var arguments = expression.Arguments;
 
-            if (method.IsOneOf(EnumerableMethod.SequenceEqual, QueryableMethod.SequenceEqual))
+            if (method.IsOneOf(__sequenceEqualMethods))
             {
+                if (method.IsOneOf(__sequenceEqualWithComparerMethods))
+                {
+                    var comparerExpression = arguments[2];
+                    if (comparerExpression is not ConstantExpression { Value : null })
+                    {
+                        throw new ExpressionNotSupportedException(expression, because: "comparer value must be null");
+                    }
+                }
+
                 var firstExpression = arguments[0];
                 var secondExpression = arguments[1];
 
