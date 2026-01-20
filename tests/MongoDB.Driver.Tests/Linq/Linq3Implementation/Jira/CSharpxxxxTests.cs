@@ -18,15 +18,49 @@ using System.Linq;
 using MongoDB.Driver.TestHelpers;
 using FluentAssertions;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.Options;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Driver.Linq.Linq3Implementation.Serializers;
 using Xunit;
 
 namespace MongoDB.Driver.Tests.Linq.Linq3Implementation.Jira;
 
 public class CSharpxxxxTests : LinqIntegrationTest<CSharpxxxxTests.ClassFixture>
 {
+    static CSharpxxxxTests()
+    {
+        BsonClassMap.RegisterClassMap<C>(cm =>
+        {
+            var intAsStringSerializer = new Int32Serializer(representation: BsonType.String);
+            var dictionarySerializer = DictionarySerializer.Create(DictionaryRepresentation.Document, intAsStringSerializer, intAsStringSerializer);
+
+            cm.AutoMap();
+            cm.MapMember(x => x.D).SetSerializer(dictionarySerializer);
+        });
+    }
+
     public CSharpxxxxTests(ClassFixture fixture)
         : base(fixture)
     {
+    }
+
+    [Fact]
+    public void C_sould_serialize_as_expected()
+    {
+        var c = new C()
+        {
+            Id = 1,
+            One = 1,
+            A = new int[] { 1, 2, 3 },
+            B = new BsonDocument { { "One", 1 }, { "Two", 2 }, { "Three", 3 } },
+            D = new Dictionary<int, int>() { { 1, 1 }, { 2, 2 }, { 3, 3 } },
+            L = new List<int> { 1, 2, 3 }
+        };
+
+        var json =  c.ToJson();
+        json.Should().Be("""{ "_id" : 1, "One" : "1", "A" : ["1", "2", "3"], "B" : { "One" : 1, "Two" : 2, "Three" : 3 }, "D" : { "1" : "1", "2" : "2", "3" : "3" }, "L" : ["1", "2", "3"] }""");
     }
 
     [Fact]
@@ -35,10 +69,10 @@ public class CSharpxxxxTests : LinqIntegrationTest<CSharpxxxxTests.ClassFixture>
         var collection = Fixture.Collection;
 
         var queryable = collection.AsQueryable()
-            .Select(x => new C { A = new int[] { x.One, 2, 3 } });
+            .Select(x => new C { A = new[] { x.One, 2, 3 } });
 
         var stages = Translate(collection, queryable);
-        AssertStages(stages, "{ $project : { A : ['$One', 2, 3], _id : 0 } }");
+        AssertStages(stages, "{ $project : { A : ['$One', '2', '3'], _id : 0 } }");
     }
 
     [Fact]
@@ -47,7 +81,7 @@ public class CSharpxxxxTests : LinqIntegrationTest<CSharpxxxxTests.ClassFixture>
         var collection = Fixture.Collection;
 
         var queryable = collection.AsQueryable()
-            .Select(x => new C { B = new BsonDocument { { "One", x.One }, { "Two", 2 }, { "Three", 3} } });
+            .Select(x => new C { B = { { "One", x.One }, { "Two", 2 }, { "Three", 3} } });
 
         var stages = Translate(collection, queryable);
         AssertStages(stages, "{ $project : { B : { One : '$One', Two : 2, Three : 3 } } }");
@@ -59,10 +93,10 @@ public class CSharpxxxxTests : LinqIntegrationTest<CSharpxxxxTests.ClassFixture>
         var collection = Fixture.Collection;
 
         var queryable = collection.AsQueryable()
-            .Select(x => new C { B = new BsonDocument { { 1, x.One }, { 2, 2 }, { 3, 3} } });
+            .Select(x => new C { D = { { 1, x.One }, { 2, 2 }, { 3, 3} } });
 
         var stages = Translate(collection, queryable);
-        AssertStages(stages, "{ $project : { B : { One : '$One', Two : 2, Three : 3 } } }");
+        AssertStages(stages, "{ $project : { D : { '1' : '$One', '2' : '2', '3' : '3' } } }");
     }
 
     [Fact]
@@ -71,10 +105,10 @@ public class CSharpxxxxTests : LinqIntegrationTest<CSharpxxxxTests.ClassFixture>
         var collection = Fixture.Collection;
 
         var queryable = collection.AsQueryable()
-            .Select(x => new C { L = new List<int> { x.One, 2, 3 } });
+            .Select(x => new C { L = { x.One, 2, 3 } });
 
         var stages = Translate(collection, queryable);
-        AssertStages(stages, "{ $project : { A : ['$One', 2, 3], _id : 0 } }");
+        AssertStages(stages, "{ $project : { A : ['$One', '2', '3'], _id : 0 } }");
     }
 
     public class C
@@ -83,7 +117,7 @@ public class CSharpxxxxTests : LinqIntegrationTest<CSharpxxxxTests.ClassFixture>
         [BsonRepresentation(BsonType.String)] public int One { get; set; }
         [BsonRepresentation(BsonType.String)] public int[] A { get; set; }
         public BsonDocument B { get; set; }
-        [BsonRepresentation(BsonType.String)] public Dictionary<int, int> D { get; set; }
+        public Dictionary<int, int> D { get; set; }
         [BsonRepresentation(BsonType.String)] public List<int> L { get; set; }
     }
 
